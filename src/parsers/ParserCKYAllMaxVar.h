@@ -20,12 +20,12 @@ public:
                         const std::vector<double>& priors,
                         double beam_threshold,
                         const annot_descendants_type& annot_descendants_,
-                        bool accurate_, unsigned min_beam_length, int stubborn, unsigned cell_threads)
+                        bool accurate_, unsigned min_beam_length, int stubborn)
     : ParserCKYAll_Impl<TCell>(cgs,
                                priors,
                                beam_threshold,
                                annot_descendants_,
-                               accurate_, min_beam_length, stubborn, cell_threads)
+                               accurate_, min_beam_length, stubborn)
     {}
 
 
@@ -44,8 +44,7 @@ public:
                              toFunc (&ProbaModel::update_binary));
         cell.apply_on_edges (toFunc(&ProbaModel::update_unary),
                              toFunc (&ProbaModel::finalize));
-      },
-      this->num_cell_threads
+      }
     );
   }
 
