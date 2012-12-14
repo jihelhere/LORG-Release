@@ -33,7 +33,7 @@ PCKYAllCell<Types>::PCKYAllCell( const PCKYAllCell<Types> & o )
 //   std::copy(&(o.edges), &(o.edges)+1, &edges);
 //   std::cout << "size of edges = " << edges.size() << " " << edges.capacity() <<  " " << max_size << std:: endl;
 //   memcpy(e, o.edges.data(), max_size*sizeof(Edge));
-  
+
 //   std::cout << "copy constructor of " << this << " from " << &o << std::endl;
 //   *this = o ;
 //   memcpy(this, &o, sizeof(PCKYAllCell<Types>));
@@ -91,7 +91,7 @@ void PCKYAllCell<Types>::process_candidate(const UnaryRule* rule, double L_insid
 
   //   std::cout << "PCKYAllCell<Types>::process_candidate. array at " << & e.get_annotations().inside_probabilities_unary_temp.array[0] << std::endl; std::cout.flush();
   e.get_annotations().inside_probabilities_unary_temp.array[0] += L_inside * rule->get_probability()[0][0];
-  
+
 }
 
 template<class Types>
@@ -249,6 +249,7 @@ void PCKYAllCell<Types>::beam(double threshold)
   //looking for the probability of the most probable symbol
   for(unsigned i = 0; i < max_size; ++i)
     if(edges[i]) {
+
       double ins = std::accumulate(edges[i]->get_annotations().inside_probabilities.array.begin(),
                                    edges[i]->get_annotations().inside_probabilities.array.end(),
                                    0.0);
@@ -426,7 +427,7 @@ void PCKYAllCell<Types>::change_rules_resize(const AnnotatedLabelsInfo& next_ann
   for(size_t i=0; i<max_size; ++i) {
     Edge & edge = edges[i];
     if(not edge.is_closed()) {
-      
+
       AnnotationInfo a(next_annotations.get_number_of_annotations(i), 0.0);
 
       //process invalid annotations

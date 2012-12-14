@@ -248,13 +248,20 @@ public:
 
   void process(function<void(ProbaModel &)> f) {f(get_prob_model());}
 
+  void process(function<void(ProbaModel &, const Edge&)> f) {f(get_prob_model(), *this);}
+
   void process(function<void(Edge &)> f) { f(*this); }
+  void process(function<void(const Edge &)> f) { f(*this); }
 
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) {process(toFunc(f));apply(o...);}
   void apply() const {}
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) const {process(toFunc(f));apply(o...);}
+
+
+  double marginalise() const;
+
 };
 
 #endif /*PACKEDEDGE_H_*/

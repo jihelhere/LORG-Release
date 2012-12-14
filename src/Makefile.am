@@ -102,6 +102,9 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	parsers/maxrule/ParserCKYAllMaxRuleKB.h	parsers/maxrule/ParserCKYAllMaxRuleKB.cpp \
 	parsers/maxrule/ParserCKYAllMaxRuleMultiple.h parsers/maxrule/ParserCKYAllMaxRuleMultiple.cpp \
 	parsers/maxrule/MaxRuleTreeLogProbaComputer.h parsers/maxrule/ParserCKYAllMaxRule.h \
+	parsers/variational/VariationalTypes.h \
+	parsers/variational/ParserCKYAllVariational.cpp parsers/variational/ParserCKYAllVariational.h \
+	parsers/variational/VariationalProbabilityKB.cpp parsers/variational/VariationalProbabilityKB.h \
 	PCKYAllCell.h parsers/ParserCKYAll.h parsers/ParserCKYAll.hpp \
 	parsers/viterbi/ParserCKYAllViterbi.h parsers/viterbi/ParserCKYAllViterbi.cpp \
 	parsers/viterbi/ViterbiProbability.h parsers/viterbi/ViterbiProbability.cpp \

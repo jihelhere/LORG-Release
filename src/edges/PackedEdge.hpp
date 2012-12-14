@@ -366,15 +366,20 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
 
   //  std::cout << "log prob deriv: " << best.get(ith_deriv).probability << std::endl;
 
-  if(best.get(ith_deriv).probability == - std::numeric_limits<double>::infinity())
+
+  // TODO raise exception
+  // This is only to prevent wtf cases
+  if(best.get(ith_deriv).probability == - std::numeric_limits<double>::infinity()) {
+    //std::cout << "-inf" << std::endl;
     return NULL;
+  }
 
   if(best.get(ith_deriv).dtrs == NULL) {
-    //    std::cerr << "no daughters" << std::endl;
+    //std::cout << "no daughters" << std::endl;
     return NULL;
   }
   if(std::isnan(best.get(ith_deriv).probability)) {
-    //    std::cerr << "invalid prob" << std::endl ;
+    //std::cout << "invalid prob" << std::endl ;
     return NULL;
   }
   // if(my_isinvalid(best.get(ith_deriv).probability)) {
@@ -585,7 +590,37 @@ bool PackedEdge<Types>::has_solution(unsigned i) const
 }
 
 
+template <typename Types>
+double PackedEdge<Types>::marginalise() const
+{
+  // for(auto & d: this->binary_daughters) {
+  //   std::cout << *(d.get_rule()) << std::endl;
+  // }
+  // for(auto & d: this->unary_daughters) {
+  //   std::cout << *(d.get_rule()) << std::endl;
+  // }
+  // for(auto & d: this->lexical_daughters) {
+  //   std::cout << *(d.get_rule()) << std::endl;
+  // }
 
+
+  double normalisation_factor = 0;
+  const AnnotationInfo & a = this->get_annotations();
+  for (unsigned i = 0; i < a.inside_probabilities.array.size(); ++i)
+  {
+    if(a.inside_probabilities.array[i] == LorgConstants::NullProba
+       || a.outside_probabilities.array[i] == LorgConstants::NullProba
+       )
+      continue;
+
+    //    std::cout << a.inside_probabilities.array[i] << " " << a.outside_probabilities.array[i] << std::endl;
+    normalisation_factor += a.inside_probabilities.array[i] * a.outside_probabilities.array[i];
+  }
+
+  //  std::cout << std::log(normalisation_factor) << std::endl;
+  return std::log(normalisation_factor);
+
+}
 
 
 #endif

@@ -33,14 +33,9 @@ AC_CHECK_HEADER([string],,AC_MSG_ERROR(STL classes missing ?))
 AC_CHECK_HEADER([list],,AC_MSG_ERROR(STL classes missing ?))
 AC_CHECK_HEADER([vector],,AC_MSG_ERROR(STL classes missing ?))
 
-##AC_CHECK_HEADER([google/malloc_extension.h],[use_tcmalloc=yes],AC_MSG_WARN(google malloc missing ?))
-
 AC_CHECK_FUNCS([memset],,,AC_MSG_ERROR(memset is missing))
 AC_CHECK_FUNCS([strdup],,,AC_MSG_ERROR(strdup is missing))
 
-
-##AM_CONDITIONAL([WANT_TEST],[test "$build_test" = yes])
-##AM_CONDITIONAL([WANT_TCMALLOC],[test "$use_tcmalloc" = yes])
 
 #Fix a bug in Linux with tbb tick_count (need -ltr)
 case "$host_os" in

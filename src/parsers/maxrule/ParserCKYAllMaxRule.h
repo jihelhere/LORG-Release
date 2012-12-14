@@ -28,8 +28,6 @@ public:
                                accurate_, min_beam_length, stubborn)
     {}
 
-
-
    /**
    * @brief calculate the chart specific rule probabilities for all packed edges in all cells
    *
