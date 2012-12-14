@@ -10,11 +10,11 @@
 #include "maxrule/ParserCKYAllMaxRuleKB.h"
 #include "maxrule/ParserCKYAllMaxRuleMultiple.h"
 #include "mindivkb/ParserCKYAllMinDivKB.h"
+#include "variational/ParserCKYAllVariational.h"
 
-// #include "ParserCKYAll.hpp"
+
 #include "grammars/GrammarAnnotated.hpp"
 #include "utils/data_parsers/AnnotHistoriesParser.h"
-
 
 ParserCKYAllFactory::Parsing_Algorithm
 ParserCKYAllFactory::string_to_pa(const std::string& s)
@@ -26,6 +26,8 @@ ParserCKYAllFactory::string_to_pa(const std::string& s)
     if (s == "kmax") return ParserCKYAllFactory::KMaxRule;
 
     if (s == "mind") return ParserCKYAllFactory::MinDiv;
+
+    if (s == "var") return ParserCKYAllFactory::Variational;
 
     std::clog << "Unknown parser type: " << s << std::endl;
 
@@ -52,6 +54,8 @@ ParserCKYAll * create_parser(std::vector<ParserCKYAll::AGrammar*> cgs, ParserCKY
         return new ParserCKYAllMaxRuleKB(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
       case MinDiv :
         return new ParserCKYAllMinDivKB(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
+      case Variational :
+        return new ParserCKYAllVariational(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
       default :
         return NULL;
     }
@@ -108,16 +112,9 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
         grammars = create_intermediates(*cg, annot_descendants);
         // compute priors for base grammar
         priors = grammars[0]->compute_priors();
-        // for(unsigned j = 0; j < priors.size(); ++j) {
-        //   std::clog << SymbolTable::instance_nt()->get_label_string(j)
-        // 		<< " -> " << priors[j] << std::endl;
-        // }
-
-
-        //      std::clog << "finishing creation" << std::endl;
-        //    std::clog << "init" << std::endl;
         cg->init();
         //    std::clog << "smooth" << std::endl;
+        // TODO: options to set this from command line
         cg->linear_smooth(0.01,0.1);
         //    std::clog << "clean" << std::endl;
         cg->remove_unlikely_annotations_all_rules(1e-10);

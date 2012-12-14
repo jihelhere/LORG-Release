@@ -88,14 +88,14 @@ public:
   {
     return left->is_closed() or right->is_closed() ;
   }
-  
+
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
     Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities.array,
                                         left->get_annotations().inside_probabilities.array,
                                         right->get_annotations().inside_probabilities.array);
   }
-  
+
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
     Parent::get_rule()->update_outside_annotations(annotations.outside_probabilities.array,
@@ -126,7 +126,7 @@ protected:
 
 public:
 //   inline UnaryPackedEdgeDaughters & operator=(UnaryPackedEdgeDaughters<Types> && o) { *this = std::move(o); return *this; }
-  
+
   UnaryPackedEdgeDaughters(Edge & le, const Rule * ru) :
     Parent(ru), left(&le)
   {};
@@ -137,7 +137,7 @@ public:
   inline bool is_lexical() const {return false;}
 //   inline const Edge& left_daughter() const  {return *left;}
   inline Edge& left_daughter() const {return *left;}
-  
+
   inline bool points_towards_invalid_edges() const
   {
     return left->is_closed();
@@ -169,12 +169,12 @@ public:
   protected:
   const Word* word;
 
-  double relaxation;
+  //  double relaxation;
 
 public:
   LexicalPackedEdgeDaughters(const Rule * ru, const Word* w) :
-  Parent(ru), word(w),
-    relaxation(0)
+  Parent(ru), word(w)
+  //  , relaxation(0)
   {};
 
   ~LexicalPackedEdgeDaughters() {};
@@ -182,7 +182,7 @@ public:
   inline bool is_binary() const {return false;}
   inline bool is_lexical() const {return true;}
   inline const Word* get_word() const {return word;}
-  
+
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
 //     BLOCKTIMING("LexicalPackedEdgeDaughters - update_inside_annotations");
     assert(Parent::get_rule() != NULL);
