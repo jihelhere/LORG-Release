@@ -215,9 +215,9 @@ void URule::update_outside_annotations(const std::vector<double>& up,
   }
 }
 
-double URule::update_outside_annotations_return_marginal(const std::vector< double >& up, 
-                                                               const std::vector< double >& in_left, 
-                                                               std::vector< double >& out_left) 
+double URule::update_outside_annotations_return_marginal(const std::vector< double >& up,
+                                                               const std::vector< double >& in_left,
+                                                               std::vector< double >& out_left)
 const
 {
   double marginal = 0.0;

@@ -14,7 +14,7 @@ struct ViterbiTypes {
   typedef ViterbiProbability EdgeProbability ;
   typedef emptystruct EdgeDaughterProbability ;
   typedef Word ChartWord ;
-  
+
   typedef BRuleC2f BRule;
   typedef URuleC2f URule;
   typedef LexicalRuleC2f LRule;
@@ -35,14 +35,17 @@ public:
   typedef typename ViterbiTypes::UnaryDaughter  UnaryDaughter;
   typedef typename ViterbiTypes::BinaryDaughter BinaryDaughter;
   typedef typename ViterbiTypes::LexicalDaughter LexicalDaughter;
-  
+
 private:
-  std::vector<packed_edge_probability_with_index> best;
+  std::vector<packed_edge_probability> best;
 public:
   ViterbiProbability() {};
   ViterbiProbability(unsigned size) : best(size) {};
 
-  void set_size(unsigned size_) {best.resize(size_);}
+  void set_size(unsigned size_)
+  {
+    best.resize(size_);
+  }
 
 
   const packed_edge_probability& get(unsigned index) const

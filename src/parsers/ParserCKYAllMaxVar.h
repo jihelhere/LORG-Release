@@ -41,7 +41,8 @@ public:
       [](Cell & cell)
       {
 //       std::cout << "filling cell " << &cell << " : ======================================================" << cell << std::endl;
-        cell.apply_on_edges (toFunc(&ProbaModel::update_lexical),
+        cell.apply_on_edges (toFunc(&ProbaModel::init),
+                             toFunc(&ProbaModel::update_lexical),
                              toFunc (&ProbaModel::update_binary));
         cell.apply_on_edges (toFunc(&ProbaModel::update_unary),
                              toFunc (&ProbaModel::finalize));

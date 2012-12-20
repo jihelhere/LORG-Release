@@ -37,7 +37,7 @@ void ParserCKYAll_Impl<Types>::parse(int start_symbol) const
   double beam_threshold = prior_beam_threshold;
 
   do {
-    
+
     //clear only when first try was a failure
     if(ntries != stubbornness) {
       chart->prepare_retry();
@@ -110,7 +110,7 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
             //     }
             //     // create daughters
             //     result_cell.reserve_binary_daughters(nb_rules);
-            //   }  
+            //   }
   {
     //               BLOCKTIMING("get_candidates creating");
     //iterating through all the rules P -> L R, indexed by L
@@ -123,7 +123,7 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
           Edge & right_edge = right_cell.get_edge(same_rhs.rhs1);
           if (not right_edge.is_closed()) {
             double LR = LR1 * right_edge.get_annotations().inside_probabilities.array[0];
-            
+
             //iterating through all the rules P -> L R, indexed by P, R and L fixed
             for(const auto & rule: same_rhs) {
               result_cell.process_candidate(left_edge,right_edge, rule, LR);
@@ -424,15 +424,16 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
     double beam_threshold = io_beam_thresholds[i + 1];
 
     // std::cout << std::log(get_sentence_probability()) << std::endl;
-    //     std::cout << "beaming with grammar: " << i << std::endl;
+    //    std::cout << "beaming with grammar: " << i << std::endl;
+
 
 
     // FIX: This test messes with product grammar parsing
     // TODO: Do this test only with the first grammar
-    //    if(i != 0) {// inside_probs already computed when bulding the chart
-    //      std::cout << "before inside" << std::endl;
+    // if(i != 0) {// inside_probs already computed when bulding the chart
+    //   std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
-    //    }
+    // }
 
 
 
@@ -442,9 +443,10 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
     //   std::cout << "top is not in root cell" << std::endl;
 
     if(chart->get_root().is_closed() || !chart->get_root().exists_edge(top_idx)) {
-      //      std::cerr << "grammar " << i << " spoiled the fun :(" << std::endl;
+      //      std::cout << "grammar " << i << " spoiled the fun :(" << std::endl;
       break;
     }
+
     //    std::cout << "after inside" << std::endl;
     //    std::cout << "before beam" << std::endl;
     double sp = std::log(get_sentence_probability());
@@ -464,11 +466,15 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
     //    std::cout << "before change" << std::endl;
 
+
+
     // TODO this function should take current_annot_descendants as an argument
     // instead annot_descendants is changed in ParserCKYAllMaxVarMultiple::extract_solution
     // which is a bit .. hackish
     change_rules_resize(i, current_grammars);
   }
+
+
 }
 
 template <class Types>

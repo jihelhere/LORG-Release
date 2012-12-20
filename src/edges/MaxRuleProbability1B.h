@@ -3,7 +3,6 @@
 #define _MAXRULEPROBABILITY1B_H_
 #include <numeric>
 
-
 #include "PackedEdgeProbability.h"
 #include "PackedEdge.h"
 #include "MaxRuleTreeLogProbaComputer.h"
@@ -16,7 +15,7 @@ struct MaxRule1BTypes {
   typedef MaxRuleProbability1B EdgeProbability ;
   typedef emptystruct EdgeDaughterProbability ;
   typedef Word ChartWord ;
-  
+
   typedef BRuleC2f BRule;
   typedef URuleC2f URule;
   typedef LexicalRuleC2f LRule;
@@ -48,6 +47,8 @@ public:
 
   static void set_log_normalisation_factor(double lnf);
 
+
+  inline void init() {best.init();}
   inline const packed_edge_probability& get(unsigned/*ignored*/) const {return best;}
   inline packed_edge_probability& get(unsigned /*ignored*/) {return best;}
 
@@ -73,11 +74,13 @@ inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbability1B & 
 inline void MaxRuleProbability1B::update_lexical(Edge & edge,  const LexicalDaughter& dtr)
 {
     const LexicalRuleC2f* rule = dtr.get_rule();
-    
-    //std::cout << "update with " << *rule << std::endl;
-    
+
+    //    std::cout << "update with " << *rule << std::endl;
+
     double probability = QInsideComputer::compute(edge.get_annotations(), rule, log_normalisation_factor);
-    
+
+    //    std::cout << probability << std::endl;
+
     if (probability > best.probability) {
         best.probability = probability;
         best.dtrs = &dtr;
@@ -87,10 +90,15 @@ inline void MaxRuleProbability1B::update_lexical(Edge & edge,  const LexicalDaug
 
 inline void MaxRuleProbability1B::update_unary (Edge & e, const UnaryDaughter & dtr)
 {
+  //  std::cout << "update with " << *(dtr.get_rule()) << std::endl;
+
   double probability = -std::numeric_limits<double>::infinity();
 
   const Edge& left  = dtr.left_daughter();
+  // std::cout << left << std::endl;
+  // std::cout << left.get_prob_model().get(0).dtrs << std::endl;
   if(left.get_prob_model().get(0).dtrs && (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())) {
+    //    std::cout << "unary case" << std::endl;
     probability =  QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor);
   }
 
@@ -98,11 +106,15 @@ inline void MaxRuleProbability1B::update_unary (Edge & e, const UnaryDaughter & 
     best.probability = probability;
     best.dtrs = &dtr;
   }
+
+  //  std::cout << probability << std::endl;
 }
 
 inline void
 MaxRuleProbability1B::update_binary (Edge & e, const BinaryDaughter & dtr)
 {
+  //  std::cout << "update with " << *(dtr.get_rule()) << std::endl;
+
   double probability = QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor);
 
   if (probability > best.probability)
@@ -110,6 +122,8 @@ MaxRuleProbability1B::update_binary (Edge & e, const BinaryDaughter & dtr)
       best.probability = probability;
       best.dtrs = &dtr;
     }
+
+  //  std::cout << probability << std::endl;
 }
 
 // //uncomment the function to get the best indexes
