@@ -7,26 +7,26 @@
 
 template <typename Bin, typename Un, typename Lex>
 GrammarAnnotated<Bin,Un,Lex>::GrammarAnnotated()
-: 
-Grammar<Bin,Un,Lex>(), 
+:
+Grammar<Bin,Un,Lex>(),
 AnnotatedContents(),
 viterbi_decoding_paths()
 {}
 
 namespace {
-  
+
   struct remove_unlikely_helper_struct
   {
     const double& threshold;
     remove_unlikely_helper_struct(const double& threshold_)
     : threshold(threshold_) {};
-    
+
     template<class T>
     void operator() (T& rule) const {rule.remove_unlikely_annotations(threshold);}
   };
 
 
-  
+
   ///  a structure that compares unary rules (according to their symbolic part)
   // A1 -> B1 (p1,...,pn) == A2 -> B2 (q1,...,qn) <=> A1 == A2 && B1 == B2
   // used when looking for unary chains
@@ -46,58 +46,58 @@ namespace {
   std::vector<Lex> compute_new_unknowns(const std::vector<Lex>& lexical_rules)
   {
     typedef std::vector<Lex> LexVect;
-    
+
     static int unknown_id = SymbolTable::instance_word().insert(LorgConstants::token_unknown);
-    
+
     //map from tags to lexical rules
     uomap<int, Lex> tags2rules;
-    
+
     std::set<int> tags_w_unk;
-    
+
     for(typename LexVect::const_iterator i(lexical_rules.begin()); i != lexical_rules.end(); ++i) {
       if (i->get_rhs0() == unknown_id) {
         tags_w_unk.insert(i->get_lhs());
       }
     }
-    
-    
+
+
     for(typename LexVect::const_iterator i(lexical_rules.begin()); i != lexical_rules.end(); ++i) {
-      
+
       const std::string& word = SymbolTable::instance_word().get_label_string(i->get_rhs0());
-      
-      
+
+
       //lexical to word signature
       if(!tags_w_unk.count(i->get_lhs()) && word.length() >= 3 && word.substr(0,3) == "UNK") {
-        
+
         if(!tags2rules.count(i->get_lhs())) {
           Lex copy(*i);
           copy.set_rhs0(unknown_id);
           tags2rules.insert(std::make_pair(i->get_lhs(),copy));
         }
         else {
-          
+
           Lex& old_rule = tags2rules.find(i->get_lhs())->second;
           std::vector<double>& old_probabilities = old_rule.get_probability();
-          
-          
+
+
           if(i->get_probability().size() > old_probabilities.size())
             old_probabilities.resize(i->get_probability().size());
-          
+
           for(unsigned a = 0; a < i->get_probability().size(); ++a) {
             old_probabilities[a] += i->get_probability()[a];
           }
-          
-          
-          
+
+
+
         }
       }
     }
-    
+
     std::vector<Lex> result;
     for(typename uomap<int,Lex>::const_iterator i(tags2rules.begin()) ; i != tags2rules.end(); ++i) {
       result.push_back(i->second);
     }
-    
+
     return result;
   }
 }
@@ -279,15 +279,9 @@ void GrammarAnnotated<Bin,Un,Lex>::compute_unary_chains(PathMatrix& decoding_pat
 template<typename Bin, typename Un, typename Lex>
 void GrammarAnnotated<Bin,Un,Lex>::set_logmode()
 {
-  std::for_each(Grammar<Bin,Un,Lex>::binary_rules.begin(),
-    Grammar<Bin,Un,Lex>::binary_rules.end(),
-    std::mem_fun_ref(&Bin::set_logmode));
-  std::for_each(Grammar<Bin,Un,Lex>::unary_rules.begin(),
-    Grammar<Bin,Un,Lex>::unary_rules.end(),
-    std::mem_fun_ref(&Un::set_logmode));
-  std::for_each(Grammar<Bin,Un,Lex>::lexical_rules.begin(),
-    Grammar<Bin,Un,Lex>::lexical_rules.end(),
-    std::mem_fun_ref(&Lex::set_logmode));
+  for(auto& rule: this->binary_rules) {rule.set_logmode();}
+  for(auto& rule: this->unary_rules) {rule.set_logmode();}
+  for(auto& rule: this->lexical_rules) {rule.set_logmode();}
 }
 
 template<typename Bin, typename Un, typename Lex>

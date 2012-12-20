@@ -39,16 +39,16 @@ void ParserCKYAllMinDivKB::extract_solution()
 //   {
 //     cell.apply_on_edges(reinit_1);
 //   });
-//   
+//
 //   // computes q from marginal probabilities on p
 //   update_q();
-  
+
   /* min divergence computation here ! : fixed point iterations */
   while (false) {
     compute_inside_outside_q_probabilities();
     update_q();
   }
-  
+
   // compute the probability of the best subtree starting at each edge daughter
   // and initialize structures "candidates" and "derivations" of the edge
   {
@@ -75,7 +75,7 @@ unsigned MinDivProbabilityKB::size = 0;
 
 
 
-ostream & MinDivProbabilityKB::operator>> (ostream & out) const 
+ostream & MinDivProbabilityKB::operator>> (ostream & out) const
 {return out;}
 
 inline void
@@ -87,7 +87,7 @@ MinDivProbabilityKB::extend_derivation (unsigned int i, bool licence_unaries)
 
   if(derivations.size() > 0) {
 
-    packed_edge_probability_with_index& last = derivations[derivations.size() -1];
+    packed_edge_probability& last = derivations[derivations.size() -1];
 
     //    std::cout << "last.probability " << last.probability << std::endl;
 
@@ -130,7 +130,7 @@ MinDivProbabilityKB::extend_derivation (unsigned int i, bool licence_unaries)
 
 }
 
-inline void MinDivProbabilityKB::find_succ(packed_edge_probability_with_index& pep, bool licence_unaries)
+inline void MinDivProbabilityKB::find_succ(packed_edge_probability& pep, bool licence_unaries)
 {
   if(pep.dtrs->is_lexical())  { return;}
   // binary -> extend left and right daughters
@@ -145,9 +145,9 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability_with_index& p
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
-      p.probability = d->tree_log_proba(p.left_index, p.right_index); 
+      p.probability = d->tree_log_proba(p.left_index, p.right_index);
 
       assert(p.probability <= 0);
 
@@ -171,7 +171,7 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability_with_index& p
       //        std::cout << "bin extending on the right" << std::endl;
 
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.right_index = nextright;
       p.probability = d->tree_log_proba(p.left_index, p.right_index);
 
@@ -205,7 +205,7 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability_with_index& p
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
       p.probability = d->tree_log_proba(p.left_index);
 
@@ -249,13 +249,13 @@ inline void ParserCKYAllMinDivKB::extend_all_derivations()
 inline void ParserCKYAllMinDivKB::compute_outside_probabilities()
 {
   MinDivProbabilityKB::set_normalisation_factor(get_sentence_probability());
-  
+
   this->chart->opencells_apply_top_down([&](Cell & cell)
   {
       cell.apply_on_edges(& Edge::                 prepare_outside_probability);
       cell.apply_on_edges(&       UnaryDaughter  ::outside_and_marginal);
       cell.apply_on_edges(& Edge::                 adjust_outside_probability);
-      cell.apply_on_edges(&       BinaryDaughter ::outside_and_marginal, 
+      cell.apply_on_edges(&       BinaryDaughter ::outside_and_marginal,
                           &       LexicalDaughter::outside_and_marginal);
   }
   );
@@ -271,7 +271,7 @@ inline void MinDivProbabilityKB::update_inside_lexical(const LexicalDaughter& dt
 inline void MinDivProbabilityKB::update_inside_binary(const BinaryDaughter& dtr)
 {
   inside_prob += (
-    dtr.q 
+    dtr.q
     * dtr.left_daughter().get_prob_model().inside_prob
     * dtr.right_daughter().get_prob_model().inside_prob
   );
@@ -299,7 +299,7 @@ inline void ParserCKYAllMinDivKB::compute_inside_q_probabilities()
     cell.apply_on_edges(& MinDivProbabilityKB::update_inside_lexical,
                         & MinDivProbabilityKB::update_inside_binary,
                         & MinDivProbabilityKB::prepare_inside_unary);
-    
+
     cell.apply_on_edges(& MinDivProbabilityKB::update_inside_unary);
     cell.apply_on_edges(& MinDivProbabilityKB::adjust_inside_unary);
   }
@@ -323,12 +323,12 @@ inline void MinDivProbabilityKB::update_outside_binary(const BinaryDaughter& dtr
   #endif
   *left += (
     outside_prob
-    * dtr.q 
+    * dtr.q
     * dtr.right_daughter().get_prob_model().inside_prob
   );
   *right += (
     outside_prob
-    * dtr.q 
+    * dtr.q
     * dtr.left_daughter().get_prob_model().inside_prob
   );
 }
@@ -379,9 +379,9 @@ inline void ParserCKYAllMinDivKB::compute_inside_outside_q_probabilities()
   });
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
   this->chart->get_root().get_edge(start_symbol).get_prob_model().set_outside_prob(1.0);
-  
+
   compute_inside_q_probabilities();
-  
+
   compute_outside_q_probabilities();
 }
 
@@ -435,7 +435,7 @@ template<class TDaughter>
 inline void MinDivProbabilityKB::update_best(const TDaughter& dtr)
 {
 //   std::cout << "updating "<<*this << "(dtr: " << *dtr.get_rule() << ")" << std::endl;
-  packed_edge_probability_with_index pep;
+  packed_edge_probability pep;
 
   pep.probability = dtr.tree_log_proba();
 
@@ -462,7 +462,7 @@ inline void MinDivProbabilityKB:: finalize_best()
         candidates.resize(size);
   }
   std::make_heap(candidates.begin(),candidates.end());
-  
+
   std::pop_heap(candidates.begin(),candidates.end());
   candidates.pop_back();
 }
@@ -480,7 +480,7 @@ inline void ParserCKYAllMinDivKB::fill_bests()
 //       std::cout << "filling cell " << &cell << " : ======================================================" << cell << std::endl;
       cell.apply_on_edges (/*function<void(Edge&)>([](Edge&e){(std::cout << "(edge.1:"<<&e <<" : " << e << ") ").flush();}), */
                            toFunc(&ProbaModel::update_best<LexicalDaughter>),
-//                            function<void(Edge&)>([](Edge&e){(std::cout << "(edge.2:"<<&e <<" : " << e << ") ").flush();}), 
+//                            function<void(Edge&)>([](Edge&e){(std::cout << "(edge.2:"<<&e <<" : " << e << ") ").flush();}),
                            toFunc (&ProbaModel::update_best<BinaryDaughter>));
       cell.apply_on_edges (toFunc(&ProbaModel::update_best<UnaryDaughter>),
                            toFunc (&ProbaModel::finalize_best));
@@ -492,13 +492,13 @@ inline void ParserCKYAllMinDivKB::fill_bests()
 
 inline void ParserCKYAllMinDivKB::initialise_candidates()
 {
-  
+
   double sentence_probability = std::log(get_sentence_probability());
   //  unsigned sent_size = chart->get_size();
-  
+
   MinDivProbabilityKB::set_log_normalisation_factor(sentence_probability);
   MinDivProbabilityKB::set_size(k);
-  
+
   fill_bests();
 }
 
