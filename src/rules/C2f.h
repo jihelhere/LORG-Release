@@ -80,7 +80,11 @@ public:
 
 
   bool is_logmode() const {return logmode;}
-  void set_logmode() {set_log(this->probabilities); logmode=true;};
+  void set_logmode()
+  {
+    set_log(this->probabilities); logmode=true;
+  };
+
 
 private:
   std::vector< C2f*> finers;

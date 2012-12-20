@@ -177,7 +177,7 @@ struct c2f_replace_struct_helper
   template <typename T>
   void operator ()(T& daughter) const
   {
-    daughter.set_rule((typename T::Rule *)daughter.get_rule()->get(idx));
+    daughter.set_rule(static_cast<const typename T::Rule *>(daughter.get_rule()->get(idx)));
   }
 };
 
@@ -307,11 +307,11 @@ unsigned decode_path(PtbPsTree& tree,
         final = true;
       else {
         //  std::cout << "adding node " << SymbolTable::instance_nt()->translate(it2->second.first) << std::endl;
-        
+
         std::ostringstream node_content;
         node_content << SymbolTable::instance_nt().translate(it2->second.first);
         if(append_annot) node_content << "_" << it2->second.second;
-        
+
         pos=tree.add_last_daughter(pos,node_content.str());
         candidate = it2->second;
         ++path_length;
@@ -352,7 +352,6 @@ unsigned decode_path(PtbPsTree& tree,
 template <class Types>
 PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool append_annot, bool output_forms) const
 {
-
   PtbPsTree * tree = NULL;
 
   std::ostringstream node_content;
@@ -394,6 +393,12 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
 
     if(best.get(ith_deriv).dtrs->is_binary()) {
 
+      //       std::cout
+      //           << "b rule: "
+      //     << *(static_cast<const
+      //     BinaryDaughter*>(best.get(ith_deriv).dtrs)->get_rule())
+      //           << std::endl;
+
       // std::cout << "deriv " << ith_deriv
       //           << "\t" << best.get(ith_deriv).get_left_index()
       //           << "\t" << best.get(ith_deriv).get_right_index() << std::endl;
@@ -406,8 +411,14 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
     }
     else {
 
-            // std::cout << "deriv " << ith_deriv
-            //     << "\t" << best.get(ith_deriv).get_left_index() << std::endl;
+       // std::cout
+       //     << "u rule: "
+       //     << *(static_cast<const UnaryDaughter*>(best.get(ith_deriv).dtrs)->get_rule())
+       //     << std::endl;
+
+
+       // std::cout << "deriv " << ith_deriv << std::endl;
+       // std::cout << "\t" << best.get(ith_deriv).get_left_index() << std::endl;
 
       const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(best.get(ith_deriv).dtrs);
       decode_path(*tree,pos,
@@ -437,7 +448,11 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
 
   // if we can't find a branching (lexical node)
   // the nwe exit
-  if(!best.get(index).dtrs) {return;}
+  if(!best.get(index).dtrs)
+  {
+    //std::cout << "dtrs is null" << std::endl;
+    return;
+  }
 
 
   // if the *branching* leads to a lexical node
@@ -450,6 +465,12 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
     // pos = tree.add_last_daughter(pos, SymbolTable::instance_word()->translate(get_lhs()));
 
     const LexicalDaughter * daughters =  static_cast<const LexicalDaughter*>(best.get(index).dtrs);
+
+     // std::cout
+     //     << "l rule: "
+    //     << *(static_cast<const
+    //     LexicalDaughter*>(best.get(index).dtrs)->get_rule())
+         // << std::endl;
 
 
     node_content << SymbolTable::instance_nt().translate(lhs);
@@ -480,7 +501,14 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
 
     if(best.get(index).dtrs->is_binary()) {
 
-      // std::cout << "binary" << std::endl;
+       // std::cout
+       //     << "b rule: "
+      //     << *(static_cast<const
+      //     BinaryDaughter*>(best.get(index).dtrs)->get_rule())
+           // << std::endl;
+
+
+      // // std::cout << "binary" << std::endl;
       // std::cout << "deriv " << index
       //           << "\t" << best.get(index).get_left_index()
       //           << "\t" << best.get(index).get_right_index() << std::endl;
@@ -495,6 +523,11 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
                                                best.get(index).get_right_index(), append_annot, output_forms);
     } // if(best.get(index).dtrs->is_binary())
     else { //unary branching
+
+       // std::cout
+       //     << "u rule: "
+       //     << *(static_cast<const UnaryDaughter*>(best.get(index).dtrs)->get_rule())
+       //     << std::endl;
 
       // std::cout << "unary" << std::endl;
       // std::cout << "deriv " << index

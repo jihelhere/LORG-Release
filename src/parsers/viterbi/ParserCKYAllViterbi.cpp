@@ -11,6 +11,7 @@ ParserCKYAllViterbi::ParserCKYAllViterbi(std::vector<AGrammar *>& cgs,
   fine_grammar = new ParserCKYAll::AGrammar(*cgs[cgs.size()-1]);
   fine_grammar->set_logmode(); // the Viterbi algorithms assume the fine grammar rules weights are log_probs
 
+
   //TODO maybe make this a parser option?
   //create the coarse-to-fine map
 
@@ -27,7 +28,6 @@ void ParserCKYAllViterbi::extract_solution()
 {
   const AnnotatedLabelsInfo& annotations_info = fine_grammar->get_annotations_info();
 
-
   chart->opencells_apply_bottom_up(
     [&annotations_info](Cell & cell){
 
@@ -39,6 +39,12 @@ void ParserCKYAllViterbi::extract_solution()
           cell.get_edge(i).apply(&ViterbiProbability::update_binary);
         }
       }
+      for(unsigned i = 0; i < cell.get_max_size(); ++i) {
+        if(cell.exists_edge(i))  {
+          cell.get_edge(i).apply(&ViterbiProbability::update_unary);
+        }
+      }
+
     }
   );
 }

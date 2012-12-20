@@ -33,7 +33,7 @@ class MaxRuleProbabilityKB
 
 public:
 
-  typedef std::vector<packed_edge_probability_with_index> heap_type;
+  typedef std::vector<packed_edge_probability> heap_type;
   typedef typename MaxRuleKBTypes::Edge Edge;
   typedef typename MaxRuleKBTypes::Cell Cell;
   typedef typename MaxRuleKBTypes::UnaryDaughter UnaryDaughter;
@@ -62,7 +62,8 @@ public:
   inline const heap_type & get_candidates() const { return candidates; }
   inline const heap_type & get_derivations() const { return derivations; }
 
-  inline const packed_edge_probability_with_index& get(unsigned idx) const {return derivations[idx];}
+  inline void init() {}
+  inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
   inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
 
 
@@ -71,7 +72,8 @@ public:
   inline void update_binary(Edge& e, const BinaryDaughter& dtr);
   inline void finalize();
 
-  inline void find_succ(Edge*,packed_edge_probability_with_index& pep, bool licence_unaries);
+
+  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
   inline void extend_derivation(Edge*, unsigned, bool) ;
 
   inline unsigned n_deriv() const {return derivations.size();};
@@ -82,10 +84,10 @@ private:
 
   struct test_helper
   {
-    const packed_edge_probability_with_index& pep;
-    test_helper(const packed_edge_probability_with_index& p) : pep(p) {};
+    const packed_edge_probability& pep;
+    test_helper(const packed_edge_probability& p) : pep(p) {};
 
-    inline bool operator()(const packed_edge_probability_with_index& p)
+    inline bool operator()(const packed_edge_probability& p)
     {
       return (p.probability == pep.probability) //|| (p.dtrs == pep.dtrs)
       ;
@@ -110,7 +112,7 @@ void MaxRuleProbabilityKB::update_lexical(Edge& e, const LexicalDaughter& dtr)
   const LexicalRuleC2f* rule = dtr.get_rule();
   assert(rule != NULL);
 
-  packed_edge_probability_with_index pep;
+  packed_edge_probability pep;
   pep.probability = QInsideComputer::compute(a, rule, log_normalisation_factor);
 
 //    std::cout << "lexical " << pep.probability << std::endl;
@@ -132,7 +134,7 @@ void MaxRuleProbabilityKB::update_unary(Edge& e, const UnaryDaughter& dtr)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_unary");
   const AnnotationInfo & a = e.get_annotations();
-  packed_edge_probability_with_index pep;
+  packed_edge_probability pep;
   pep.dtrs = &dtr;
   //  std::cout << "before ump" << std::endl;
   pep.probability= QInsideComputer::compute(a, dtr, log_normalisation_factor);
@@ -154,7 +156,7 @@ void MaxRuleProbabilityKB::update_binary(Edge& e, const BinaryDaughter& dtr)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_binary");
   const AnnotationInfo & a = e.get_annotations();
-  packed_edge_probability_with_index pep;
+  packed_edge_probability pep;
   pep.dtrs = &dtr;
 
   pep.probability= QInsideComputer::compute(a, dtr, log_normalisation_factor);
@@ -180,7 +182,7 @@ void MaxRuleProbabilityKB::update_binary(Edge& e, const BinaryDaughter& dtr)
 
 struct gt_pep
 {
-  bool operator()(const packed_edge_probability_with_index& p1, const packed_edge_probability_with_index& p2) const
+  bool operator()(const packed_edge_probability& p1, const packed_edge_probability& p2) const
   {
     return p1 > p2;
   }
@@ -244,7 +246,7 @@ void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licenc
 
   if(derivations.size() > 0) {
 
-    packed_edge_probability_with_index& last = derivations[derivations.size() -1];
+    packed_edge_probability& last = derivations[derivations.size() -1];
 
     //    std::cout << "last.probability " << last.probability << std::endl;
 
@@ -287,7 +289,7 @@ void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licenc
 
 }
 
-void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability_with_index& pep, bool licence_unaries)
+void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries)
 {
   if(pep.dtrs->is_lexical())  { return;}
   // binary -> extend left and right daughters
@@ -302,7 +304,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability_with_in
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
       p.probability = QInsideComputer::compute(edge->get_annotations(), *d, log_normalisation_factor, p.left_index, p.right_index);
 
@@ -328,7 +330,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability_with_in
       //        std::cout << "bin extending on the right" << std::endl;
 
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.right_index = nextright;
       p.probability = QInsideComputer::compute(edge->get_annotations(), *d, log_normalisation_factor, p.left_index, p.right_index);
 
@@ -362,7 +364,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability_with_in
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
       p.probability = QInsideComputer::compute(edge->get_annotations(), *d, log_normalisation_factor, p.left_index);
 
