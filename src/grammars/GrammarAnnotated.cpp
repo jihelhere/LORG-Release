@@ -18,7 +18,7 @@ void extend_mapping(std::vector< std::vector<unsigned> >& acc, const std::vector
       std::vector<unsigned> new_results;
       for(std::vector<unsigned>::const_iterator i(acc[annot].begin()); i != acc[annot].end(); ++i)
         new_results.insert(new_results.end(), nexts[*i].begin(), nexts[*i].end());
-      
+
       acc[annot] = new_results;
     }
   }
@@ -32,25 +32,25 @@ std::vector<std::vector<std::vector<unsigned> > > compute_mapping(unsigned from,
   std::vector<std::vector<std::vector<unsigned> > > result(SymbolTable::instance_nt().get_symbol_count());
   unsigned begin = from;
   unsigned end = to;
-  
+
   while(begin < end) {
-    
+
     const std::vector<std::vector< std::vector<unsigned> > >& mapping_begin = annot_descendants[begin];
-    
+
     for(unsigned nt = 0; nt < mapping_begin.size(); ++nt)
-      
+
       extend_mapping(result[nt], mapping_begin[nt]);
-    
+
     ++begin;
   }
-  
+
   return result;
 }
 
 std::vector<uomap<unsigned,unsigned> > project_rule::invert_mapping(std::vector<std::vector<std::vector<unsigned> > > mapping)
 {
   std::vector<uomap<unsigned,unsigned> > res(mapping.size());
-  
+
   for (unsigned i = 0; i < res.size(); ++i)
   {
     for (unsigned j = 0; j < mapping[i].size(); ++j)
@@ -61,7 +61,7 @@ std::vector<uomap<unsigned,unsigned> > project_rule::invert_mapping(std::vector<
       }
     }
   }
-  
+
   return res;
 }
 
@@ -71,14 +71,14 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
                             const std::vector<std::vector<std::vector<unsigned> > >& mapping)
 {
   std::vector<std::vector<double> > result(expected_counts);
-  
+
   for (unsigned i = 0; i < mapping.size(); ++i)
   {
     const std::vector<std::vector<unsigned> >& mapping_i = mapping[i];
     const std::vector<double>& exp_i = expected_counts[i];
     std::vector<double>& result_i = result[i];
-    
-    
+
+
     for (unsigned annot_i = 0; annot_i < mapping_i.size(); ++annot_i)
     {
       double sum = 0;
@@ -93,10 +93,10 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
       }
     }
   }
-  
+
   return result;
 }
-  
+
 
 
   LexicalRuleC2f project_rule::operator()(const LexicalRuleC2f& old_rule) const
@@ -104,64 +104,64 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
     int lhs = old_rule.get_lhs();
     LexicalRuleC2f new_rule(LexicalRule(lhs, old_rule.get_word(),
                                         std::vector<double>(mapping[lhs].size())));
-    
+
     std::vector<double>& probs = new_rule.get_probability();
     const std::vector<double>& old_probs = old_rule.get_probability();
-    
+
     const uomap<unsigned,unsigned>& inverted_lhs = inverted[lhs];
     const std::vector<double>& conditional_probabilities_lhs = conditional_probabilities[lhs];
-    
+
     for (unsigned i = 0; i < old_probs.size(); ++i)
     {
       unsigned new_lhs_annot = inverted_lhs.find(i)->second;
       probs[new_lhs_annot] += old_probs[i] * conditional_probabilities_lhs[i];
     }
-    
+
     return new_rule;
   }
-  
+
   URuleC2f project_rule::operator()(const URuleC2f& old_rule) const
   {
     //    std::clog << old_rule << std::endl;
-    
+
     int lhs = old_rule.get_lhs();
     int rhs = old_rule.get_rhs0();
     URuleC2f new_rule(URule(lhs, rhs,
                             std::vector< std::vector<double> >(mapping[lhs].size(),
                                                                std::vector<double>(mapping[rhs].size()))));
-    
+
     const std::vector<std::vector<double> >& old_probs = old_rule.get_probability();
     std::vector<std::vector<double> >& new_probs = new_rule.get_probability();
-    
-    
+
+
     const uomap<unsigned,unsigned>& inverted_lhs = inverted[lhs];
     const uomap<unsigned,unsigned>& inverted_rhs = inverted[rhs];
     const std::vector<double>& conditional_probabilities_lhs = conditional_probabilities[lhs];
-    
-    
-    
+
+
+
     for (unsigned i = 0; i < old_probs.size(); ++i)
     {
-      
+
       const std::vector<double>& old_probs_i = old_probs[i];
       const double& conditional_probabilities_lhs_i = conditional_probabilities_lhs[i];
-      
+
       std::vector<double>& new_probs_new_lhs_annot = new_probs[inverted_lhs.find(i)->second];
-      
+
       for (unsigned j = 0; j < old_probs_i.size(); ++j)
       {
         unsigned new_rhs_annot = inverted_rhs.find(j)->second;
         new_probs_new_lhs_annot[new_rhs_annot] += old_probs_i[j] * conditional_probabilities_lhs_i;
       }
     }
-    
-    
+
+
     //    std::clog << new_rule << std::endl;
-    
+
     return new_rule;
   }
-  
-  
+
+
   BRuleC2f project_rule::operator()(const BRuleC2f& old_rule) const
   {
     int lhs = old_rule.get_lhs();
@@ -171,21 +171,21 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
                             std::vector< std::vector< std::vector<double> > >(mapping[lhs].size(),
                                                                               std::vector< std::vector<double> >(mapping[rhs0].size(),
                                                                                                                  std::vector<double>(mapping[rhs1].size())))));
-    
-    
+
+
     const std::vector< std::vector<std::vector<double> > >& old_probs = old_rule.get_probability();
     std::vector< std::vector<std::vector<double> > >& new_probs = new_rule.get_probability();
-    
+
     const uomap<unsigned,unsigned>& lhs_map = inverted[lhs];
     const uomap<unsigned, unsigned>& rhs0_map = inverted[rhs0];
     const uomap<unsigned, unsigned>& rhs1_map = inverted[rhs1];
-    
+
     for (unsigned i = 0; i < old_probs.size(); ++i)
     {
       std::vector< std::vector<double> >& new_probs_lhs = new_probs[lhs_map.find(i)->second];
       double conditional = conditional_probabilities[lhs][i];
       const std::vector< std::vector<double> >& old_probs_i = old_probs[i];
-      
+
       for (unsigned j = 0; j < old_probs_i.size(); ++j)
       {
         std::vector<double>& new_probs_lhs_rhs0 = new_probs_lhs[rhs0_map.find(j)->second];
@@ -196,10 +196,10 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
         }
       }
     }
-    
+
     return new_rule;
   }
-  
+
 
 
 
@@ -306,6 +306,9 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
     }
   }
 }
- 
+
+
+
+
 
 #endif /* _GRAMMARANNOTATED_H_ */

@@ -54,7 +54,7 @@ public:
   typedef typename Types::BRule BinaryRule;
   typedef typename Types::URule UnaryRule;
   typedef typename Types::LRule LexicalRule;
-  
+
   typedef typename Types::BinaryDaughter  BinaryDaughter;
   typedef typename Types::UnaryDaughter   UnaryDaughter;
   typedef typename Types::LexicalDaughter LexicalDaughter;
@@ -80,7 +80,7 @@ private:
   PackedEdge(const PackedEdge<Types> &o) {}
 
 public:
-  void reserve_binary_daughters(int size) 
+  void reserve_binary_daughters(int size)
   {
     binary_daughters.reserve(size);
   }
@@ -195,10 +195,10 @@ public:
 
   bool has_solution(unsigned i) const ;
 
-  bool no_daughters() { return binary_daughters.empty() and unary_daughters.empty() and lexical_daughters.empty(); } 
+  bool no_daughters() { return binary_daughters.empty() and unary_daughters.empty() and lexical_daughters.empty(); }
   bool is_closed() const { return not open; }
   void close() { open=false; Edge::~Edge(); }
-  
+
 protected :
   bvector binary_daughters;    ///< set of possible daughters
   uvector unary_daughters;     ///< set of possible daughters
@@ -231,7 +231,7 @@ public:
   void process(function<void(LexicalDaughter &, AnnotationInfo &)> f) {for(auto& d: get_lexical_daughters()) f(d, get_annotations());}
   void process(function<void(UnaryDaughter &, AnnotationInfo &)> f) { for(auto& d: get_unary_daughters()) f(d, get_annotations()); }
   void process(function<void(BinaryDaughter &, AnnotationInfo &)> f) { for(auto& d: get_binary_daughters()) f(d, get_annotations()); }
-  
+
   void process(function<void(ProbaModel &, const AnnotationInfo &)> f) {f(get_prob_model(), get_annotations());}
 
   void process(function<void(ProbaModel &, Edge &, const LexicalDaughter &)> f) {for(const auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d);}
@@ -245,11 +245,11 @@ public:
   void process(function<void(ProbaModel &, LexicalDaughter &)> f) {for(auto& d: get_lexical_daughters()) f(get_prob_model(), d);}
   void process(function<void(ProbaModel &, UnaryDaughter &)> f) {for(auto& d: get_unary_daughters()) f(get_prob_model(), d);}
   void process(function<void(ProbaModel &, BinaryDaughter &)> f) {for(auto& d: get_binary_daughters()) f(get_prob_model(), d);}
-  
+
   void process(function<void(ProbaModel &)> f) {f(get_prob_model());}
 
   void process(function<void(Edge &)> f) { f(*this); }
-  
+
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) {process(toFunc(f));apply(o...);}
   void apply() const {}

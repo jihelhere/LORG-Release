@@ -39,7 +39,7 @@ class MaxRuleProbabilityMultiple
 private:
   typedef std::unordered_map<const PackedEdgeDaughters*,double> score_map_type;
   typedef std::unordered_map<const PackedEdgeDaughters*,unsigned> occ_map_type;
-  typedef std::vector<packed_edge_probability_with_index> heap_type;
+  typedef std::vector<packed_edge_probability> heap_type;
   typedef MaxRuleTreeLogProbaComputer<MaxRuleProbabilityMultiple> QInsideComputer;
 
   score_map_type scores;
@@ -78,8 +78,10 @@ public:
 
   inline static void set_nbgrammars(unsigned n) {nb_grammars = n;}
 
-  inline const packed_edge_probability_with_index& get(unsigned idx) const {return derivations[idx];}
-  inline       packed_edge_probability_with_index& get(unsigned idx)       {return derivations[idx];}
+
+  inline void init(){}
+  inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
+  inline       packed_edge_probability& get(unsigned idx)       {return derivations[idx];}
 
   inline void update_lexical(Edge& e, const LexicalDaughter& dtr);
   inline void update_unary(Edge& e, const UnaryDaughter& dtr);
@@ -91,7 +93,7 @@ public:
   inline void pick_best_unary(const UnaryDaughter& dtr);
   inline void pick_best();
 
-  inline void find_succ(Edge*,packed_edge_probability_with_index& pep, bool licence_unaries);
+  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
   inline void extend_derivation(Edge*, unsigned, bool);
 
 
@@ -120,10 +122,10 @@ private:
 
   struct test_helper
   {
-    const packed_edge_probability_with_index& pep;
-    test_helper(const packed_edge_probability_with_index& p) : pep(p) {};
+    const packed_edge_probability& pep;
+    test_helper(const packed_edge_probability& p) : pep(p) {};
 
-    bool operator()(const packed_edge_probability_with_index& p)
+    bool operator()(const packed_edge_probability& p)
     {
       //      return false;
       return p.probability == pep.probability
@@ -230,7 +232,7 @@ void MaxRuleProbabilityMultiple::finalize()
 void MaxRuleProbabilityMultiple::pick_best_lexical(const LexicalDaughter & dtr)
 {
   if(occ[&dtr] == nb_grammars) {
-    packed_edge_probability_with_index p;
+    packed_edge_probability p;
     p.dtrs = &dtr;
 
     const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
@@ -301,7 +303,7 @@ void MaxRuleProbabilityMultiple::pick_best_binary(const BinaryDaughter& dtr)
 
   if(occ[&dtr] == nb_grammars) {
 
-    packed_edge_probability_with_index p;
+    packed_edge_probability p;
     p.dtrs = &dtr;
 
     const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
@@ -362,7 +364,7 @@ void MaxRuleProbabilityMultiple::pick_best_unary(const UnaryDaughter & dtr)
 {
   if(occ[&dtr] == nb_grammars) {
 
-    packed_edge_probability_with_index p;
+    packed_edge_probability p;
     p.dtrs = &dtr;
 
     const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
@@ -425,7 +427,7 @@ void MaxRuleProbabilityMultiple::pick_best()
   if(!candidates.empty()) {
     if(candidates.size() > size) {
       //      std::cout << candidates.size() << std::endl;
-      std::nth_element(candidates.begin(),candidates.begin()+size,candidates.end(), std::greater<packed_edge_probability_with_index>());
+      std::nth_element(candidates.begin(),candidates.begin()+size,candidates.end(), std::greater<packed_edge_probability>());
       candidates.resize(size);
 
     }
@@ -478,7 +480,7 @@ void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool 
 
   if(derivations.size() > 0) {
 
-    packed_edge_probability_with_index& last = derivations[derivations.size() -1];
+    packed_edge_probability& last = derivations[derivations.size() -1];
 
     //    std::cout << "last.probability " << last.probability << std::endl;
 
@@ -527,7 +529,7 @@ void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool 
 }
 
 
-void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability_with_index& pep, bool licence_unaries)
+void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries)
 {
   if(pep.dtrs->is_lexical())  {
     //std::cout << "find_suc lex" << std::endl;
@@ -557,7 +559,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability_w
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
       p.probability = 0;
 
@@ -602,7 +604,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability_w
       //      std::cout << "bin extending on the right" << std::endl;
 
 
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.right_index = nextright;
       p.probability = 0;
 
@@ -657,7 +659,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability_w
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;
-      packed_edge_probability_with_index p(pep);
+      packed_edge_probability p(pep);
       p.left_index = nextleft;
       p.probability = 0;
 

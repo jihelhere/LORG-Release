@@ -28,8 +28,8 @@ void ParserCKYAllMaxRule1B::extract_solution()
   //   std::cout << *chart << std::endl;
   calculate_chart_specific_rule_probabilities_and_best_edge();
   //   std:e:cout << *chart << std::endl;
-  // PCKYAllCell& root = chart->get_root();
-  // if (!root.exists_edge(SymbolTable::instance_nt()->get_label_id(LorgConstants::tree_root_name)))
+
+  // if (!chart->get_root().exists_edge(SymbolTable::instance_nt().get_label_id(LorgConstants::tree_root_name)))
   //   std::cout << "no axiom at root" << std::endl;
 }
 

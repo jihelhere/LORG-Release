@@ -13,7 +13,7 @@ class MinDivProbabilityKB
 
 public:
 
-  typedef std::vector<packed_edge_probability_with_index> heap_type;
+  typedef std::vector<packed_edge_probability> heap_type;
 
   typedef typename MinDivKBTypes::Edge Edge;
   typedef typename MinDivKBTypes::Cell Cell;
@@ -42,7 +42,7 @@ public:
   ~MinDivProbabilityKB() {};
 
   inline static void set_size(unsigned k) {size = k;}
-  
+
   inline const heap_type & get_candidates() const { return candidates; }
   inline const heap_type & get_derivations() const { return derivations; }
 
@@ -59,15 +59,15 @@ public:
   inline const double & get_inside_unary_temp() const { return inside_unary_temp; }
   inline double & get_outside_unary_temp() { return outside_unary_temp; }
   inline const double & get_outside_unary_temp() const { return outside_unary_temp; }
-  
-  inline const packed_edge_probability_with_index& get(unsigned idx) const {return derivations[idx];}
+
+  inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
   inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
 
   template<class TDaughter>
   inline void update_best(const TDaughter& dtr);
   inline void finalize_best();
-  
-  inline void find_succ(packed_edge_probability_with_index& pep, bool licence_unaries);
+
+  inline void find_succ(packed_edge_probability& pep, bool licence_unaries);
   void extend_derivation(unsigned, bool) ;
 
   inline unsigned n_deriv() const {return derivations.size();};
@@ -81,31 +81,31 @@ public:
   inline void update_inside_unary(const UnaryDaughter& dtr);
   inline void adjust_inside_unary();
   inline void update_inside_binary(const BinaryDaughter& dtr);
-  
+
   inline void update_outside_lexical(const LexicalDaughter& dtr);
   inline void prepare_outside_unary();
   inline void update_outside_unary(const UnaryDaughter& dtr);
   inline void adjust_outside_unary();
   inline void update_outside_binary(const BinaryDaughter& dtr);
-  
+
   inline void update_q_lexical(LexicalDaughter& dtr);
   inline void update_q_unary(UnaryDaughter& dtr);
   inline void update_q_binary(BinaryDaughter& dtr);
 
 private:
-  
+
   struct test_helper
   {
-    const packed_edge_probability_with_index& pep;
-    test_helper(const packed_edge_probability_with_index& p) : pep(p) {};
+    const packed_edge_probability& pep;
+    test_helper(const packed_edge_probability& p) : pep(p) {};
 
-    inline bool operator()(const packed_edge_probability_with_index& p)
+    inline bool operator()(const packed_edge_probability& p)
     {
       return (p.probability == pep.probability) //|| (p.dtrs == pep.dtrs)
       ;
     }
   };
-  
+
   public:
     inline std::ostream& operator>>(std::ostream& out) const;
 };
@@ -143,7 +143,7 @@ public:
 private:
   /** also computes marginals for each daughter */
   inline virtual void compute_outside_probabilities();
-  
+
   /* computes inside-outside on q */
   inline void compute_inside_q_probabilities();
   inline void compute_outside_q_probabilities();
@@ -151,7 +151,7 @@ private:
 
   /* computes q as marginal(p) / (inside(q)*outside(q)) */
   inline void update_q();
-  
+
   /* filling edge probability structures with "best" pointers */
   inline void fill_bests();
   inline void initialise_candidates();

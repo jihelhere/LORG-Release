@@ -56,7 +56,7 @@ std::ostream& operator<<(std::ostream& out, const BRule& rule)
   for(unsigned i = 0 ; i < rule.probabilities.size(); ++i)
     for(unsigned j = 0; j < rule.probabilities[i].size(); ++j)
       for(unsigned k = 0; k < rule.probabilities[i][j].size(); ++k)
-	if(rule.probabilities[i][j][k] != 0)
+        if(rule.probabilities[i][j][k] != 0)
 	  out << " (" <<i << ',' << j << ',' << k << ','
 	      << rule.probabilities[i][j][k] << ')';
 
@@ -141,10 +141,10 @@ void BRule::update_outside_annotations(const std::vector<double>& up_out,
 
 
 double
-BRule::update_outside_annotations_return_marginal(const std::vector< double >& up_out, 
-                                                        const std::vector< double >& left_in, 
-                                                        const std::vector< double >& right_in, 
-                                                        std::vector< double >& left_out, 
+BRule::update_outside_annotations_return_marginal(const std::vector< double >& up_out,
+                                                        const std::vector< double >& left_in,
+                                                        const std::vector< double >& right_in,
+                                                        std::vector< double >& left_out,
                                                         std::vector< double >& right_out) const
 {
   double marginal = 0.;
@@ -167,7 +167,7 @@ BRule::update_outside_annotations_return_marginal(const std::vector< double >& u
         const double& t = dim_j[k];
         // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
         // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
-        
+
         // I and O are always Null at the same time
         if(right_in[k] != LorgConstants::NullProba) {
           temp4left += right_in[k] * t;
