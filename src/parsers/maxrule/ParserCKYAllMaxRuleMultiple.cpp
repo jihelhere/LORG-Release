@@ -186,10 +186,10 @@ void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
 {
   chart->opencells_apply_bottom_up( [](Cell&cell)
   {
-    cell.apply_on_edges( &MaxRuleProbabilityMultiple::pick_best_lexical,
-                         &MaxRuleProbabilityMultiple::pick_best_binary );
-    cell.apply_on_edges( &MaxRuleProbabilityMultiple::pick_best_unary,
-                         &MaxRuleProbabilityMultiple::pick_best );
+    cell.apply_on_edges( &ProbaModel::pick_best_lexical,
+                         &ProbaModel::pick_best_binary );
+    cell.apply_on_edges( &ProbaModel::pick_best_unary,
+                         &ProbaModel::pick_best );
   }  );
 }
 

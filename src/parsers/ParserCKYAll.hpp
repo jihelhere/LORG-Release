@@ -424,16 +424,17 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
     double beam_threshold = io_beam_thresholds[i + 1];
 
     // std::cout << std::log(get_sentence_probability()) << std::endl;
+    // std::cout << get_sentence_probability() << std::endl;
     //    std::cout << "beaming with grammar: " << i << std::endl;
 
 
 
     // FIX: This test messes with product grammar parsing
     // TODO: Do this test only with the first grammar
-    // if(i != 0) {// inside_probs already computed when bulding the chart
+    //    if(i != 0) {// inside_probs already computed when bulding the chart
     //   std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
-    // }
+    //     }
 
 
 

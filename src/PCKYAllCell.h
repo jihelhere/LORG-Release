@@ -73,7 +73,7 @@ public:
    * @return void
    **/
   void reserve_binary_daughters(const std::vector<int> &);
-  
+
   /**
      \brief insert a candidate edge in the cell from application of a binary rule
      \param
@@ -180,7 +180,6 @@ public:
   inline static unsigned get_max_size() { return max_size; }
 
 private:
-  //   std::vector<Edge> edges;
   Edge * edges;
   bool closed;
   unsigned begin;
