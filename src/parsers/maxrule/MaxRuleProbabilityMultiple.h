@@ -79,7 +79,15 @@ public:
   inline static void set_nbgrammars(unsigned n) {nb_grammars = n;}
 
 
-  inline void init(){}
+  inline void init()
+  {
+    //candidates = heap_type(0);
+    derivations =  heap_type(1);
+    if (scores.size() == 0)
+      scores = score_map_type();
+    if (occ.size() == 0)
+      occ = occ_map_type();
+  }
   inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
   inline       packed_edge_probability& get(unsigned idx)       {return derivations[idx];}
 
@@ -161,6 +169,8 @@ void MaxRuleProbabilityMultiple::write_scores(const PackedEdgeDaughters& dtr, do
   }
 
   occ[&dtr]++;
+
+  //  std::cout << occ[&dtr] << std::endl;
 
 }
 

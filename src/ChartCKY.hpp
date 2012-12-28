@@ -33,7 +33,7 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s, unsigned grammar_size,
 
   Edge * edge = the_edges;
   for(unsigned i = 0; i < size; ++i) {
-    
+
     //    std::cout << "i: " << i << std::endl;
     {
       //         BLOCKTIMING("ChartCKY<Types>::ChartCKY chart[i] = line_start;");
@@ -59,23 +59,23 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s, unsigned grammar_size,
       cell.init(close, i, j, edge, i==0 and j==size-1);
     }
   }
-  
+
   for (unsigned i = 0; i < sentence.size(); ++i)
   {
     //       BLOCKTIMING("ChartCKY<Types>::ChartCKY add_word");
     // todo: proper error handling
     if(access(sentence[i].get_start(), sentence[i].get_end()-1).is_closed())
       std::clog << "Problem in chart initialisation: brackets and tokenization are insconsistent." << std::endl;
-    
+
     access(sentence[i].get_start(), sentence[i].get_end()-1).add_word(sentence[i]);
-  }    
+  }
 //     std::cout << "Chart is built and intialised" << std::endl;
 //     std::cout << *this << std::endl; std::cout.flush();
 }
 
-  
-  
-  
+
+
+
   template<class Types>
 void
 ChartCKY<Types>::opencells_apply_nothread( std::function<void(Cell &)> f)
@@ -87,15 +87,15 @@ template<class Types>
 void
 ChartCKY<Types>::opencells_apply_bottom_up_nothread( std::function<void(Cell &)> f, unsigned min_span)
 {
-  
+
   unsigned sent_size = get_size();
   for (unsigned span = min_span; span < sent_size; ++span) {
     unsigned end_of_begin=sent_size-span;
     for (unsigned begin=0; begin < end_of_begin; ++begin) {
       unsigned end = begin + span ;
-      
+
       //std::cout << "(" << begin << "," << end << ")" << std::endl;
-      
+
       Cell& cell = access(begin,end);
       if(!cell.is_closed()) f(cell);
     }
@@ -109,11 +109,11 @@ ChartCKY<Types>::opencells_apply_top_down_nothread( std::function<void(Cell &)> 
   unsigned sent_size=get_size();
   for (signed span = sent_size-1; span >= 0; --span) {
     unsigned end_of_begin=sent_size-span;
-    
+
     for (unsigned begin=0; begin < end_of_begin; ++begin) {
       unsigned end = begin + span ;
       //std::cout << '(' << begin << ',' << end << ')' << std::endl;
-      
+
       Cell& cell = access(begin,end);
       if(!cell.is_closed()) f(cell);
     }
@@ -127,11 +127,11 @@ ChartCKY<Types>::opencells_apply_top_down_nothread( std::function<void(const Cel
   unsigned sent_size=get_size();
   for (signed span = sent_size-1; span >= 0; --span) {
     unsigned end_of_begin=sent_size-span;
-    
+
     for (unsigned begin=0; begin < end_of_begin; ++begin) {
       unsigned end = begin + span ;
       //std::cout << '(' << begin << ',' << end << ')' << std::endl;
-      
+
       const Cell& cell = access(begin,end);
       if(!cell.is_closed()) f(cell);
     }
@@ -194,13 +194,13 @@ ChartCKY<Types>::opencells_apply_top_down( std::function<void(Cell &)> f)
   unsigned sent_size=get_size();
   for (signed span = sent_size-1; span >= 0; --span) {
     unsigned end_of_begin=sent_size-span;
-    
+
     tbb::parallel_for(tbb::blocked_range<unsigned>(0, end_of_begin),
                       [this,span,&f](const tbb::blocked_range<unsigned>& r){
                         for (unsigned begin = r.begin(); begin < r.end(); ++begin) {
                           unsigned end = begin + span ;
                           //std::cout << '(' << begin << ',' << end << ')' << std::endl;
-                          
+
                           Cell& cell = this->access(begin,end);
                           if(!cell.is_closed()) f(cell);
                         }
@@ -233,9 +233,9 @@ public:
   ChartTask(std::function<void()> _action)
   : action(_action)
   { /*std::cout << "initialisation" << endl;*/}
-  
+
   tbb::task* successor[2]; // always NULL in constructor ?
-  
+
   task* execute() {
     __TBB_ASSERT( ref_count()==0, NULL );
     action();
@@ -247,8 +247,8 @@ public:
       return NULL;
   }
   };
-  
-  
+
+
   #ifdef OPENCELLS_APPLY_PARALLEL_FOR
   template<class Types>
   void
@@ -264,18 +264,18 @@ public:
     );
   }
   #endif
-  
+
   #ifdef OPENCELLS_APPLY_CONTINUATION_TASK
   #include <tbb/atomic.h>
   using tbb::atomic;
-  
+
   template<typename Cell>
   class ParallelTask: public tbb::task {
     const std::function<void(Cell &)> action ;
     atomic<Cell*> & it  ;
     Cell* end ;
     tbb::task * waiter;
-    
+
   public:
     ParallelTask(std::function<void(Cell &)> _action, atomic<Cell *> & _it, Cell * _end, tbb::task * _waiter)
     : action(_action), it(_it), end(_end), waiter(_waiter)
@@ -289,7 +289,7 @@ public:
         oldit = it ; newit = oldit;
         if (newit!=end) ++newit;
       } while(it.compare_and_swap(newit,oldit) != oldit);
-      
+
       if (oldit != end) {
         //       std::cout << "cell : " << it << " ? " << end << std::endl ;
         if (not oldit->is_closed()) action(*oldit);
@@ -299,9 +299,9 @@ public:
         waiter->decrement_ref_count();
         return NULL;
       }
-    }  
+    }
   };
-  
+
   template<class Types>
   void
   ChartCKY<Types>::opencells_apply( std::function<void(Cell &)> f)
@@ -320,12 +320,12 @@ public:
     tbb::task::destroy(*waiter);
   }
   #endif
-  
-  
+
+
   #ifdef OPENCELLS_APPLY_TASK_GROUP
-  
+
   #include "tbb/task_group.h"
-  
+
   template<class Types>
   void
   ChartCKY<Types>::opencells_apply( std::function<void(Cell &)> f)
@@ -337,18 +337,18 @@ public:
     g.wait();
   }
   #endif
-  
-  
+
+
   #ifdef OPENCELLS_APPLY_CHART_TASK
   template<class Types>
   void
   ChartCKY<Types>::opencells_apply( std::function<void(Cell &)> f)
   {
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
-    
+
     tbb::task_list seeds;
     unsigned count = 0;
-    
+
     for(auto & cell: the_cells) {
       if(not cell.is_closed())
       {
@@ -360,15 +360,15 @@ public:
         ++count;
       }
     }
-    
+
     waiter->set_ref_count(count +1);
     // Wait for all tasks to complete.
     waiter->spawn_and_wait_for_all(seeds);
     tbb::task::destroy(*waiter);
   }
   #endif
-  
-  
+
+
   template<class Types>
   void
   ChartCKY<Types>::opencells_apply_bottom_up( std::function<void(Cell &)> f, unsigned min_span )
@@ -376,7 +376,7 @@ public:
     signed min_s = min_span;
     signed sent_size = get_size();
     if (min_s>=sent_size) return;
-    
+
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
     ChartTask* x[sent_size][sent_size];
     for (signed span = sent_size-1; span>=min_s; --span) {
@@ -388,7 +388,7 @@ public:
           x[span][begin] = new( tbb::task::allocate_root() ) ChartTask([](){});
         else
           x[span][begin] = new( tbb::task::allocate_root() ) ChartTask([cell,&f](){f(*cell);});
-        
+
         // successor[0] = successor up-left, successor[1] = successor up
           x[span][begin]->successor[0] = span<sent_size-1 && begin>0              ? x[span+1][begin-1] : NULL;
           x[span][begin]->successor[1] = span<sent_size-1 && begin<end_of_begin-1 ? x[span+1][begin  ] : NULL;
@@ -396,7 +396,7 @@ public:
           //       (std::cout << "created ("<< span << "," << begin << "," << end << " | " << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n").flush();
       }
     }
-    
+
     x[sent_size-1][0]->successor[0] = waiter;
     //   (std::cout << "waiter("<< span << "," << begin << "," << end << " | " << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n").flush();
     waiter->set_ref_count(2);
@@ -407,7 +407,7 @@ public:
       waiter->spawn_and_wait_for_all(seeds);
       tbb::task::destroy(*waiter);
   }
-  
+
   template<class Types>
   void
   ChartCKY<Types>::opencells_apply_top_down( std::function<void(Cell &)> f )
@@ -419,34 +419,34 @@ public:
       unsigned end_of_begin=sent_size-span-1;
       for (unsigned begin=0; begin <= end_of_begin; ++begin) {
         unsigned end = begin + span ;
-        
+
         Cell * cell = & this->access(begin,end);
         if (cell->is_closed())
           x[span][begin] = new( tbb::task::allocate_root() ) ChartTask([](){});
         else
           x[span][begin] = new( tbb::task::allocate_root() ) ChartTask([cell,&f](){f(*cell);});
-        
+
         x[span][begin]->successor[0] = span>0 ? x[span-1][begin] : waiter;
         x[span][begin]->successor[1] = span>0 ? x[span-1][begin+1] : NULL;
         x[span][begin]->set_ref_count((begin<end_of_begin) + (begin>0));
-        
+
         //       (std::cout << "created ("<< span << "," << begin << "," << end << " | " << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n").flush();
       }
     }
-    
+
     waiter->set_ref_count(sent_size+1);
     waiter->spawn_and_wait_for_all(*x[sent_size-1][0]);
     tbb::task::destroy(*waiter);
   }
-  
+
   #endif // WITH_PARALLEL_FOR
   #endif // USE_THREADS
-  
-  
-  
+
+
+
   template<class Types>
   ostream & operator<<(ostream & out, const ChartCKY<Types> & chart) { return chart.to_stream(out) ; }
-  
+
   template<class Types>
   ostream & ChartCKY<Types>::to_stream(ostream & s) const {
     s << "(begin chart:"<< this << ")" << std::endl;
@@ -457,7 +457,7 @@ public:
     s << "(end   chart "<< this << ")" << std::endl;
     return s;
   }
-  
+
 #include <sstream>
 
   template<class Types>
@@ -465,22 +465,22 @@ public:
     std::string ret;
     std::ostringstream stream(ret);
     opencells_apply_top_down_nothread( [&stream](const Cell & cell){
-      
+
       stream << "(span " << cell.get_end()-cell.get_begin()+1 << ", begin " << cell.get_begin() << ")" << std::endl;
       stream << cell << std::endl;
     } );
     return ret;
   }
-  
+
   //#include "utils/SymbolTable.h"
-  
+
   template<class Types>
   inline
   unsigned ChartCKY<Types>::get_size() const
   {
     return size;
   }
-  
+
   template<class Types>
   inline
   typename Types::Cell& ChartCKY<Types>::access(unsigned start, unsigned end)
@@ -491,7 +491,7 @@ public:
 //     std::cout << "access("<<start<<","<<end<<") = "<<start + ( (end-start)*(2*size - (end-start) + 1))/2 << std::endl; std::cout.flush();
     return the_cells[start + ( (end-start)*(2*size - (end-start) + 1))/2 ];
   }
-  
+
   template<class Types>
   inline
   const typename Types::Cell& ChartCKY<Types>::access(unsigned start, unsigned end) const
@@ -501,7 +501,7 @@ public:
     //     return chart[start][end-start];
     return the_cells[start + ( (end-start)*(2*size - (end-start) + 1))/2 ];
   }
-  
+
   template<class Types>
   ChartCKY<Types>::~ChartCKY()
   {
@@ -514,42 +514,42 @@ public:
 //       delete[] chart[i];
 //     delete[] chart;
   }
-  
-  
+
+
   template<class Types>
   typename Types::Cell& ChartCKY<Types>::get_root()
   {
     return access(0,size-1);
   }
-  
+
   template<class Types>
   const typename Types::Cell& ChartCKY<Types>::get_root() const
   {
     return access(0,size-1);
   }
-  
+
   template<class Types>
   PtbPsTree* ChartCKY<Types>::get_best_tree(int start_symbol, unsigned k, bool output_forms, bool output_annotations) const
   {
     PtbPsTree* tree = NULL;
-    
+
     const Cell & root_cell = this->get_root();
-    
+
     if (!root_cell.is_closed() && root_cell.exists_edge(start_symbol)) {
       tree = root_cell.get_edge(start_symbol).to_ptbpstree(start_symbol, k, output_annotations, output_forms);
     }
-    
+
     return tree;
   }
-  
+
   //score at root
   template<class Types>
   double ChartCKY<Types>::get_score(int symbol, unsigned k) const
   {
     return get_root().get_edge(symbol).get_prob_model().get(k).probability;
   }
-  
-  
+
+
   template<class Types>
   void ChartCKY<Types>::init(const std::vector< MyWord >& sentence)
   {
@@ -560,7 +560,7 @@ public:
     cell.add_word(*w_itr);
         }
   }
-  
+
   template<class MyWord>
   unsigned find_last_in_sentence(const std::vector< MyWord >& s)
   {
@@ -571,13 +571,13 @@ public:
     }
     return res;
   }
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   template<class Types>
   void ChartCKY<Types>::reset_probabilities()
   {
@@ -587,15 +587,15 @@ public:
         access(i,j).reset_probabilities();
       }
   }
-  
-  
+
+
   template<class Types>
   bool ChartCKY<Types>::has_solution(int symb, unsigned i) const
   {
     //  std::cout << SymbolTable::instance_nt().translate(symb) << std::endl;
     return get_root().get_edge(symb).has_solution(i);
   }
-  
+
   template<class Types>
   void ChartCKY<Types>::clear()
   {
@@ -604,19 +604,19 @@ public:
         access(i,j).clear();
       }
   }
-  
+
   template<class Types>
   void ChartCKY<Types>::prepare_retry()
   {
     this->clear();
     this->reset_probabilities();
-    
+
     for(unsigned i = 0; i < size; ++i) {
       // j == 0 -> word position
       Cell& cell = access(i,i); //the_chart[i]; //chart[i][0];
       cell.reinit(false);
       cell.add_word(sentence[i]);
-      
+
       // regular chart cells
       for(unsigned j = 1; j < size-i;++j) {
         bool close = brackets.end() != std::find_if(brackets.begin(),brackets.end(),
@@ -625,11 +625,11 @@ public:
       }
     }
   }
-  
+
   template <class Types>
   bool ChartCKY<Types>::is_valid(int start_symbol) const
   {
     return !get_root().is_closed() && get_root().exists_edge(start_symbol);
   }
-  
+
 #endif

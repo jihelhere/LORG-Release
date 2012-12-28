@@ -66,17 +66,14 @@ protected:
   EdgePtr right;
 //   friend class Types::Edge ;
 public:
-//   inline BinaryPackedEdgeDaughters & operator=(BinaryPackedEdgeDaughters<Types> && o) { *this = std::move(o); return *this; }
-  BinaryPackedEdgeDaughters(Edge& le, Edge& ri, const typename Types::BRule * ru) :
-    Parent(ru), left(&le),right(&ri)
+  BinaryPackedEdgeDaughters(Edge& le, Edge& ri, const typename Types::BRule * ru)
+      : Parent(ru), left(&le),right(&ri)
   {};
-//   BinaryPackedEdgeDaughters(BinaryPackedEdgeDaughters&& o) : PackedEdgeDaughters(), RH(o), left(o.left),right(o.right) {}
-//   BinaryPackedEdgeDaughters(const BinaryPackedEdgeDaughters& o) : PackedEdgeDaughters(), RH(o), left(o.left),right(o.right) {}
 
   ~BinaryPackedEdgeDaughters() {};
 
-//   inline const Edge& left_daughter() const  {return *left;}
-//   inline const Edge& right_daughter() const {return *right;}
+  //   inline const Edge& left_daughter() const  {return *left;}
+  //   inline const Edge& right_daughter() const {return *right;}
   inline Edge& left_daughter() const {return *left;}
   inline Edge& right_daughter() const {return *right;}
 
@@ -125,17 +122,15 @@ protected:
   EdgePtr left;
 
 public:
-//   inline UnaryPackedEdgeDaughters & operator=(UnaryPackedEdgeDaughters<Types> && o) { *this = std::move(o); return *this; }
-
-  UnaryPackedEdgeDaughters(Edge & le, const Rule * ru) :
-    Parent(ru), left(&le)
+  UnaryPackedEdgeDaughters(Edge & le, const Rule * ru)
+      : Parent(ru), left(&le)
   {};
 
   ~UnaryPackedEdgeDaughters() {};
 
   inline bool is_binary() const {return false;}
   inline bool is_lexical() const {return false;}
-//   inline const Edge& left_daughter() const  {return *left;}
+  //   inline const Edge& left_daughter() const  {return *left;}
   inline Edge& left_daughter() const {return *left;}
 
   inline bool points_towards_invalid_edges() const
