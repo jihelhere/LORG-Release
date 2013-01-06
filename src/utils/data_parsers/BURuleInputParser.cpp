@@ -30,10 +30,10 @@ namespace qi = boost::spirit::qi;
 namespace mychar = boost::spirit::standard;
 
 template <typename Iterator>
-struct burule_parser : boost::spirit::qi::grammar<Iterator, AnnotatedRule*(), mychar::space_type>
+struct burule_parser : boost::spirit::qi::grammar<Iterator, std::vector<AnnotatedRule*>(), mychar::space_type>
 {
 
-burule_parser() : burule_parser::base_type(rule)
+burule_parser() : burule_parser::base_type(rules)
 {
   using namespace qi::labels;
 
@@ -93,6 +93,9 @@ burule_parser() : burule_parser::base_type(rule)
 
   rule %= unary_int | binary | unary_lex;
 
+  rules %= +rule;
+
+  rules.name("rules");
   rule.name("rule");
   unary_lex.name("unary_lex");
   unary_int.name("unary_int");
@@ -119,6 +122,7 @@ burule_parser() : burule_parser::base_type(rule)
      );
 }
 
+  boost::spirit::qi::rule<Iterator, std::vector<AnnotatedRule*>(), mychar::space_type> rules;
   boost::spirit::qi::rule<Iterator, AnnotatedRule*(), mychar::space_type> rule;
   boost::spirit::qi::rule<Iterator, BRule*(), mychar::space_type> binary;
   boost::spirit::qi::rule<Iterator, URule*(), mychar::space_type> unary_int;
@@ -202,64 +206,6 @@ struct ptbpstree_parser : boost::spirit::qi::grammar<Iterator, std::vector< Tree
 };
 
 
-// std::vector< Tree<unsigned> > AnnotHistoriesParser::from_string( const std::string& str ) throw(ParseError)
-// {
-//   typedef std::string::const_iterator iterator_type;
-//   typedef ptbpstree_parser<iterator_type> parser;
-
-
-//   iterator_type iter = str.begin();
-//   iterator_type end  = str.end();
-
-//   parser p;
-//   std::vector< Tree<unsigned> > trees;
-
-//   bool r = phrase_parse(iter, end, p, mychar::space, trees);
-
-//   if(!r) {
-//     throw(ParseError());
-//     //    std::clog << "not read: " << std::string(iter,end) << std::endl;
-//   }
-
-//   return trees;
-// }
-
-// void AnnotHistoriesParser::from_file(const char* filename,
-// 			       std::vector< Tree<unsigned> >& trees) throw(ParseError)
-// {
-
-//   std::ifstream in(filename);
-//   if(!in)
-//     std::cerr << "stream problems, uh oh ...\n";
-
-//   std::string str;
-
-//   in.unsetf(std::ios::skipws); // No white space skipping!
-//   std::copy(std::istream_iterator<char>(in),
-// 	    std::istream_iterator<char>(),
-// 	    std::back_inserter(str));
-
-//   typedef std::string::const_iterator iterator_type;
-//   typedef ptbpstree_parser<iterator_type> parser;
-
-//   iterator_type iter = str.begin();
-//   iterator_type end  = str.end();
-
-//   parser p;
-
-//   //read the trees in the file
-//   bool res = phrase_parse(iter, end, p,mychar::space,  trees);
-//   if(!res) throw(ParseError(filename));
-
-
-//   // for(std::vector<Tree<unsigned> >::const_iterator i(trees.begin()); i != trees.end(); ++i)
-//   //   std::cout << *i << std::endl;
-
-//   in.close();
-
-// }
-
-
 void BURuleInputParser::read_rulestring(const std::string& str, AnnotatedRule** rule_ptr) throw(ParseError)
 {
   std::string::const_iterator iter = str.begin();
@@ -270,12 +216,16 @@ void BURuleInputParser::read_rulestring(const std::string& str, AnnotatedRule** 
 
   parser p;
 
-  bool r = phrase_parse(iter, end, p, mychar::space, *rule_ptr);
+  std::vector<AnnotatedRule*> v;
+
+  bool r = phrase_parse(iter, end, p, mychar::space, v);
 
   if(!r) {
     //std::clog << "not read: " << std::string(iter,end) << std::endl;
     throw(ParseError());
   }
+
+  *rule_ptr = v[0];
 
 }
 
@@ -326,38 +276,62 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
     num_annotations_map.insert(m);
   } while(res && iter != end);
 
+  // Read history maps
   do {
     res = phrase_parse(iter, end, t, mychar::space, history_trees);
   } while (res && iter != end);
 
 
+  std::vector<AnnotatedRule *> v;
   // Read rules
   do {
     //std::cout << "in rule parser" << std::endl;
-    AnnotatedRule * r;
-    res = phrase_parse(iter, end, p, mychar::space, r);
+
+    res = phrase_parse(iter, end, p, mychar::space, v);
 
     if(!res) {
       //std::cout << "not read: " << std::string(iter,end) << std::endl;
       throw(ParseError(filename));
     }
 
+    // if(r->is_lexical()) {
+    //   if(static_cast<LexicalRule*>(r)->get_probability().size()>0)
+    //     lexicals.push_back(*(static_cast<LexicalRule*>(r)));
+    // }
+    // else
+    //   if(r->is_unary()) {
+    //     if(static_cast<URule*>(r)->get_probability().size()>0)
+    //       unaries.push_back(*static_cast<URule*>(r));
+    //   }
+    //   else
+    //     if(static_cast<BRule*>(r)->get_probability().size()>0)
+    //       n_aries.push_back(*static_cast<BRule*>(r));
+
+    // delete(r);
+  } while(res && iter != end);
+
+
+  lexicals.reserve(v.size());
+  unaries.reserve(v.size());
+  n_aries.reserve(v.size());
+  for(auto& r : v)
+  {
     if(r->is_lexical()) {
       if(static_cast<LexicalRule*>(r)->get_probability().size()>0)
-	lexicals.push_back(*(static_cast<LexicalRule*>(r)));
+        lexicals.push_back(*(static_cast<LexicalRule*>(r)));
     }
     else
       if(r->is_unary()) {
-	if(static_cast<URule*>(r)->get_probability().size()>0)
-	  unaries.push_back(*static_cast<URule*>(r));
+        if(static_cast<URule*>(r)->get_probability().size()>0)
+          unaries.push_back(*static_cast<URule*>(r));
       }
       else
-	if(static_cast<BRule*>(r)->get_probability().size()>0)
-	  n_aries.push_back(*static_cast<BRule*>(r));
-
+        if(static_cast<BRule*>(r)->get_probability().size()>0)
+          n_aries.push_back(*static_cast<BRule*>(r));
     delete(r);
-  } while(res && iter != end);
+  }
+
+
   //std::cout << "got here " << std::endl;
   in_file.close();
 }
-
