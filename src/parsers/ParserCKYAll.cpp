@@ -29,6 +29,7 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
 
 
   // copied from void TrainingGrammar::uncompact_all_rules()
+  //  std::clog << "before uncompact" << std::endl;
   for(std::vector<BRuleC2f>::iterator brule_it = binary_rules.begin();
       brule_it != binary_rules.end(); ++brule_it) {
 

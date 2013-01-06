@@ -5,6 +5,12 @@
 #include "GrammarAnnotated.h"
 #include "grammars/Grammar.h"
 
+#ifdef USE_THREADS
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+#endif
+
+
 template <typename Bin, typename Un, typename Lex>
 GrammarAnnotated<Bin,Un,Lex>::GrammarAnnotated()
 :
@@ -287,42 +293,66 @@ void GrammarAnnotated<Bin,Un,Lex>::set_logmode()
 template<typename Bin, typename Un, typename Lex>
 void GrammarAnnotated<Bin,Un,Lex>::remove_unlikely_annotations_all_rules(double threshold)
 {
+#ifndef USE_THREADS
   remove_unlikely_helper_struct remover(threshold);
-  std::for_each(Grammar<Bin,Un,Lex>::binary_rules.begin(),
-    Grammar<Bin,Un,Lex>::binary_rules.end(),
-    remover);
+  std::for_each(this->binary_rules.begin(),
+                this->binary_rules.end(),
+                remover);
+#else
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Bin>::iterator>(this->binary_rules.begin(),
+                                                              this->binary_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Bin>::iterator>& r)
+      {
+        for(auto& i: r) i.remove_unlikely_annotations(threshold);
+      }
+                    );
+#endif
 
+  this->binary_rules.erase(std::remove_if(this->binary_rules.begin(),
+                                          this->binary_rules.end(),
+                                          std::mem_fun_ref(&Bin::is_empty)),
+                           this->binary_rules.end());
 
-  //  std::clog << "bin before: " << Grammar<Bin,Un,Lex>::binary_rules.size() << std::endl;
-  Grammar<Bin,Un,Lex>::binary_rules.erase(std::remove_if(Grammar<Bin,Un,Lex>::binary_rules.begin(),
-              Grammar<Bin,Un,Lex>::binary_rules.end(),
-              std::mem_fun_ref(&Bin::is_empty)),
-            Grammar<Bin,Un,Lex>::binary_rules.end());
-  //  std::clog << "bin after: " << Grammar<Bin,Un,Lex>::binary_rules.size() << std::endl;
-
-
+#ifndef USE_THREADS
   std::for_each(Grammar<Bin,Un,Lex>::unary_rules.begin(),
-    Grammar<Bin,Un,Lex>::unary_rules.end(),
-    remover);
+                Grammar<Bin,Un,Lex>::unary_rules.end(),
+                remover);
+#else
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Un>::iterator>(this->unary_rules.begin(),
+                                                             this->unary_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Un>::iterator>& r)
+      {
+        for(auto& i: r) i.remove_unlikely_annotations(threshold);
+      }
+                    );
+#endif
 
-  //  std::clog << "un before: " << Grammar<Bin,Un,Lex>::unary_rules.size() << std::endl;
-  Grammar<Bin,Un,Lex>::unary_rules.erase(std::remove_if(Grammar<Bin,Un,Lex>::unary_rules.begin(),
-              Grammar<Bin,Un,Lex>::unary_rules.end(),
-              std::mem_fun_ref(&Un::is_empty)),
-          Grammar<Bin,Un,Lex>::unary_rules.end());
-  //  std::clog << "un after: " << Grammar<Bin,Un,Lex>::unary_rules.size() << std::endl;
+  this->unary_rules.erase(std::remove_if(this->unary_rules.begin(),
+                                         this->unary_rules.end(),
+                                         std::mem_fun_ref(&Un::is_empty)),
+                          this->unary_rules.end());
 
-
+#ifndef USE_THREADS
   std::for_each(Grammar<Bin,Un,Lex>::lexical_rules.begin(),
-    Grammar<Bin,Un,Lex>::lexical_rules.end(),
-    remover);
-
-  //  std::clog << "lex before: " << Grammar<Bin,Un,Lex>::lexical_rules.size() << std::endl;
-  Grammar<Bin,Un,Lex>::lexical_rules.erase(std::remove_if(Grammar<Bin,Un,Lex>::lexical_rules.begin(),
                 Grammar<Bin,Un,Lex>::lexical_rules.end(),
-                std::mem_fun_ref(&Lex::is_empty)),
-            Grammar<Bin,Un,Lex>::lexical_rules.end());
-  //  std::clog << "lex after: " << Grammar<Bin,Un,Lex>::lexical_rules.size() << std::endl;
+                remover);
+#else
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Lex>::iterator>(this->lexical_rules.begin(),
+                                                              this->lexical_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Lex>::iterator>& r)
+      {
+        for(auto& i: r) i.remove_unlikely_annotations(threshold);
+      }
+                    );
+#endif
+
+  this->lexical_rules.erase(std::remove_if(this->lexical_rules.begin(),
+                                           this->lexical_rules.end(),
+                                           std::mem_fun_ref(&Lex::is_empty)),
+                            this->lexical_rules.end());
 
 }
 
@@ -494,6 +524,43 @@ GrammarAnnotated<Bin,Un,Lex>::compute_priors() const
   }
 
   return res;
+}
+
+
+
+template<class Bin, class Un, class Lex>
+void GrammarAnnotated<Bin, Un, Lex>::linear_smooth(double internal_threshold, double lexical_threshold)
+{
+#ifdef USE_THREADS
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Bin>::iterator>(this->binary_rules.begin(),
+                                                              this->binary_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Bin>::iterator>& r)
+      {
+        for(auto& i: r) i.linear_smooth(internal_threshold);
+      }
+                    );
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Un>::iterator>(this->unary_rules.begin(),
+                                                             this->unary_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Un>::iterator>& r)
+      {
+        for(auto& i: r) i.linear_smooth(internal_threshold);
+      }
+                    );
+  tbb::parallel_for(
+      tbb::blocked_range<typename std::vector<Lex>::iterator>(this->lexical_rules.begin(),
+                                                              this->lexical_rules.end()),
+      [&](tbb::blocked_range<typename std::vector<Lex>::iterator>& r)
+      {
+        for(auto& i: r) i.linear_smooth(lexical_threshold);
+      }
+                    );
+#else
+  for(auto& rule:  binary_rules) {rule.linear_smooth(internal_threshold);}
+  for(auto& rule:   unary_rules) {rule.linear_smooth(internal_threshold);}
+  for(auto& rule: lexical_rules) {rule.linear_smooth( lexical_threshold);}
+#endif
 }
 
 

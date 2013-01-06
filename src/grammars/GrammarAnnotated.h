@@ -51,6 +51,9 @@ public:
 
   std::vector<double> compute_priors() const;
 
+  void linear_smooth(double internal_threshold, double lexical_threshold);
+
+
   inline const std::vector< Tree<unsigned> >&  get_history_trees() const {return history_trees;}
 
 
@@ -85,7 +88,7 @@ private:
 
 /**************************************************************************************
  * utils
- * 
+ *
  * functions. Defined in GrammarAnnotated.cpp
  **************************************************************************************/
 void calculate_expected_counts(uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >& trans,
@@ -93,7 +96,7 @@ void calculate_expected_counts(uomap<int, uomap<unsigned, uomap<int, uomap<unsig
                                std::vector<std::vector<double> >& result);
 
 
-std::vector<std::vector<std::vector<unsigned> > > compute_mapping(unsigned from, 
+std::vector<std::vector<std::vector<unsigned> > > compute_mapping(unsigned from,
                                                                   unsigned to,
                                                                   const std::vector< std::vector<std::vector< std::vector<unsigned>>>> & annot_descendants);
 
@@ -127,15 +130,15 @@ private:
   const std::vector<std::vector<double> >& conditional_probabilities;
   const std::vector<std::vector<std::vector<unsigned> > >& mapping;
   std::vector<uomap<unsigned,unsigned> > inverted;
-  
-  
-  
-  
+
+
+
+
   //TODO: iterate on new_probs instead of old_probs
   // would be more efficient (especially for binary rules)
-  
-  
-  
+
+
+
   std::vector<uomap<unsigned,unsigned> > invert_mapping(std::vector<std::vector<std::vector<unsigned> > > mapping);
 };
 
