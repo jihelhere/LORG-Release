@@ -224,12 +224,12 @@ BOOST_AUTO_TEST_CASE(RuleParserLexicalTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_lexical(), true);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_lexical(), true);
 
-        LexicalRule* lexr = static_cast<LexicalRule*>(r);
+        LexicalRule* lexr = static_cast<LexicalRule*>(vr[0]);
         unsigned int lhs  = SymbolTable::instance_nt().get_label_id("IN");
         unsigned int word = SymbolTable::instance_word().get_label_id("of");
 
@@ -246,12 +246,12 @@ BOOST_AUTO_TEST_CASE(RuleParserUnaryTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_unary(), true);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_unary(), true);
 
-        URule* ur = static_cast<URule*>(r);
+        URule* ur = static_cast<URule*>(vr[0]);
         unsigned int lhs = SymbolTable::instance_nt().get_label_id("NX");
         unsigned int rhs = SymbolTable::instance_nt().get_label_id("CD");
 
@@ -268,12 +268,12 @@ BOOST_AUTO_TEST_CASE(RuleParserBinaryTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_lexical() && r->is_unary(), false);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_lexical() || vr[0]->is_unary(), false);
 
-        BRule* br = static_cast<BRule*>(r);
+        BRule* br = static_cast<BRule*>(vr[0]);
         unsigned int lhs  = SymbolTable::instance_nt().get_label_id("ADJP");
         unsigned int rhs0 = SymbolTable::instance_nt().get_label_id("IN");
         unsigned int rhs1 = SymbolTable::instance_nt().get_label_id("S");
