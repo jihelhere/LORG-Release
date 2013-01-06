@@ -226,7 +226,7 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
 
   while(n_iter-- && epsilon > 1.0e-10) {
 
-    //        std::clog << n_iter << " : " << epsilon << std::endl;
+    //    std::clog << n_iter << " : " << epsilon << std::endl;
 
     for (size_t i = 0; i < result.size(); ++i)
       {

@@ -73,6 +73,21 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
 {
     bool verbose = config.exists("verbose");
 
+    #ifdef USE_THREADS
+    unsigned nbthreads = config.get_value<unsigned>("nbthreads");
+    #endif
+    if(verbose){
+      std::clog << "using " <<
+      #ifndef USE_THREADS
+      1
+      #else
+      (nbthreads == 0 ? tbb::task_scheduler_init::default_num_threads() : nbthreads)
+      #endif
+      << " threads to parse" << std::endl;
+    }
+
+
+
     std::vector<double> priors;
     std::vector<annot_descendants_type> all_annot_descendants;
 
@@ -111,6 +126,7 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
           std::clog << "create intermediate grammars" << std::endl;
         grammars = create_intermediates(*cg, annot_descendants);
         // compute priors for base grammar
+        //        std::clog << "before priors" << std::endl;
         priors = grammars[0]->compute_priors();
         cg->init();
         //    std::clog << "smooth" << std::endl;
@@ -177,19 +193,6 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
 
 
     unsigned min = config.get_value<unsigned>("min-length-beam");
-
-    #ifdef USE_THREADS
-    unsigned nbthreads = config.get_value<unsigned>("nbthreads");
-    #endif
-    if(verbose){
-      std::clog << "using " <<
-      #ifndef USE_THREADS
-      1
-      #else
-      (nbthreads == 0 ? tbb::task_scheduler_init::default_num_threads() : nbthreads)
-      #endif
-      << " threads to parse" << std::endl;
-    }
 
     return create_parser(grammars,
                          string_to_pa(config.get_value<std::string>("parser-type")),
@@ -260,18 +263,19 @@ create_annot_descendants(const std::vector< Tree<unsigned> >& annot_histories)
 std::vector<ParserCKYAll::AGrammar*>
 create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_type& annot_descendants)
 {
-  std::vector<ParserCKYAll::AGrammar*> result;
+  std::vector<ParserCKYAll::AGrammar*> result(annot_descendants.size() -1);
 
-  //    std::clog << "before transition" << std::endl;
+  //  std::clog << "before transition" << std::endl;
   uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >transition_probabilities;
   grammar.compute_transition_probabilities(transition_probabilities);
-  //    std::clog << "after transition" << std::endl;
+  //  std::clog << "after transition" << std::endl;
 
-  //    std::clog << "before expected counts" << std::endl;
+  //  std::clog << "before expected counts" << std::endl;
   std::vector<std::vector<double> > expected_counts;
   calculate_expected_counts(transition_probabilities, grammar.get_annotations_info(), expected_counts);
-  //    std::clog << "after expected counts" << std::endl;
+  //  std::clog << "after expected counts" << std::endl;
 
+#ifndef USE_THREADS
   for (unsigned i = 0; i < annot_descendants.size() - 1; ++i) {
 
     //      std::clog << "before mapping " << i << std::endl;
@@ -294,9 +298,43 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
     //      std::clog << "removing zeros" << std::endl;
     cg->remove_unlikely_annotations_all_rules(1e-6);
     // done!
-    result.push_back(cg);
+    result[i] = cg;
     //      std::clog << "creation finished" << std::endl;
   }
+#else
+  tbb::parallel_for(tbb::blocked_range<unsigned>(0, annot_descendants.size() -1),
+                    [&]
+                    (tbb::blocked_range<unsigned>& r)
+                    {
+                      for(unsigned i = r.begin(); i < r.end(); ++i) {
+                        //      std::clog << "before mapping " << i << std::endl;
+                        std::vector<std::vector<std::vector<unsigned> > > annotation_mapping = compute_mapping(i, annot_descendants.size() - 1, annot_descendants);
+                        //      std::clog << "after mapping " << i << std::endl;
+
+                        //      std::clog << "before create_projection" << std::endl;
+                        ParserCKYAll::AGrammar * cg = grammar.create_projection(expected_counts, annotation_mapping);
+                        //      std::clog << "after create_projection" << std::endl;
+
+
+                        //      std::clog << "finishing creation" << std::endl;
+                        //add unary chains
+                        //      std::clog << "init" << std::endl;
+                        cg->init();
+                        //smooth
+                        //      std::clog << "smoothing" << std::endl;
+                        cg->linear_smooth(0.01,0.1);
+                        // remove zeros
+                        //      std::clog << "removing zeros" << std::endl;
+                        cg->remove_unlikely_annotations_all_rules(1e-6);
+                        // done!
+                        result[i] = cg;
+                        //      std::clog << "creation finished" <<
+                        //      std::endl;
+                      }
+                    }
+                    );
+#endif
+
 
   return result;
 }
