@@ -75,6 +75,7 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
 
     #ifdef USE_THREADS
     unsigned nbthreads = config.get_value<unsigned>("nbthreads");
+
     #endif
     if(verbose){
       std::clog << "using " <<
@@ -83,7 +84,7 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
       #else
       (nbthreads == 0 ? tbb::task_scheduler_init::default_num_threads() : nbthreads)
       #endif
-      << " threads to parse" << std::endl;
+      << " thread(s) to parse" << std::endl;
     }
 
 

@@ -219,7 +219,7 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
   result[root_id][0] = 1;
   temp[root_id][0] = 1;
 
-  unsigned n_iter = 30;
+  unsigned n_iter = 50;
   double epsilon = 1;
 
 
