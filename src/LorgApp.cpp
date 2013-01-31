@@ -19,15 +19,19 @@ bool LorgApp::init(int argc, char **argv)
   ConfigTable configuration(argc,argv,get_options());
 
   bool res = read_config(configuration);
-  
+
 #ifdef USE_THREADS
   unsigned nbthreads = configuration.get_value<unsigned>("nbthreads");
-  if (nbthreads!=0)
+  if (nbthreads != 0)
+  {
     tbb_task_scheduler.initialize(nbthreads);
+  }
   else
+  {
     tbb_task_scheduler.initialize(tbb::task_scheduler_init::automatic);
+  }
 #endif
-  
+
   return res;
 }
 
