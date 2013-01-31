@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.68)
+AC_PREREQ(2.63)
 AC_INIT([lorg_tools], [git], [jleroux@computing.dcu.ie])
 
 AC_CONFIG_MACRO_DIR([m4])
