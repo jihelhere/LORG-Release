@@ -9,6 +9,9 @@
 #include "emptystruct.h"
 #include "ChartCKY.h"
 
+#include "parsers/ParserCKYAllFactory.h"
+
+
 class MaxRuleProbability1B;
 
 struct MaxRule1BTypes {
@@ -46,7 +49,7 @@ public:
   ~MaxRuleProbability1B() {};
 
   static void set_log_normalisation_factor(double lnf);
-
+  static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {QInsideComputer::set_calculation(c);}
 
   inline void init() {best.init();}
   inline const packed_edge_probability& get(unsigned/*ignored*/) const {return best;}

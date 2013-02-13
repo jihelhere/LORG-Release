@@ -144,16 +144,17 @@ public:
     // options for the two stage parser
     po::options_description parser_opts("two-stage parser options");
     parser_opts.add_options()
-      ("grammar,g", po::value<std::string>(), "sets the grammar for the parser")
-      ("alternate-grammar,F", po::value< std::vector<std::string> >(), "sets the additional grammars for the (maxn parsing) parser")
-      ("parser-type,p",po::value<std::string>()->default_value("max"),"sets the type of parsing - vit for Viterbi , max for MaxRule, maxn for MaxRule with several grammars, kmax for k-best maxrule, mind for minimal divergence, var for Matsuzaki's variational")
-      ("beam-threshold,b",po::value<double>()->default_value(0.0001), "sets the ratio for beaming")
-      ("accurate", "set thresholds for accurate parsing")
-      ("min-length-beam",po::value<unsigned>()->default_value(1), "minimum length of sentences to use beam")
-      ("kbest,k",po::value<unsigned>()->default_value(1), "numbers of parses to return for each sentence (only used in kmax)")
-      ("stubbornness,s", po::value<int>()->default_value(-1), "number of retries (with lower beam-threshold) if packed forest construction fails. Last try is performed without threshold. Set to negative value to skip this.")
-      ("nbthreads", po::value<unsigned>()->default_value(0), "Number of threads for processing the chart")
-      ;
+        ("grammar,g", po::value<std::string>(), "sets the grammar for the parser")
+        ("alternate-grammar,F", po::value< std::vector<std::string> >(), "sets the additional grammars for the maxn parser")
+        ("parser-type,p",po::value<std::string>()->default_value("max"),"sets the type of parsing - vit for Viterbi , max for MaxRule, maxn for MaxRule with several grammars, kmax for k-best maxrule, mind for minimal divergence, var for Matsuzaki's variational")
+        ("max-type,m", po::value<std::string>()->default_value("product"), "type of calculation for the max algorithms: product, sum or prodsum")
+        ("beam-threshold,b",po::value<double>()->default_value(0.0001), "sets the ratio for beaming")
+        ("accurate", "set thresholds for accurate parsing")
+        ("min-length-beam",po::value<unsigned>()->default_value(1), "minimum length of sentences to use beam")
+        ("kbest,k",po::value<unsigned>()->default_value(1), "numbers of parses to return for each sentence (only used in kmax)")
+        ("stubbornness,s", po::value<int>()->default_value(-1), "number of retries (with lower beam-threshold) if packed forest construction fails. Last try is performed without threshold. Set to negative value to skip this.")
+        ("nbthreads", po::value<unsigned>()->default_value(0), "Number of threads for processing the chart")
+        ;
     options.add(parser_opts);
   }
 

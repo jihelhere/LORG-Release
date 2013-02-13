@@ -160,7 +160,7 @@ inline
 void BinaryTrainingTree::compute_outside_probability()
 {
   //TOP node has an outside probability of 1
-  root->annotations.reset_outside_probabilities(1);
+  root->annotations.reset_outside_probabilities(1, false);
   root->compute_outside_probability();
 }
 

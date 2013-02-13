@@ -21,8 +21,6 @@
 #include <algorithm>
 #include <numeric>
 
-//#define USE_THREADS 1
-
 #ifdef USE_THREADS
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -87,6 +85,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
 
   virtual void clean() = 0;
 
+  virtual void set_nbthreads(unsigned)=0;
 
  protected: // attributes
   std::vector<AGrammar *> grammars; ///< the grammars to beam
@@ -190,6 +189,8 @@ public:
 
   void clean() { delete chart; chart = nullptr;}
 
+
+  void set_nbthreads(unsigned n) {Chart::nbthreads = n;}
 
  private:
   /** \brief Add unary rules at this position in the chart

@@ -7,12 +7,13 @@
 
 
 
-ParserCKYAllMaxRuleMultiple::ParserCKYAllMaxRuleMultiple(std::vector<AGrammar*>& cgs,
+ParserCKYAllMaxRuleMultiple::ParserCKYAllMaxRuleMultiple(ParserCKYAllFactory::MaxParsing_Calculation c,
+                                                         std::vector<AGrammar*>& cgs,
                                                          const std::vector<double>& p, double b_t,
                                                          const std::vector< std::vector<AGrammar*> >& fgs,
                                                          const std::vector< annot_descendants_type >& all_annot_descendants_,
                                                          bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
-: ParserCKYAllMaxRule<MaxRuleMultipleTypes>(cgs, p, b_t, all_annot_descendants_[0], accurate_, min_beam, stubborn),
+: ParserCKYAllMaxRule<MaxRuleMultipleTypes>(c, cgs, p, b_t, all_annot_descendants_[0], accurate_, min_beam, stubborn),
     fine_grammars(fgs), all_annot_descendants(all_annot_descendants_), nb_grammars(fgs.size() + 1), k(k_)
 {
 
@@ -129,11 +130,13 @@ void ParserCKYAllMaxRuleMultiple::multiple_inside_outside_specific()
 
 
     if(!chart->get_root().is_closed() && chart->get_root().exists_edge(start_symbol)) {
-      chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0);
+      chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0, false);
       compute_outside_probabilities();
 
       MaxRuleProbabilityMultiple::set_log_normalisation_factor(std::log(get_sentence_probability()));
-      calculate_maxrule_probabilities();
+
+      // don;t need this anymore
+      // calculate_maxrule_probabilities();
 
     }
 
@@ -186,8 +189,10 @@ void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
 {
   chart->opencells_apply_bottom_up( [](Cell&cell)
   {
-    cell.apply_on_edges( &ProbaModel::pick_best_lexical,
-                         &ProbaModel::pick_best_binary );
+    cell.apply_on_edges(
+        &ProbaModel::init,
+        &ProbaModel::pick_best_lexical,
+        &ProbaModel::pick_best_binary );
     cell.apply_on_edges( &ProbaModel::pick_best_unary,
                          &ProbaModel::pick_best );
   }  );

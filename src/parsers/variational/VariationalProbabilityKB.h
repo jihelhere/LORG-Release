@@ -11,6 +11,7 @@
 #include "edges/PackedEdgeDaughters.h"
 #include "VariationalTypes.h"
 
+#include "parsers/ParserCKYAllFactory.h"
 
 class VariationalProbabilityKB
 {
@@ -27,6 +28,8 @@ public:
   typedef typename VariationalTypes::BinaryDaughter BinaryDaughter;
 
   typedef typename VariationalTypes::LRule LRule;
+
+  static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {QInsideComputer::set_calculation(c);}
 
 
 private:

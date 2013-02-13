@@ -2,21 +2,22 @@
 #ifndef _PARSERCKYALLMAXVAR_H_
 #define _PARSERCKYALLMAXVAR_H_
 
-//#include "ParserCKY.h"
 #include "parsers/ParserCKYAll.h"
-#include "utils/lorg_functional.h"
+#include "parsers/ParserCKYAllFactory.h"
+//#include "utils/lorg_functional.h"
 
 template<class Types>
 class ParserCKYAllMaxRule : public ParserCKYAll_Impl<Types>
 {
-public:
+ public:
   typedef typename ParserCKYAll_Impl<Types>::AGrammar AGrammar;
   typedef typename Types::Chart Chart;
   typedef typename Types::Cell Cell;
   typedef typename Types::Edge Edge;
   typedef typename Types::EdgeProbability ProbaModel;
 
-    ParserCKYAllMaxRule(std::vector<AGrammar*>& cgs,
+    ParserCKYAllMaxRule(ParserCKYAllFactory::MaxParsing_Calculation c,
+                        std::vector<AGrammar*>& cgs,
                         const std::vector<double>& priors,
                         double beam_threshold,
                         const annot_descendants_type& annot_descendants_,
@@ -26,7 +27,9 @@ public:
                                beam_threshold,
                                annot_descendants_,
                                accurate_, min_beam_length, stubborn)
-    {}
+    {
+     ProbaModel::set_calculation(c);
+    }
 
    /**
    * @brief calculate the chart specific rule probabilities for all packed edges in all cells

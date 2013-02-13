@@ -297,7 +297,7 @@ void ParserCKYAll_Impl<Types>::beam_chart(double log_sent_prob, double log_thres
 {
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
-  chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0);
+  chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0, false);
   compute_outside_probabilities();
 
   this->chart->opencells_apply_bottom_up(
@@ -530,7 +530,7 @@ void ParserCKYAll_Impl<Types>::compute_inside_outside_probabilities()
 {
   compute_inside_probabilities();
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
-  chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0);
+  chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0, true);
   compute_outside_probabilities();
 }
 

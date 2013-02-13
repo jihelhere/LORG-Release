@@ -10,7 +10,6 @@ double MaxRuleProbabilityMultiple::log_normalisation_factor = 0;
 unsigned MaxRuleProbabilityMultiple::nb_grammars = 0;
 std::vector<double> MaxRuleProbabilityMultiple::log_normalisation_factor_backup;
 
-
 void MaxRuleProbabilityMultiple::set_log_normalisation_factor(double lnf)
 {
   log_normalisation_factor = lnf;
@@ -26,5 +25,9 @@ const double& MaxRuleProbabilityMultiple::get_log_normalisation_factor()
 {
   return log_normalisation_factor;
 }
+
+template<>
+ParserCKYAllFactory::MaxParsing_Calculation
+MaxRuleTreeLogProbaComputer<MaxRuleProbabilityMultiple>::calculation = ParserCKYAllFactory::Product;
 
 #endif /* _MAXRULEMULTIPLEPROBABILITY_CPP_ */

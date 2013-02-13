@@ -8,3 +8,7 @@ std::ostream & VariationalProbabilityKB::operator>> (std::ostream & out) const
   for(auto& cand: candidates) { out << "cand:" << cand.probability << " "; }
   return out;
 }
+
+template<>
+ParserCKYAllFactory::MaxParsing_Calculation
+MaxRuleTreeLogProbaComputer<VariationalProbabilityKB>::calculation = ParserCKYAllFactory::Product;
