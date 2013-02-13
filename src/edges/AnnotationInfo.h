@@ -31,7 +31,7 @@ struct scaled_array
   double get_scaled_logvalue(unsigned i) const;
 
 
-  void reset(double value);
+  void reset(double value, bool keepnullproba = false);
 
   void resize(unsigned new_size);
 
@@ -75,11 +75,11 @@ struct AnnotationInfo
 
   int get_outside_scale() const;
 
-  void reset_inside_probabilities(double value = 0.0);
+  void reset_inside_probabilities(double value, bool keepnullproba);
 
-  void reset_outside_probabilities(double value = 0.0);
+  void reset_outside_probabilities(double value, bool keepnullproba);
 
-  void reset_probabilities( double value = 0.0);
+  void reset_probabilities( double value, bool keepnullproba);
 
   unsigned get_size() const;
 

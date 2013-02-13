@@ -8,6 +8,8 @@
 #include <numeric>
 #include <math.h>
 
+#include "parsers/ParserCKYAllFactory.h"
+
 template<class ProbaModel>
 class MaxRuleTreeLogProbaComputer
 {
@@ -16,6 +18,12 @@ public:
   typedef typename Edge::LexicalDaughter LexicalDaughter;
   typedef typename Edge::UnaryDaughter UnaryDaughter;
   typedef typename Edge::BinaryDaughter BinaryDaughter;
+
+  static  ParserCKYAllFactory::MaxParsing_Calculation calculation;
+
+ static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {calculation = c;}
+
+
 
   static double compute (const AnnotationInfo & up_annotations,
                                             const BinaryDaughter & dtr,
@@ -66,55 +74,33 @@ public:
       probability += up_outside.array[i] * temp;
     }
 
+   if (calculation == ParserCKYAllFactory::Product)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     return  logprod
+        + left.get_prob_model().get(left_idx).probability
+        + right.get_prob_model().get(right_idx).probability;
+   }
 
-    double res = (std::log (probability) - normalisation_factor)
-                 + left.get_prob_model().get (left_idx).probability
-                 + right.get_prob_model().get (right_idx).probability;
+   if (calculation == ParserCKYAllFactory::Sum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return sum
+        + left.get_prob_model().get(left_idx).probability
+        + right.get_prob_model().get(right_idx).probability;
+   }
 
-    //assert(res <= 0);
+   if (calculation == ParserCKYAllFactory::ProdSum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return logprod + std::pow(sum, 4.0)
+        + left.get_prob_model().get(left_idx).probability
+        + right.get_prob_model().get(right_idx).probability;
+   }
 
-    if (res > 0)
-    {
-      // for(unsigned i = 0; i < up_annotations.outside_probabilities.array.size(); ++i)
-      //   //        if(up_annotations.outside_probabilities.array[i] != LorgConstants::NullProba)
-      //   std ::cout << i << ":" << up_annotations.outside_probabilities.array[i] << " " ;
-      // std::cout << std::endl;
-
-      // std::cout << std::log(probability) << std::endl;
-      // std::cout << normalisation_factor << std::endl;
-      //        std::cout << res
-      //<< " : " << *dtr.get_rule()
-      //        << std::endl;
-    }
-
-
-    // if(std::isnan(res)) {
-    //   std::cout << "bin nan" << std::endl;
-    //   std::cout << std::log (probability)
-    //             << " "  << normalisation_factor
-    //             << " " << left.get_prob_model().get (left_idx).probability
-    //             << " " << right.get_prob_model().get (right_idx).probability
-    //             << " " << up_annotations.inside_probabilities.array.size()
-    //             << " " << up_annotations.outside_probabilities.array.size()
-    //             << std::endl;
-
-
-    //   for(unsigned i = 0; i < up_annotations.inside_probabilities.array.size(); ++i)
-    //     if(up_annotations.inside_probabilities.array[i] != LorgConstants::NullProba)
-    //       std::cout << up_annotations.inside_probabilities.array[i] << " ";
-
-    //   std::cout << std::endl;
-
-    //   for(unsigned i = 0; i < up_annotations.outside_probabilities.array.size(); ++i)
-    //     if(up_annotations.outside_probabilities.array[i] != LorgConstants::NullProba)
-    //       std::cout << up_annotations.outside_probabilities.array[i] << " ";
-
-    //   std::cout << std::endl;
-
-    // }
-
-    return (res > 0) ? 0 : res;
-
+   return -std::numeric_limits < double >::infinity ();
 
   }
 
@@ -202,45 +188,36 @@ public:
       probability += up_outside.array[i] * inner;
     }
 
-
     //FIXME: this should not happen because chart is clean ???
     // only relevant in kmax parsing
-    if (      //probability != 0
-      //     &&
-      left.get_prob_model().n_deriv () != 0)
-    {
-
-      double res = (std::log(probability) - normalisation_factor) +
-                   left.get_prob_model().get (left_idx).probability;
-        // assert(res <= 0);
-
-        if (res > 0)
-        {
-          // for(unsigned i = 0; i < up_annotations.outside_probabilities.array.size(); ++i)
-          //   //        if(up_annotations.outside_probabilities.array[i] != LorgConstants::NullProba)
-          //   std ::cout << i << ":" << up_annotations.outside_probabilities.array[i] << " " ;
-          // std::cout << std::endl;
-
-          // std::cout << std::log(probability) << std::endl;
-          // std::cout << normalisation_factor << std::endl;
-          //        std::cout << res
-          //                  << " : " << *dtrs.get_rule()
-          //                  << std::endl;
-        }
-
-
-        // if (std::isnan(res))
-        // {
-        //   std::cout << "un nan" << std::endl;
-        // }
-
-
-        return (res > 0) ? 0 : res;
-    }
-    else  {
-      //std::cout << "here" << std::endl;
+    if (left.get_prob_model().n_deriv () == 0)
       return -std::numeric_limits < double >::infinity ();
-    }
+
+
+   if (calculation == ParserCKYAllFactory::Product)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     return  logprod
+         + left.get_prob_model().get(left_idx).probability;
+   }
+
+   if (calculation == ParserCKYAllFactory::Sum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return sum
+         + left.get_prob_model().get(left_idx).probability;
+   }
+
+   if (calculation == ParserCKYAllFactory::ProdSum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return logprod + std::pow(sum, 4.0)
+         + left.get_prob_model().get(left_idx).probability;
+   }
+
+   return -std::numeric_limits < double >::infinity ();
   }
 
   static void compute_best_indexes (const AnnotationInfo & up_annotations,
@@ -303,48 +280,41 @@ public:
         up_annotations.outside_probabilities.array[i];
     }
 
-    double res = std::log (probability) - normalisation_factor;
 
-    // if(res < 0) {
-      //   std::cout << res << " : " << *rule_ptr  << std::endl;
-    // }
+   if (calculation == ParserCKYAllFactory::Product)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     return  logprod;
+   }
 
+   if (calculation == ParserCKYAllFactory::Sum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return sum;
+   }
 
-    // if(res > 0) {
-      //   // for(unsigned i = 0; i < up_annotations.outside_probabilities.array.size(); ++i)
-    //   //   //        if(up_annotations.outside_probabilities.array[i] != LorgConstants::NullProba)
-    //   //     std ::cout << i << ":" << up_annotations.outside_probabilities.array[i] << " " ;
-    //   // std::cout << std::endl;
+   if (calculation == ParserCKYAllFactory::ProdSum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return logprod + std::pow(sum, 4.0);
+   }
 
-    //   // std::cout << std::log(probability) << std::endl;
-    //   // std::cout << normalisation_factor << std::endl;
-    //   std::cout << res
-    //     // << " : " << *rule_ptr
-    //             << std::endl;
-    // }
-    // //    assert(res <= 0);
-
-    // if(std::isnan(res))
-    //   std::cout << "lex nan" << std::endl;
-
-    return res > 0 ? 0 : res;
-
+   return -std::numeric_limits < double >::infinity ();
   }
 
 
-  static  double compute_simple (const AnnotationInfo & up_annotations,
-                                            double normalisation_factor,
-                                            const AnnotationInfo &
-                                            left_annotations,
-                                            const AnnotationInfo &
-                                            right_annotations,
-                                            const std::vector<std::vector<std::vector<double>>>&rule_probs)
+  static  double compute_simple (const AnnotationInfo& up_annotations,
+                                 double normalisation_factor,
+                                 const AnnotationInfo& left_annotations,
+                                 const AnnotationInfo& right_annotations,
+                                 const std::vector<std::vector<std::vector<double>>>& rule_probs)
   {
     double probability = 0.0;
 
     const scaled_array & left_inside = left_annotations.inside_probabilities;
-    const scaled_array & right_inside =
-    right_annotations.inside_probabilities;
+    const scaled_array & right_inside = right_annotations.inside_probabilities;
     const scaled_array & up_outside = up_annotations.outside_probabilities;
 
     unsigned size = rule_probs.size ();
@@ -376,15 +346,27 @@ public:
       //      std::cout << probability << std::endl;
     }
 
-    double res = (std::log (probability) - normalisation_factor);
+   if (calculation == ParserCKYAllFactory::Product)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     return  logprod;
+   }
 
-    //    std::cout << std::log(probability) << " " << normalisation_factor << std::endl;
+   if (calculation == ParserCKYAllFactory::Sum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return sum;
+   }
 
-    //    std::cout << "umps bin: " << res << std::endl;
+   if (calculation == ParserCKYAllFactory::ProdSum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return logprod + std::pow(sum, 4.0);
+   }
 
-    return (res > 0) ? 0 : res;
-
-
+   return -std::numeric_limits < double >::infinity ();
   }
 
   static double compute_simple (const AnnotationInfo & up_annotations,
@@ -414,19 +396,27 @@ public:
       probability += up_outside.array[i] * inner;
     }
 
+   if (calculation == ParserCKYAllFactory::Product)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     return  logprod;
+   }
 
-    //FIXME: this should not happen because chart is clean ???
-    // only relevant in kmax parsing
-    // if(//probability != 0
-    //    //     &&
-    //    left.get_prob_model().n_deriv() != 0
-    //    ) {
+   if (calculation == ParserCKYAllFactory::Sum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return sum;
+   }
 
-      double res = (std::log (probability) - normalisation_factor);
-      return (res > 0) ? 0 : res;
-      // }
-      // else
-      //   return - std::numeric_limits<double>::infinity();
+   if (calculation == ParserCKYAllFactory::ProdSum)
+   {
+     double logprod = (std::log (probability) - normalisation_factor);
+     double sum = std::exp(logprod);
+     return logprod + std::pow(sum, 4.0);
+   }
+
+   return -std::numeric_limits < double >::infinity ();
   }
 };
 

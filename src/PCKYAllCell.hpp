@@ -115,7 +115,7 @@ void PCKYAllCell<Types>::add_word(const Word & word)
 template<class Types>
 void PCKYAllCell<Types>::reset_probabilities()
 {
-  apply_on_edges(function<void(Edge&)>([](Edge&e){e.get_annotations().reset_probabilities(0.0);}));
+  apply_on_edges(function<void(Edge&)>([](Edge&e){e.get_annotations().reset_probabilities(0.0, true);}));
 }
 
 
@@ -133,10 +133,14 @@ void PCKYAllCell<Types>::compute_inside_probabilities()
 {
 //     apply_on_edges( & Edge::clean_invalidated_binaries);
 
-  apply_on_edges(std::function<void(Edge&)>([](Edge& edge){if (edge.get_lex()) edge.get_annotations().reset_probabilities();}) ,
-                      & LexicalDaughter::update_inside_annotations  ,
-                      &  BinaryDaughter::update_inside_annotations  ,
-                      &            Edge::prepare_inside_probability );
+  apply_on_edges(std::function<void(Edge&)>([](Edge& edge){
+        /*if
+         *
+         (edge.get_lex())*/
+        edge.get_annotations().reset_probabilities(0.0, true);}) ,
+    & LexicalDaughter::update_inside_annotations  ,
+    &  BinaryDaughter::update_inside_annotations  ,
+    &            Edge::prepare_inside_probability );
 
   apply_on_edges(& UnaryDaughter::update_inside_annotations);
   apply_on_edges(& Edge::         adjust_inside_probability);
@@ -459,7 +463,7 @@ void PCKYAllCell<Types>::change_rules_resize(unsigned new_size, unsigned finer_i
 {
   apply_on_edges(function<void(Edge&)>([new_size,finer_idx](Edge&e){
     //resize
-    e.get_annotations().reset_probabilities(0.0);
+        e.get_annotations().reset_probabilities(0.0, true);
     e.get_annotations().resize(new_size);
     //replace rule
     e.replace_rule_probabilities(finer_idx);

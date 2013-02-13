@@ -13,4 +13,9 @@ void MaxRuleProbability1B::set_log_normalisation_factor(double lnf)
   log_normalisation_factor = lnf;
 }
 
+
+template<>
+ParserCKYAllFactory::MaxParsing_Calculation
+MaxRuleTreeLogProbaComputer<MaxRuleProbability1B>::calculation = ParserCKYAllFactory::Product;
+
 #endif /* _MAXRULEPROBABILITY_H_ */

@@ -35,7 +35,22 @@ ParserCKYAllFactory::string_to_pa(const std::string& s)
 }
 
 
-ParserCKYAll * create_parser(std::vector<ParserCKYAll::AGrammar*> cgs, ParserCKYAllFactory::Parsing_Algorithm pt,
+ParserCKYAllFactory::MaxParsing_Calculation
+ParserCKYAllFactory::string_to_mpc(const std::string& s)
+{
+    if (s == "product") return ParserCKYAllFactory::Product;
+    if (s == "sum") return ParserCKYAllFactory::Sum;
+    if (s == "prodsum") return ParserCKYAllFactory::ProdSum;
+
+    std::clog << "Unknown calculation type: " << s << std::endl;
+
+    throw std::out_of_range(s);
+}
+
+
+ParserCKYAll * create_parser(std::vector<ParserCKYAll::AGrammar*> cgs,
+                             ParserCKYAllFactory::Parsing_Algorithm pt,
+                             ParserCKYAllFactory::MaxParsing_Calculation c,
                              const std::vector<double>& p, double b_t,
                              const std::vector< std::vector<ParserCKYAll::AGrammar*> >& fgs,
                              const std::vector< annot_descendants_type >& all_annot_descendants,
@@ -47,11 +62,11 @@ ParserCKYAll * create_parser(std::vector<ParserCKYAll::AGrammar*> cgs, ParserCKY
       case Viterbi :
         return new ParserCKYAllViterbi(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn);
       case MaxRule :
-        return new ParserCKYAllMaxRule1B(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn);
+        return new ParserCKYAllMaxRule1B(c, cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn);
       case MaxN :
-        return new ParserCKYAllMaxRuleMultiple(cgs, p, b_t, fgs, all_annot_descendants, accurate, min_beam, stubborn, k);
+        return new ParserCKYAllMaxRuleMultiple(c, cgs, p, b_t, fgs, all_annot_descendants, accurate, min_beam, stubborn, k);
       case KMaxRule :
-        return new ParserCKYAllMaxRuleKB(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
+        return new ParserCKYAllMaxRuleKB(c, cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
       case MinDiv :
         return new ParserCKYAllMinDivKB(cgs, p, b_t, all_annot_descendants[0], accurate, min_beam, stubborn, k);
       case Variational :
@@ -197,6 +212,7 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
 
     return create_parser(grammars,
                          string_to_pa(config.get_value<std::string>("parser-type")),
+                         string_to_mpc(config.get_value<std::string>("max-type")),
                          priors, beam_threshold,
                          alt_gs, all_annot_descendants, accurate, min,
                          config.get_value<int>("stubbornness"),

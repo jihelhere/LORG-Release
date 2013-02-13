@@ -8,8 +8,10 @@
 
 namespace ParserCKYAllFactory {
   enum Parsing_Algorithm {MaxRule, Viterbi, MaxN, KMaxRule, MinDiv, Variational};
+  enum MaxParsing_Calculation {Product, Sum, ProdSum};
   ParserCKYAll * create_parser(ConfigTable& config);
   Parsing_Algorithm string_to_pa(const std::string& s);
+  MaxParsing_Calculation string_to_mpc(const std::string& s);
 };
 
 #endif /* _PARSERCKYALLFACTORY_H_ */

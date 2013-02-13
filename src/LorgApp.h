@@ -32,9 +32,10 @@ protected:
   std::ostream* out;
 
   #ifdef USE_THREADS
-  tbb::task_scheduler_init tbb_task_scheduler;
+  unsigned nbthreads;
+  //  tbb::task_scheduler_init tbb_task_scheduler;
   #endif
-  
+
 };
 
 

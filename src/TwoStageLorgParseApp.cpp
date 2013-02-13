@@ -142,6 +142,9 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 
     if(verbose) { std::clog << "creating the parser... ";}
     if((parser = ParserCKYAllFactory::create_parser(configuration)) == NULL) return false;
+
+    parser->set_nbthreads(this->nbthreads);
+
     if(verbose) {std::clog << "ok" << std::endl;}
 
     kbest = configuration.get_value<unsigned>("kbest");

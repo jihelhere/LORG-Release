@@ -10,7 +10,8 @@ ParserCKYAllVariational::ParserCKYAllVariational(std::vector<AGrammar*>& cgs,
                                                    const std::vector<double>& p, double b_t,
                                                    const annot_descendants_type& annot_descendants_,
                                                    bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
-    : ParserCKYAllMaxRule<VariationalTypes>(cgs, p, b_t, annot_descendants_, accurate_, min_beam, stubborn) , k(k_)
+    : ParserCKYAllMaxRule<VariationalTypes>(ParserCKYAllFactory::Product,
+                                            cgs, p, b_t, annot_descendants_, accurate_, min_beam, stubborn) , k(k_)
 {
   //create the coarse-to-fine map
   this->create_coarse_to_fine_mapping(this->grammars);

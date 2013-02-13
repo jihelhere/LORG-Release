@@ -8,6 +8,7 @@
 #include "emptystruct.h"
 #include "ChartCKY.h"
 
+#include "parsers/ParserCKYAllFactory.h"
 
 class MaxRuleProbabilityKB;
 
@@ -58,6 +59,7 @@ public:
   inline static void set_size(unsigned k) {size = k;}
 
   inline static void set_log_normalisation_factor(double lnf) {log_normalisation_factor = lnf;};
+  static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {QInsideComputer::set_calculation(c);}
 
   inline const heap_type & get_candidates() const { return candidates; }
   inline const heap_type & get_derivations() const { return derivations; }

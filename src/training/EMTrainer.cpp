@@ -266,10 +266,14 @@ void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGram
       std::clog << "Before update counts" << std::endl;
 
     {
+      if(verbose)
+        std::clog << "unaries ";
         typedef std::vector< std::pair<URuleTraining*, std::vector<urule_occurrence> > > VectorPairsURules;
         multithread::update_thread_tbb<URuleTraining, urule_occurrence> uut;
         parallel_for(blocked_range<VectorPairsURules::iterator>(vu.begin(), vu.end()), uut);
 
+      if(verbose)
+        std::clog << "and binaries" << std::endl;
         typedef std::vector< std::pair<BRuleTraining*, std::vector<brule_occurrence> > > VectorPairsBRules;
         //std::random_shuffle(vb.begin(),vb.end());
         multithread::update_thread_tbb<BRuleTraining, brule_occurrence> but;
@@ -726,7 +730,7 @@ double EMTrainer::calculate_likelihood(std::vector<BinaryTrainingTree>& trees) c
 
 
 void EMTrainer::one_em_cycle_lexicon_only(TrainingGrammar& em_grammar,std::vector<BinaryTrainingTree>& trees, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& vl){
-  
+
   em_grammar.update_lexical_counts(trees,true, vl);
   em_grammar.maximise_lexical_rules();
   em_grammar.remove_unlikely_annotations_all_rules(threshold);

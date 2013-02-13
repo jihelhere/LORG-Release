@@ -46,6 +46,10 @@ private:
   ChartCKY& operator=(const ChartCKY&);
 
 public:
+#ifdef USE_THREADS
+  static unsigned nbthreads;
+#endif
+
   ~ChartCKY();
 
   /**

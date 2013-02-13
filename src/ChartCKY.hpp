@@ -11,12 +11,18 @@
 // #define OPENCELLS_APPLY_TASK_GROUP
 #define OPENCELLS_APPLY_PARALLEL_FOR
 // #define OPENCELLS_APPLY_CONTINUATION_TASK
-// #define OPENCELLS_APPLY_CHART_TASK
+//#define OPENCELLS_APPLY_CHART_TASK
 
+#ifdef USE_THREADS
+template<class Types> unsigned ChartCKY<Types>::nbthreads;
+#endif
 
 // assume that words in sentence are in left to right direction (start in ascending direction)
 template<class Types>
-ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s, unsigned grammar_size, const std::vector<bracketing>& bs) : size(find_last_in_sentence(s)), sentence(s), brackets(bs)
+ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
+                          unsigned grammar_size,
+                          const std::vector<bracketing>& bs)
+    : size(find_last_in_sentence(s)), sentence(s), brackets(bs)
 {
   Cell::set_max_size(grammar_size);
   {
@@ -213,13 +219,14 @@ template<class Types>
 void
 ChartCKY<Types>::opencells_apply( std::function<void(Cell &)> f)
 {
-  tbb::parallel_for(tbb::blocked_range<typename std::vector<Cell>::iterator>(the_cells.begin(), the_cells.end()),
-                    [&f](const tbb::blocked_range<typename std::vector<Cell>::iterator>& r){
+  tbb::parallel_for(tbb::blocked_range<Cell*>(the_cells, the_cells + nb_cells),
+                    [&f](const tbb::blocked_range<Cell*>& r)
+                    {
                       for (auto cell = r.begin(); cell < r.end(); ++cell) {
                         if(! cell->is_closed()) f(*cell);
                       }
                     }
-  );
+                    );
 }
 
 
@@ -309,7 +316,7 @@ public:
     atomic<Cell *> it; it = the_cells.data();
     tbb::task_list seeds;
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
-    for (signed t=0; t</*1*/tbb::task_scheduler_init::default_num_threads(); ++t) {
+    for (signed t=0; t< nbthreads; ++t) {
       ParallelTask<Cell> & task = *new (tbb::task::allocate_root()) ParallelTask<Cell>(f, it, the_cells.data()+the_cells.size(), waiter);
       task.set_ref_count(2);
       seeds.push_back(task);
