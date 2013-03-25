@@ -8,6 +8,8 @@
 class ArabicUMapping : public WordSignature
 {
 public:
+  ArabicUMapping() : WordSignature(Arabic) {};
+
   std::string get_unknown_mapping(const std::string& word, unsigned position) const;
 };
 

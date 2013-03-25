@@ -73,6 +73,9 @@ private:
   void lexical_smoothing();
   void create_additional_rules();
 
+
+  std::string header_string() const;
+
 #ifdef USE_THREADS
   //  friend class basic_lexicon_update_thread;
   friend class basic_lexicon_update_thread_tbb;

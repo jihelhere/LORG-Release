@@ -4,6 +4,8 @@
 
 #include "ParserCKYAll.h"
 
+#include "lexicon/WordSignatureFactory.h"
+
 
 template<>
 GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std::string& filename)
@@ -18,8 +20,23 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
   std::vector<URule> un;
   std::vector<LexicalRule> lex;
 
+  std::map<std::string, std::string>  gram_conf;
 
-  BURuleInputParser::read_rulefile(filename, lex, un, bin, map, history_trees);
+  BURuleInputParser::read_rulefile(filename, lex, un, bin, map, history_trees, gram_conf);
+
+  // TODO this should be moved somewhere else
+  if (gram_conf.count("lex_unknown_map"))
+  {
+    std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+    Word::reset_lexicon_type();
+    Word::init_lexicon_type(
+        WordSignatureFactory::create_wordsignature(
+            WordSignature::string_2_lex_unknown_map(gram_conf.at("lex_unknown_map")),
+            true));
+  }
+
+
+
 
   label_annotations.set_num_annotations_map(map);
 

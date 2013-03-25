@@ -8,6 +8,8 @@
 class ItalianIGMapping : public WordSignature
 {
 public:
+  ItalianIGMapping() : WordSignature(ItalianIG) {};
+
   std::string get_unknown_mapping(const std::string& word, unsigned position) const;
 };
 

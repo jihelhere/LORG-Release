@@ -62,6 +62,7 @@ private:
   void print_rule_probabilities();
   void print_leaf_node_probs(BinaryTrainingTree* /*tree*/);
 
+  std::string header_string() const;
 
 public:
   ~BerkeleyLexicon();

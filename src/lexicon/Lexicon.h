@@ -49,6 +49,8 @@ public:
 
   virtual void create_additional_rules() = 0;
 
+  virtual std::string header_string() const = 0;
+
 };
 
 inline

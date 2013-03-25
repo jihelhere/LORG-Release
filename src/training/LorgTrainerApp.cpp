@@ -146,6 +146,7 @@ void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::st
         }
 
 
+        file_out << grammar.get_lexicon()->header_string() << '\n';
         file_out << grammar << std::flush;
         file_out.close();
     }

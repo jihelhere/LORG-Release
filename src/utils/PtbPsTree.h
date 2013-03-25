@@ -47,6 +47,12 @@ public:
   **/
   void remove_function();
 
+
+  /**
+     \brief removes trailing numbers (aka traces?) from internal nodes
+  **/
+  void remove_trailing_numbers();
+
   /**
      \brief removes numbers from leaves
      \param num_regex a regex describing numbers
