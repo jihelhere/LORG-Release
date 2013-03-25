@@ -205,6 +205,31 @@ struct ptbpstree_parser : boost::spirit::qi::grammar<Iterator, std::vector< Tree
   qi::rule<Iterator, unsigned(), mychar::space_type> id;
 };
 
+//////////////////////
+
+template <typename Iterator>
+struct conf_parser : boost::spirit::qi::grammar<Iterator, std::pair<std::string,std::string>(), mychar::space_type>
+{
+  conf_parser() : conf_parser::base_type(kvpair)
+  {
+    using namespace qi::labels;
+
+    kvpair %= qi::lit("// conf:")  >> symbol >> symbol ;
+    symbol %= qi::lexeme[+(qi::char_ - ' ' - '\n')];
+
+    kvpair.name("kvpair");
+    symbol.name("symbol");
+
+    qi::on_error<qi::fail>(kvpair, std::clog << phoenix::val("Error!") << std::endl);
+  }
+
+  qi::rule<Iterator, std::pair<std::string, std::string>(),mychar::space_type> kvpair;
+  qi::rule<Iterator, std::string(),mychar::space_type> symbol;
+};
+
+/////////////////////
+
+
 
 void BURuleInputParser::read_rulestring(const std::string& str, AnnotatedRule** rule_ptr) throw(ParseError)
 {
@@ -234,7 +259,8 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
 				      std::vector<URule>& unaries,
 				      std::vector<BRule>& n_aries,
                                       std::map<short, unsigned short>& num_annotations_map,
-                                      std::vector< Tree<unsigned> >& history_trees
+                                      std::vector< Tree<unsigned> >& history_trees,
+                                      std::map<std::string, std::string>& conf
 				      ) throw(ParseError)
 {
   std::ifstream in_file(filename.c_str(),std::ios::in);
@@ -261,12 +287,24 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
   typedef burule_parser<iterator_type> parser;
   typedef annotation_map_parser<iterator_type> am_parser;
   typedef ptbpstree_parser<iterator_type> tree_parser;
+  typedef conf_parser<iterator_type> c_parser;
 
   parser p;
   am_parser a;
   tree_parser t;
 
+  c_parser c;
+
   bool res;
+
+
+  do
+  {
+    std::pair<std::string, std::string> conf_pair;
+    res = phrase_parse(iter, end, c, mychar::space, conf_pair);
+    conf.insert(conf_pair);
+  } while (res && iter != end);
+
 
   // Read annotations Map
   // lines like: Symbol Num_annot

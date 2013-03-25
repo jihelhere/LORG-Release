@@ -139,6 +139,7 @@ class TrainingGrammar: public Grammar<BRuleTraining,URuleTraining,LexicalRuleTra
         const std::vector< Tree<unsigned> >& get_annot_histories() const {return annot_histories;}
 
         Lexicon* get_lexicon() {return lexicon;}
+        const Lexicon* get_lexicon() const {return lexicon;}
 
         template <class T>
             void perform_action_all_internal_rules(T& action);

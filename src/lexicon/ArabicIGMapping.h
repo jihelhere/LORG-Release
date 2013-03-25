@@ -8,6 +8,8 @@
 class ArabicIGMapping : public WordSignature
 {
 public:
+  ArabicIGMapping() : WordSignature(ArabicIG) {};
+
   std::string get_unknown_mapping(const std::string& word, unsigned position) const;
 };
 

@@ -1,4 +1,7 @@
 #include "BasicLexicon.h"
+#include "LexiconFactory.h"
+//#include "WordSignatureFactory.h"
+
 
 #ifdef USE_THREADS
 #include <tbb/parallel_reduce.h>
@@ -375,3 +378,21 @@ void BasicLexicon::copy(Lexicon*& dest) const
 //dummies
 void BasicLexicon::lexical_smoothing() {}
 void BasicLexicon::create_additional_rules() {}
+
+
+std::string BasicLexicon::header_string() const
+{
+  std::stringstream ss;
+
+  ss <<  "// conf: "
+     << "lex_type "
+     << LexiconFactory::lex_type_2_string(LexiconFactory::Basic) << '\n'
+     <<  "// conf: "
+     << "lex_unknown_map "
+     << WordSignature::lex_unknown_map_2_string(unknown_word_map.get_type()) << '\n'
+     << "// conf: "
+     << "unknown_threshold " << unknown_word_cutoff
+     << '\n';
+
+  return ss.str();
+}

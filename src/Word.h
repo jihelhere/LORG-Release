@@ -48,6 +48,7 @@ public:
 
 public:
   static void init_lexicon_type(WordSignature* ws){wordsignature = ws;};
+  static void reset_lexicon_type(){delete wordsignature;}
 
 protected:
   static WordSignature* wordsignature; ///< use this ws to get the unknown word class/signature
