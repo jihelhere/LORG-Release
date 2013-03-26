@@ -12,7 +12,7 @@
 #include "utils/tick_count.h"
 
 
-TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parser(NULL)
+TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 {
   unix_parse_solution::init();
   json_parse_solution::init();
@@ -20,7 +20,8 @@ TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parser(NULL)
 
 TwoStageLorgParseApp::~TwoStageLorgParseApp()
 {
-    if(parser) delete parser;
+  for(auto& p : this->parsers)
+    if(p) delete p;
 }
 
 int TwoStageLorgParseApp::run()
@@ -62,29 +63,29 @@ int TwoStageLorgParseApp::run()
             // create and initialise chart
             {
               //                             BLOCKTIMING("initialise_chart");
-              parser->initialise_chart(sentence, brackets);
+              parsers[0]->initialise_chart(sentence, brackets);
             }
 
             // parse, aka create the coarse forest
             {
               //                             BLOCKTIMING("parse");
-              parser->parse(start_symbol);
+              parsers[0]->parse(start_symbol);
             }
             //use intermediate grammars to prune the chart
             {
               //                             BLOCKTIMING("beam_c2f");
-              parser->beam_c2f(start_symbol);
+              parsers[0]->beam_c2f(start_symbol);
             }
             // extract best solution with the finest grammar
-            if(parser->is_chart_valid(start_symbol))
+            if(parsers[0]->is_chart_valid(start_symbol))
             {
               //                             BLOCKTIMING("extract_solution");
-              parser->extract_solution();
+              parsers[0]->extract_solution();
             }
-            if(parser->is_chart_valid(start_symbol))
+            if(parsers[0]->is_chart_valid(start_symbol))
             {
               //                             BLOCKTIMING("get_parses");
-              parser->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+              parsers[0]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
             }
         }
         parse_solution * p_typed =
@@ -111,7 +112,7 @@ int TwoStageLorgParseApp::run()
         brackets.clear();
         comments.clear();
 
-        parser->clean();
+        parsers[0]->clean();
 
     }
 
@@ -137,16 +138,16 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
     output_annotations = configuration.get_value<bool>("output-annotations");
 
     if(verbose) { std::clog << "creating the parser... ";}
-    if((parser = ParserCKYAllFactory::create_parser(configuration)) == NULL) return false;
+    if((parsers[0] = ParserCKYAllFactory::create_parser(configuration)) == NULL) return false;
 
-    parser->set_nbthreads(this->nbthreads);
+    parsers[0]->set_nbthreads(this->nbthreads);
 
     if(verbose) {std::clog << "ok" << std::endl;}
 
     kbest = configuration.get_value<unsigned>("kbest");
 
     //creating tagger
-    tagger.set_word_rules(&(parser->get_words_to_rules()));
+    tagger.set_word_rules(&(parsers[0]->get_words_to_rules()));
 
 
     extract_features = configuration.get_value<bool>("extract-features");

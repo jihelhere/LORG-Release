@@ -18,7 +18,7 @@ private:
   bool read_config(ConfigTable& configuration);
   LorgOptions get_options() const;
 
-  ParserCKYAll * parser;
+  std::vector<ParserCKYAll *> parsers;
   Tagger tagger;
   bool output_annotations;
   unsigned kbest;
