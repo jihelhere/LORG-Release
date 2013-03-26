@@ -144,7 +144,10 @@ public:
     // options for the two stage parser
     po::options_description parser_opts("two-stage parser options");
     parser_opts.add_options()
+
         ("grammar,g", po::value<std::string>(), "sets the grammar for the parser")
+        ("grammar2,y", po::value<std::string>(), "sets the second grammar for the parser (dd)")
+
         ("alternate-grammar,F", po::value< std::vector<std::string> >(), "sets the additional grammars for the maxn parser")
         ("parser-type,p",po::value<std::string>()->default_value("max"),"sets the type of parsing - vit for Viterbi , max for MaxRule, maxn for MaxRule with several grammars, kmax for k-best maxrule, mind for minimal divergence, var for Matsuzaki's variational")
         ("max-type,m", po::value<std::string>()->default_value("product"), "type of calculation for the max algorithms: product, sum or prodsum")

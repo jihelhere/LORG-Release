@@ -19,7 +19,7 @@ private:
   LorgOptions get_options() const;
 
   std::vector<ParserCKYAll *> parsers;
-  Tagger tagger;
+  std::vector<Tagger> taggers;
   bool output_annotations;
   unsigned kbest;
 

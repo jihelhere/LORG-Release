@@ -95,9 +95,8 @@ bool LorgParseApp::read_config(ConfigTable& configuration)
   tokeniser = std::auto_ptr<Tokeniser>(TokeniserFactory::create_tokeniser(TokeniserFactory::English, rm_punctuation, input_mode, "", " ", comment_char));
 
   // get replace_numbers
-
-  std::string number_regex = configuration.get_value<std::string>("number-regex");
-  bool replace_numbers = configuration.exists("replace-numbers");
+  number_regex = configuration.get_value<std::string>("number-regex");
+  replace_numbers = configuration.exists("replace-numbers");
   if(verbose) {
     if(replace_numbers) {
       std::clog << "Replacing numbers from input with special token." << std::endl;
@@ -107,8 +106,6 @@ bool LorgParseApp::read_config(ConfigTable& configuration)
       std::clog << "Not replacing numbers from input with special token." << std::endl;
     }
   }
-
-  tagger = std::auto_ptr<Tagger>(new Tagger(NULL, replace_numbers, number_regex));
 
   return true;
 }

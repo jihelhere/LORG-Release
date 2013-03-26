@@ -134,6 +134,7 @@ bool SimpleLorgParseApp::read_config(ConfigTable& configuration)
 
   parser = new ParserCKYBest(grammar);
 
+  tagger = std::auto_ptr<Tagger>(new Tagger(NULL, replace_numbers, number_regex));
   tagger->set_word_rules(&(parser->get_words_to_rules()));
 
   return true;

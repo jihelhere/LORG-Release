@@ -84,7 +84,54 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
 annot_descendants_type
 create_annot_descendants(const std::vector< Tree<unsigned> >& annot_histories);
 
-ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
+
+std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename, bool verbose)
+{
+  std::vector<ParserCKYAll::AGrammar*> grammars;
+
+  std::vector<annot_descendants_type> all_annot_descendants;
+
+  // compute expected intermediate grammars
+
+  //get grammar
+  if(verbose) std::cerr << "Setting grammar to " << filename << ".\n";
+  ParserCKYAll::AGrammar * cg = new ParserCKYAll::AGrammar(filename);
+  if(verbose) std::cerr << "Grammar set\n";
+
+  //perform some sanity checks
+  if(cg->get_history_trees().empty() ||
+     cg->get_annotations_info().get_number_of_unannotated_labels() != cg->get_history_trees().size()) {
+
+    std::cerr << "Problem in the grammar file." << std::endl
+              << "Annotation history and number of annotations are inconsistent." << std::endl
+              << "Aborting now !" << std::endl;
+    delete cg;
+    exit(1);
+  }
+
+  if(verbose)
+    std::clog << "create intermediate grammars" << std::endl;
+
+  annot_descendants_type annot_descendants = create_annot_descendants(cg->get_history_trees());
+  grammars = create_intermediates(*cg, annot_descendants);
+
+  // compute priors for base grammar
+  //        std::clog << "before priors" << std::endl;
+  //  priors = grammars[0]->compute_priors();
+  cg->init();
+  //    std::clog << "smooth" << std::endl;
+  // TODO: options to set this from command line
+  cg->linear_smooth(0.01,0.1);
+  //    std::clog << "clean" << std::endl;
+  cg->remove_unlikely_annotations_all_rules(1e-10);
+  grammars.push_back(cg);
+  //    std::clog << "creation finished" << std::endl;
+
+  return grammars;
+}
+
+std::vector<ParserCKYAll *>
+ParserCKYAllFactory::create_parser(ConfigTable& config)
 {
     bool verbose = config.exists("verbose");
 
@@ -102,95 +149,50 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
       << " thread(s) to parse" << std::endl;
     }
 
-
+    std::vector<ParserCKYAll*> results;
 
     std::vector<double> priors;
     std::vector<annot_descendants_type> all_annot_descendants;
 
     std::vector<ParserCKYAll::AGrammar*> grammars;
-
-
     // get grammars
     if(config.exists("grammar")) {
         const std::string& filename = config.get_value< std::string >("grammar");
 
-
-        // compute expected intermediate grammars
-
-        //get grammar
-        if(verbose) std::cerr << "Setting grammar to " << filename << ".\n";
-        ParserCKYAll::AGrammar * cg = new ParserCKYAll::AGrammar(filename);
-        if(verbose) std::cerr << "Grammar set\n";
-
-        //perform some sanity checks
-        if(cg->get_history_trees().empty() ||
-           cg->get_annotations_info().get_number_of_unannotated_labels() != cg->get_history_trees().size()) {
-
-            std::cerr << "Problem in the grammar file." << std::endl
-            << "Annotation history and number of annotations are inconsistent." << std::endl
-            << "Aborting now !" << std::endl;
-            delete cg;
-            exit(1);
-        }
-
-
-        annot_descendants_type annot_descendants = create_annot_descendants(cg->get_history_trees());
-        all_annot_descendants.push_back(annot_descendants);
-
-
-        if(verbose)
-          std::clog << "create intermediate grammars" << std::endl;
-        grammars = create_intermediates(*cg, annot_descendants);
+        grammars = create_grammars(filename, verbose);
         // compute priors for base grammar
         //        std::clog << "before priors" << std::endl;
         priors = grammars[0]->compute_priors();
-        cg->init();
-        //    std::clog << "smooth" << std::endl;
-        // TODO: options to set this from command line
-        cg->linear_smooth(0.01,0.1);
-        //    std::clog << "clean" << std::endl;
-        cg->remove_unlikely_annotations_all_rules(1e-10);
-        grammars.push_back(cg);
-        //    std::clog << "creation finished" << std::endl;
-
     }
     else {
         std::cerr << "Grammar wasn't set. Exit program." << std::endl;
-        return NULL;
+        return results;
     }
 
 
+    annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
+    all_annot_descendants.push_back(annot_descendants);
+
+
+    std::cout << "here" << std::endl;
+
     std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs;
-    ParserCKYAll::AGrammar* gram_ptr;
-
-
-    // get fine grammar
     if(config.exists("alternate-grammar")) {
 
         const std::vector<std::string>& filenames = config.get_value<std::vector<std::string> >("alternate-grammar");
-
         if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0) {
             std::cerr << "Wrong parsing algorithm. Exit program." << std::endl;
-            return NULL;
+            return results;
         }
 
-        //    std::vector<std::string> filenames_ahi = config.get_value< std::vector<std::string> >("annot-histories");
+        for(unsigned i = 0; i < filenames.size(); ++i)
+        {
+          if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
+          alt_gs.push_back(create_grammars(filenames[i], verbose));
 
-        for(unsigned i = 0; i < filenames.size(); ++i) {
 
-            if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
-
-            gram_ptr = new ParserCKYAll::AGrammar(filenames[i]);
-
-            annot_descendants_type ad = create_annot_descendants(gram_ptr->get_history_trees());
-            all_annot_descendants.push_back(ad);
-            alt_gs.push_back(create_intermediates(*gram_ptr, ad));
-
-            gram_ptr->init();
-            gram_ptr->linear_smooth(0.01,0.1);
-            gram_ptr->remove_unlikely_annotations_all_rules(1e-10);
-            alt_gs[i].push_back(gram_ptr);
-
+          annot_descendants_type annot_descendants = create_annot_descendants(alt_gs.back().back()->get_history_trees());
+          all_annot_descendants.push_back(annot_descendants);
         }
     }
 
@@ -210,14 +212,47 @@ ParserCKYAll * ParserCKYAllFactory::create_parser(ConfigTable& config)
 
     unsigned min = config.get_value<unsigned>("min-length-beam");
 
-    return create_parser(grammars,
-                         string_to_pa(config.get_value<std::string>("parser-type")),
-                         string_to_mpc(config.get_value<std::string>("max-type")),
-                         priors, beam_threshold,
-                         alt_gs, all_annot_descendants, accurate, min,
-                         config.get_value<int>("stubbornness"),
-                         config.get_value<unsigned>("kbest"));
+    results.push_back(
+      create_parser(grammars,
+        string_to_pa(config.get_value<std::string>("parser-type")),
+        string_to_mpc(config.get_value<std::string>("max-type")),
+        priors, beam_threshold,
+        alt_gs, all_annot_descendants, accurate, min,
+        config.get_value<int>("stubbornness"),
+        config.get_value<unsigned>("kbest"))
+    );
 
+
+
+    std::vector<double> priors2;
+    std::vector<annot_descendants_type> all_annot_descendants2;
+    std::vector<ParserCKYAll::AGrammar*> grammars2;
+    std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs2;
+    // get grammars
+    if(config.exists("grammar2")) {
+        const std::string& filename = config.get_value< std::string >("grammar");
+
+        grammars2 = create_grammars(filename, verbose);
+        // compute priors for base grammar
+        //        std::clog << "before priors" << std::endl;
+        priors2 = grammars2[0]->compute_priors();
+
+        annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
+        all_annot_descendants2.push_back(annot_descendants);
+
+        results.push_back(
+          create_parser(grammars2,
+            string_to_pa(config.get_value<std::string>("parser-type")),
+            string_to_mpc(config.get_value<std::string>("max-type")),
+            priors2, beam_threshold,
+            alt_gs2, all_annot_descendants2, accurate, min,
+            config.get_value<int>("stubbornness"),
+            config.get_value<unsigned>("kbest"))
+        );
+
+    }
+
+    return results;
 }
 
 

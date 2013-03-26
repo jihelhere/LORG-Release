@@ -22,9 +22,12 @@ protected:
 
 protected:
   std::auto_ptr<Tokeniser> tokeniser;
-  std::auto_ptr<Tagger> tagger;
 
   unsigned max_length;
+
+  std::string number_regex;
+  bool replace_numbers;
+
 
   bool always_output_forms;
 };
