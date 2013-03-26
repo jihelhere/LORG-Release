@@ -24,6 +24,7 @@ private:
 
   Grammar<Rule,Rule,Rule>* grammar;
   ParserCKYBest* parser;
+  std::auto_ptr<Tagger> tagger;
 
   //not defined -> forbidden
   SimpleLorgParseApp(const SimpleLorgParseApp&);

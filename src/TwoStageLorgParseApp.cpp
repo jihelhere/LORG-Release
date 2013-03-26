@@ -58,7 +58,7 @@ int TwoStageLorgParseApp::run()
             //tag sentence
             {
               //                             BLOCKTIMING("tagger");
-              tagger.tag(sentence);
+              taggers[0].tag(sentence);
             }
             // create and initialise chart
             {
@@ -138,7 +138,9 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
     output_annotations = configuration.get_value<bool>("output-annotations");
 
     if(verbose) { std::clog << "creating the parser... ";}
-    if((parsers[0] = ParserCKYAllFactory::create_parser(configuration)) == NULL) return false;
+
+    this->parsers = ParserCKYAllFactory::create_parser(configuration);
+    if(this->parsers.empty()) return false;
 
     parsers[0]->set_nbthreads(this->nbthreads);
 
@@ -146,8 +148,12 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 
     kbest = configuration.get_value<unsigned>("kbest");
 
-    //creating tagger
-    tagger.set_word_rules(&(parsers[0]->get_words_to_rules()));
+    //creating taggers
+    taggers.resize(parsers.size());
+    for (size_t i = 0; i < taggers.size(); ++i)
+    {
+      taggers[i].set_word_rules(&(parsers[i]->get_words_to_rules()));
+    }
 
 
     extract_features = configuration.get_value<bool>("extract-features");
