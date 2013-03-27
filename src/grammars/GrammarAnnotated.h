@@ -54,7 +54,7 @@ public:
   void linear_smooth(double internal_threshold, double lexical_threshold);
 
 
-  inline const std::vector< Tree<unsigned> >&  get_history_trees() const {return history_trees;}
+  inline const std::map< short, Tree<unsigned> >&  get_history_trees() const {return history_trees;}
 
 
 private:
@@ -79,7 +79,7 @@ private:
   PathMatrix viterbi_decoding_paths;
 
   // history of annotations (trees of numbers)
-  std::vector< Tree<unsigned> > history_trees;
+  std::map<short, Tree<unsigned> > history_trees;
 };
 
 
@@ -91,7 +91,7 @@ private:
  *
  * functions. Defined in GrammarAnnotated.cpp
  **************************************************************************************/
-void calculate_expected_counts(uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >& trans,
+void calculate_expected_counts(const uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >& trans,
                                const AnnotatedLabelsInfo& ali,
                                std::vector<std::vector<double> >& result);
 

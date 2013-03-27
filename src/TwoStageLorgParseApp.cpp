@@ -39,8 +39,6 @@ int TwoStageLorgParseApp::run()
     int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
     tick_count parse_start = tick_count::now();
 
-    std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
-
     //read input and fill raw_sentence, sentence and brackets
     while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
@@ -55,65 +53,84 @@ int TwoStageLorgParseApp::run()
                     std::clog << "<" << i->get_form() << ">";
                 std::clog << "\n";
             }*/
+
+          for (size_t i = 0; i < parsers.size(); ++i)
+          {
+            std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
+
+            //std::cout << "iteration " << i << std::endl;
             //tag sentence
             {
               //                             BLOCKTIMING("tagger");
-              taggers[0].tag(sentence);
+              //std::cout << "tagging " << i << std::endl;
+              taggers[i].tag(sentence);
             }
             // create and initialise chart
             {
               //                             BLOCKTIMING("initialise_chart");
-              parsers[0]->initialise_chart(sentence, brackets);
+              //std::cout << "intialisation " << i << std::endl;
+              parsers[i]->initialise_chart(sentence, brackets);
             }
+
 
             // parse, aka create the coarse forest
             {
               //                             BLOCKTIMING("parse");
-              parsers[0]->parse(start_symbol);
+              //std::cout << "parsing " << i << std::endl;
+              parsers[i]->parse(start_symbol);
             }
+
             //use intermediate grammars to prune the chart
             {
               //                             BLOCKTIMING("beam_c2f");
-              parsers[0]->beam_c2f(start_symbol);
+              //std::cout << "beaming " << i << std::endl;
+              parsers[i]->beam_c2f(start_symbol);
             }
+
             // extract best solution with the finest grammar
-            if(parsers[0]->is_chart_valid(start_symbol))
+            if(parsers[i]->is_chart_valid(start_symbol))
             {
               //                             BLOCKTIMING("extract_solution");
-              parsers[0]->extract_solution();
+
+              //std::cout << "extracting " << i << std::endl;
+              parsers[i]->extract_solution();
             }
-            if(parsers[0]->is_chart_valid(start_symbol))
+
+            if(parsers[i]->is_chart_valid(start_symbol))
             {
               //                             BLOCKTIMING("get_parses");
-              parsers[0]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+              parsers[i]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+              //std::cout << "getting " << i << std::endl;
             }
-        }
-        parse_solution * p_typed =
-          parse_solution::factory.create_object(output_format,
-                                                parse_solution(raw_sentence, ++count,
-                                                               sentence.size(), best_trees,
-                                                               (verbose) ? (tick_count::now() - sent_start).seconds() : 0,
-                                                               verbose, comments, extract_features)
-                                                );
-        p_typed->print(*out);
-        delete p_typed;
+            parse_solution * p_typed =
+                parse_solution::factory.create_object(output_format,
+                                                      parse_solution(raw_sentence, ++count,
+                                                                     sentence.size(), best_trees,
+                                                                     (verbose) ? (tick_count::now() - sent_start).seconds() : 0,
+                                                                     verbose, comments, extract_features)
+                                                      );
+            p_typed->print(*out);
+            delete p_typed;
+
+
+            //sanity
+            for(unsigned i = 0; i < best_trees.size(); ++i) { // delete solutions
+              delete best_trees[i].first;
+            }
+            best_trees.clear();
+            parsers[i]->clean();
+          }
 
         ///*
         if(verbose && count % 50 == 0)
             std::clog << count << " parsed sentences in " << (tick_count::now() - parse_start).seconds() << " sec" << std::endl;
         //*/
 
-        //sanity
-        for(unsigned i = 0; i < best_trees.size(); ++i) { // delete solutions
-            delete best_trees[i].first;
+
         }
-        best_trees.clear();
         sentence.clear();
         brackets.clear();
         comments.clear();
-
-        parsers[0]->clean();
-
     }
 
     *out << std::flush;

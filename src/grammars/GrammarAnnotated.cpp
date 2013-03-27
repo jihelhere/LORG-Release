@@ -203,7 +203,7 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
 
 
 
- void calculate_expected_counts(uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >& trans,
+ void calculate_expected_counts(const uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >& trans,
                                 const AnnotatedLabelsInfo& ali,
                                 std::vector<std::vector<double> >& result)
 {
@@ -223,10 +223,12 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
   double epsilon = 1;
 
 
+  uomap< unsigned, uomap<int,uomap<unsigned,double> > > empty_trans;
+  uomap<int,uomap<unsigned,double> > empty_annot_trans;
 
   while(n_iter-- && epsilon > 1.0e-10) {
 
-    //    std::clog << n_iter << " : " << epsilon << std::endl;
+    //std::clog << n_iter << " : " << epsilon << std::endl;
 
     for (size_t i = 0; i < result.size(); ++i)
       {
@@ -237,16 +239,21 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
 
         std::vector<double>& result_i = result[i];
         //if(n_iter == 50)
-          result_i.resize(ali.get_number_of_annotations(i));
+        result_i.resize(ali.get_number_of_annotations(i));
 
-        uomap< unsigned, uomap<int,uomap<unsigned,double> > >& map = trans[i];
+        if(!trans.count(i))
+          continue;
+
+        const uomap< unsigned, uomap<int,uomap<unsigned,double> > >& map =
+            trans.count(i) ? trans.at(i) : empty_trans;
 
         for (unsigned annot_i = 0; annot_i < result_i.size(); ++annot_i)
         {
           //std::clog << "annot_i : " << annot_i << std::endl;
 
           const double& old_value = result_i[annot_i];
-          uomap<int,uomap<unsigned,double> >& lhs_map = map[annot_i];
+          const uomap<int,uomap<unsigned,double> >& lhs_map =
+              map.count(annot_i) ? map.at(annot_i) : empty_annot_trans;
 
           for (unsigned j = 0; j < result.size(); ++j)
           {
@@ -259,15 +266,18 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
             //if(n_iter == 50)
             temp_j.resize(ali.get_number_of_annotations(j));
 
-            uomap<int,uomap<unsigned,double> >::iterator found_key;
+            uomap<int,uomap<unsigned,double> >::const_iterator found_key;
             if( (found_key = lhs_map.find(j)) != lhs_map.end() ) {
 
               //                std::clog << "here" << std::endl;
               for (unsigned annot_j = 0; annot_j < temp_j.size(); ++annot_j)
               {
-                // std::clog << "annot_j : " << annot_j << std::endl;
+                // std::clog
+                //     << SymbolTable::instance_nt().get_label_string(j) << " "
+                //     << "annot_j : " << annot_j << std::endl;
                 //                try {
-                temp_j[annot_j] += old_value * found_key->second[annot_j];
+                if (found_key->second.count(annot_j))
+                  temp_j[annot_j] += old_value * found_key->second.at(annot_j);
                   //                }
                   //                catch(std::out_of_range& e) {}
                 //                    std::clog << "there" << std::endl;

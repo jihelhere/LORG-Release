@@ -182,7 +182,9 @@ public:
 
   void initialise_chart(const std::vector< Word >& sentence, const std::vector<bracketing>& brackets)
   {
-    chart = new Chart(sentence, get_nonterm_count(), brackets);
+    chart = new Chart(sentence, SymbolTable::instance_nt().get_symbol_count(),
+                      //get_nonterm_count(),
+                      brackets);
 //     std::cout << *chart << std::endl;
 
   }

@@ -23,8 +23,6 @@
 
 #include "utils/hash_impl.h"
 
-
-
 #include "EMTrainer.h"
 
 #include "edges/BinaryTrainingTree.h"
