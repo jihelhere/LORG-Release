@@ -601,11 +601,14 @@ void TrainingGrammar::compact_all_rules()
 
 std::ostream& operator<<(std::ostream& os, const TrainingGrammar& gram)
 {
-    os << gram.get_annotations_info() << std::endl;
+  auto ali = gram.get_annotations_info();
 
-    for(unsigned i = 0; i < gram.get_annot_histories().size();++i) {
-        os << gram.get_annot_histories()[i] << std::endl;
-    }
+  for(unsigned i = 0; i < ali.get_number_of_unannotated_labels(); ++i)
+    os << "ainfos " << SymbolTable::instance_nt().translate(i)
+        //<< " " << ali.get_number_of_annotations(i)
+       << " " << gram.get_annot_histories()[i]
+       << std::endl;
+
 
     helpers::out output(os);
     gram.perform_action_all_internal_rules(output);

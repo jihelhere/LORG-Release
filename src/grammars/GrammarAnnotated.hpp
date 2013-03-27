@@ -509,18 +509,24 @@ GrammarAnnotated<Bin,Un,Lex>::compute_priors() const
   std::vector<std::vector<double> > expected_counts;
   calculate_expected_counts(transition_probabilities, get_annotations_info(), expected_counts);
 
+  //std::clog << "here" << std::endl;
+
   // assume only one annotation !!!!!
   double sum = 0;
   for (unsigned i = 0; i < expected_counts.size(); ++i)
   {
-    sum += expected_counts[i][0];
+    // std::clog << SymbolTable::instance_nt().get_label_string(i) << std::endl;
+    // std::clog << expected_counts[i].size() << std::endl;
+    if(!expected_counts[i].empty())
+      sum += expected_counts[i][0];
   }
 
   std::vector<double> res(expected_counts.size());
 
   for (unsigned i = 0; i < res.size(); ++i)
   {
-    res[i] = expected_counts[i][0] / sum;
+    if(!expected_counts[i].empty())
+      res[i] = expected_counts[i][0] / sum;
   }
 
   return res;

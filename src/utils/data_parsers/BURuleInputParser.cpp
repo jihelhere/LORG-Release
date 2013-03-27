@@ -135,37 +135,18 @@ burule_parser() : burule_parser::base_type(rules)
 };
 
 template <typename Iterator>
-struct annotation_map_parser : boost::spirit::qi::grammar<Iterator, std::pair<int,unsigned>(), mychar::space_type>
+struct annotation_map_parser : boost::spirit::qi::grammar<Iterator, std::pair<int, Tree<unsigned> >(), mychar::space_type>
 {
   annotation_map_parser() : annotation_map_parser::base_type(kvpair)
   {
     using namespace qi::labels;
 
-    kvpair %= qi::lit("ainfos")  >> nt_symbol >> qi::uint_ ;
+    kvpair %= qi::lit("ainfos")  >> nt_symbol >> ptbtree;
     nt_symbol = symbol [_val = phoenix::bind(&SymbolTable::insert,
 					     SymbolTable::instance_nt(),
 					     qi::labels::_1)];
     symbol %= qi::lexeme[+(qi::char_ - ' ' - '\n')];
 
-    kvpair.name("kvpair");
-    nt_symbol.name("nt_symbol");
-    symbol.name("symbol");
-
-    qi::on_error<qi::fail>(kvpair, std::clog << phoenix::val("Error!") << std::endl);
-  }
-
-  qi::rule<Iterator, std::pair<int,unsigned>(),mychar::space_type> kvpair;
-  qi::rule<Iterator, int(),mychar::space_type> nt_symbol;
-  qi::rule<Iterator, std::string(),mychar::space_type> symbol;
-};
-
-template <typename Iterator>
-struct ptbpstree_parser : boost::spirit::qi::grammar<Iterator, std::vector< Tree<unsigned> >(), mychar::space_type>
-{
-  ptbpstree_parser() : ptbpstree_parser::base_type(ptbtrees)
-  {
-    using namespace qi::labels;
-    ptbtrees %= +ptbtree;
 
     ptbtree = '(' >> tree [_val = qi::labels::_1] >> ')';
 
@@ -184,25 +165,30 @@ struct ptbpstree_parser : boost::spirit::qi::grammar<Iterator, std::vector< Tree
 
     id %= qi::uint_;
 
-    ptbtrees.name("ptbtrees");
+
+
+
+
+    kvpair.name("kvpair");
+    nt_symbol.name("nt_symbol");
+    symbol.name("symbol");
+
     ptbtree.name("ptbtree");
     tree.name("tree");
     id.name("id");
 
-    qi::on_error<qi::fail>(ptbtree, std::clog
-			   << phoenix::val("Error! Expecting ")
-			   <<  qi::labels::_4                               // what failed?
-			   << phoenix::val(" here: \"")
-			   << phoenix::construct<std::string>(qi::labels::_3, qi::labels::_2)   // iterators to error-pos, end
-			   << phoenix::val("\"")
-			   << std::endl
-			   );
+    qi::on_error<qi::fail>(kvpair, std::clog << phoenix::val("Error!") << std::endl);
   }
 
-  qi::rule<Iterator, std::vector< Tree<unsigned> >(), mychar::space_type> ptbtrees;
+  qi::rule<Iterator, std::pair<int, Tree<unsigned> >(),mychar::space_type> kvpair;
+  qi::rule<Iterator, int(),mychar::space_type> nt_symbol;
+  qi::rule<Iterator, std::string(),mychar::space_type> symbol;
+
   qi::rule<Iterator,  Tree<unsigned> (), mychar::space_type> ptbtree;
   qi::rule<Iterator,  Tree<unsigned> (), boost::spirit::locals< unsigned, std::vector< Tree<unsigned> > >, mychar::space_type> tree;
   qi::rule<Iterator, unsigned(), mychar::space_type> id;
+
+
 };
 
 //////////////////////
@@ -258,8 +244,7 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
 				      std::vector<LexicalRule>& lexicals,
 				      std::vector<URule>& unaries,
 				      std::vector<BRule>& n_aries,
-                                      std::map<short, unsigned short>& num_annotations_map,
-                                      std::vector< Tree<unsigned> >& history_trees,
+                                      std::map<short, Tree<unsigned> >& history_tree_map,
                                       std::map<std::string, std::string>& conf
 				      ) throw(ParseError)
 {
@@ -286,12 +271,10 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
   typedef std::string::const_iterator iterator_type;
   typedef burule_parser<iterator_type> parser;
   typedef annotation_map_parser<iterator_type> am_parser;
-  typedef ptbpstree_parser<iterator_type> tree_parser;
   typedef conf_parser<iterator_type> c_parser;
 
   parser p;
   am_parser a;
-  tree_parser t;
 
   c_parser c;
 
@@ -305,19 +288,13 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
     conf.insert(conf_pair);
   } while (res && iter != end);
 
-
   // Read annotations Map
-  // lines like: Symbol Num_annot
+  // lines like: Symbol History_Tree
   do {
-    std::pair<int,unsigned> m;
+    std::pair<int, Tree<unsigned> > m;
     res = phrase_parse(iter, end, a, mychar::space, m);
-    num_annotations_map.insert(m);
+    history_tree_map.insert(m);
   } while(res && iter != end);
-
-  // Read history maps
-  do {
-    res = phrase_parse(iter, end, t, mychar::space, history_trees);
-  } while (res && iter != end);
 
 
   std::vector<AnnotatedRule *> v;
@@ -368,7 +345,6 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
           n_aries.push_back(*static_cast<BRule*>(r));
     delete(r);
   }
-
 
   //std::cout << "got here " << std::endl;
   in_file.close();

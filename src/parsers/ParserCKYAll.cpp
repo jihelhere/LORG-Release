@@ -14,15 +14,13 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
     AnnotatedContents(),
     viterbi_decoding_paths()
 {
-  std::map<short ,unsigned short> map;
-
   std::vector<BRule> bin;
   std::vector<URule> un;
   std::vector<LexicalRule> lex;
 
   std::map<std::string, std::string>  gram_conf;
 
-  BURuleInputParser::read_rulefile(filename, lex, un, bin, map, history_trees, gram_conf);
+  BURuleInputParser::read_rulefile(filename, lex, un, bin, history_trees, gram_conf);
 
   // TODO this should be moved somewhere else
   if (gram_conf.count("lex_unknown_map"))
@@ -36,9 +34,23 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
   }
 
 
+  // std::cout << history_trees.size() << std::endl;
+  // for(const auto& e : history_trees)
+  // {
+  //   std::cout << "map: "
+  //             << e.first << " "
+  //             << SymbolTable::instance_nt().get_label_string(e.first) << " "
+  //             << e.second << std::endl;
+  // }
 
 
-  label_annotations.set_num_annotations_map(map);
+  std::map<short, unsigned short> map2;
+  for(auto& e: history_trees)
+  {
+    map2.insert(std::make_pair(e.first, e.second.number_of_leaves()));
+  }
+
+  label_annotations.set_num_annotations_map(map2);
 
   lexical_rules.insert(lexical_rules.end(),lex.begin(),lex.end());
   unary_rules.insert(unary_rules.end(),un.begin(),un.end());
@@ -49,6 +61,7 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
   //  std::clog << "before uncompact" << std::endl;
   for(std::vector<BRuleC2f>::iterator brule_it = binary_rules.begin();
       brule_it != binary_rules.end(); ++brule_it) {
+    // std::cout << *brule_it << std::endl;
 
     brule_it->uncompact(label_annotations.get_number_of_annotations(brule_it->get_rhs0()),
                         label_annotations.get_number_of_annotations(brule_it->get_rhs1()));
@@ -56,6 +69,9 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
 
   for(std::vector<URuleC2f>::iterator urule_it = unary_rules.begin();
       urule_it != unary_rules.end(); ++urule_it) {
+
+    //std::cout << *urule_it << std::endl;
+
     urule_it->uncompact(label_annotations.get_number_of_annotations(urule_it->get_rhs0()));
   }
 

@@ -82,7 +82,7 @@ std::vector<ParserCKYAll::AGrammar*>
 create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_type& annot_descendants);
 
 annot_descendants_type
-create_annot_descendants(const std::vector< Tree<unsigned> >& annot_histories);
+create_annot_descendants(const std::map<short, Tree<unsigned> >& annot_histories);
 
 
 std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename, bool verbose)
@@ -98,26 +98,42 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
   ParserCKYAll::AGrammar * cg = new ParserCKYAll::AGrammar(filename);
   if(verbose) std::cerr << "Grammar set\n";
 
-  //perform some sanity checks
-  if(cg->get_history_trees().empty() ||
-     cg->get_annotations_info().get_number_of_unannotated_labels() != cg->get_history_trees().size()) {
+  // //perform some sanity checks
+  // if(cg->get_history_trees().empty() ||
+  //    cg->get_annotations_info().get_number_of_unannotated_labels() != cg->get_history_trees().size())
+  // {
 
-    std::cerr << "Problem in the grammar file." << std::endl
-              << "Annotation history and number of annotations are inconsistent." << std::endl
-              << "Aborting now !" << std::endl;
-    delete cg;
-    exit(1);
-  }
+  //   if (cg->get_history_trees().empty())
+  //   {
+  //   std::cerr << "Problem in the grammar file." << std::endl
+  //             << "Annotation history is empty." << std::endl
+  //             << "Aborting now !" << std::endl;
+  //   }
+  //   else
+  //   {
+  //     std::cerr << cg->get_annotations_info().get_number_of_unannotated_labels()
+  //               << " " << cg->get_history_trees().size() << std::endl;
+
+  //     std::cerr << "Problem in the grammar file." << std::endl
+  //               << "Annotation history and number of annotations are inconsistent." << std::endl
+  //               << "Aborting now !" << std::endl;
+  //   }
+  //   delete cg;
+  //   exit(1);
+  // }
 
   if(verbose)
     std::clog << "create intermediate grammars" << std::endl;
 
+  //std::clog << "create_annot_descendants" << std::endl;
   annot_descendants_type annot_descendants = create_annot_descendants(cg->get_history_trees());
+  //  std::clog << "create_intermediates" << std::endl;
   grammars = create_intermediates(*cg, annot_descendants);
 
   // compute priors for base grammar
   //        std::clog << "before priors" << std::endl;
   //  priors = grammars[0]->compute_priors();
+  //  std::clog << "init" << std::endl;
   cg->init();
   //    std::clog << "smooth" << std::endl;
   // TODO: options to set this from command line
@@ -161,7 +177,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
         grammars = create_grammars(filename, verbose);
         // compute priors for base grammar
-        //        std::clog << "before priors" << std::endl;
+        //std::clog << "before priors" << std::endl;
         priors = grammars[0]->compute_priors();
     }
     else {
@@ -230,15 +246,17 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
     std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs2;
     // get grammars
     if(config.exists("grammar2")) {
-        const std::string& filename = config.get_value< std::string >("grammar");
+        const std::string& filename = config.get_value< std::string >("grammar2");
 
         grammars2 = create_grammars(filename, verbose);
         // compute priors for base grammar
-        //        std::clog << "before priors" << std::endl;
+        //std::clog << "before priors2" << std::endl;
         priors2 = grammars2[0]->compute_priors();
+        //std::clog << "after priors2" << std::endl;
 
-        annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
-        all_annot_descendants2.push_back(annot_descendants);
+
+        annot_descendants_type annot_descendants2 = create_annot_descendants(grammars2.back()->get_history_trees());
+        all_annot_descendants2.push_back(annot_descendants2);
 
         results.push_back(
           create_parser(grammars2,
@@ -267,44 +285,51 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
  *   \param annot_histories the trees
  */
 annot_descendants_type
-create_annot_descendants(const std::vector< Tree<unsigned> >& annot_histories)
+    create_annot_descendants(const std::map<short, Tree<unsigned> >& annot_histories)
 {
   annot_descendants_type result;
 
+  // how many intermediate grammars should we create ?
   unsigned height = 0;
-  for (unsigned i = 0; i < annot_histories.size(); ++i)
+  for (auto& e : annot_histories)
   {
-    if(annot_histories[i].height() > height)
-      height = annot_histories[i].height();
+    if(e.second.height() > height)
+      height = e.second.height();
   }
   //    std::clog << height << std::endl;
-
   result.resize(height);
 
-  for (unsigned nt_idx = 0; nt_idx < annot_histories.size(); ++nt_idx)
+  // how many symbols (some symbols may not be in the grammar)
+  unsigned nb_symbols = SymbolTable::instance_nt().get_symbol_count();
+
+  for (unsigned nt_idx = 0; nt_idx < nb_symbols; ++nt_idx)
   {
     //      std::clog << annot_histories[nt_idx] << std::endl;
 
     for(unsigned gram_idx = 0; gram_idx < height; ++gram_idx)
     {
       //    std::clog << gram_idx << " : " << std::endl;
-      result[gram_idx].resize(annot_histories.size());
+      result[gram_idx].resize(nb_symbols);
 
-      std::vector<Tree<unsigned>::const_depth_first_iterator> subs = annot_histories[nt_idx].get_at_depth(gram_idx);
-      result[gram_idx][nt_idx].resize(subs.size());
+      if (annot_histories.count(nt_idx))
+      {
+         std::vector<Tree<unsigned>::const_depth_first_iterator> subs = annot_histories.at(nt_idx).get_at_depth(gram_idx);
+         result[gram_idx][nt_idx].resize(subs.size());
 
-      for(std::vector<Tree<unsigned>::const_depth_first_iterator>::const_iterator i(subs.begin()); i != subs.end(); ++i) {
-
-        std::vector<unsigned> descs;
-        Tree<unsigned>::const_depth_first_iterator copy = *i;
-        copy.down_first();
-        while(copy != annot_histories[nt_idx].dfend())
+        for(std::vector<Tree<unsigned>::const_depth_first_iterator>::const_iterator i(subs.begin()); i != subs.end(); ++i)
         {
-          //    std::clog << '\t' << gram_idx << "->" << nt_idx << "->" << **i << "->" << *copy << std::endl;
-          descs.push_back(*copy);
-          copy.right();
+
+          std::vector<unsigned> descs;
+          Tree<unsigned>::const_depth_first_iterator copy = *i;
+          copy.down_first();
+          while(copy != annot_histories.at(nt_idx).dfend())
+          {
+            //    std::clog << '\t' << gram_idx << "->" << nt_idx << "->" << **i << "->" << *copy << std::endl;
+            descs.push_back(*copy);
+            copy.right();
+          }
+          result[gram_idx][nt_idx][**i]=descs;
         }
-        result[gram_idx][nt_idx][**i]=descs;
       }
     }
   }
@@ -317,12 +342,12 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
 {
   std::vector<ParserCKYAll::AGrammar*> result(annot_descendants.size() -1);
 
-  //  std::clog << "before transition" << std::endl;
+  //std::clog << "before transition" << std::endl;
   uomap<int, uomap<unsigned, uomap<int, uomap<unsigned, double > > > >transition_probabilities;
   grammar.compute_transition_probabilities(transition_probabilities);
   //  std::clog << "after transition" << std::endl;
 
-  //  std::clog << "before expected counts" << std::endl;
+  //std::clog << "before expected counts" << std::endl;
   std::vector<std::vector<double> > expected_counts;
   calculate_expected_counts(transition_probabilities, grammar.get_annotations_info(), expected_counts);
   //  std::clog << "after expected counts" << std::endl;

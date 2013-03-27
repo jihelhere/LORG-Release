@@ -199,6 +199,11 @@ template<class Types>
 inline
 bool PCKYAllCell<Types>::exists_edge(int label) const
 {
+  // std::cout << SymbolTable::instance_nt().get_label_string(label)
+  //           << " " << label
+  //           << " " << max_size
+  //           << std::endl;
+
   assert(label >= 0);
   assert(label < (int) max_size);
   return (not edges[label].is_closed());

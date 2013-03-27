@@ -65,13 +65,17 @@ void ParserCKYAll_Impl<Types>::parse(int start_symbol) const
             cell.beam(priors, beam_threshold);
 
           // if(cell.is_closed())
-            //   std::cout << "(" << i << "," <<j << ") is closed" << std::endl;
+          //   std::cout << "(" << cell.get_begin() << "," << cell.get_end() << ") is closed" << std::endl;
+          // else
+          //   std::cout << "(" << cell.get_begin() << "," << cell.get_end() << ") is not closed" << std::endl;
         }
       }
       );
     }
     //actual cky is here
     {
+      //std::clog << "CKY" << std::endl;
+
       //               BLOCKTIMING("process_internal_rules");
       process_internal_rules(beam_threshold);
     }
@@ -93,35 +97,50 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
                                               Cell& right_cell,
                                               Cell& result_cell) const
 {
+
+  //  std::cout << "get_candidates" << std::endl;
+
   //   {
-    //               BLOCKTIMING("get_candidates counting");
-    // count the number of daughters to create
-    //     std::vector<int> nb_rules(result_cell.get_max_size(), 0);
-    //     for (const auto & same_rhs0_rules: brules) {
-      //       if (left_cell.exists_edge(same_rhs0_rules.rhs0)) {
-        //         for(const auto & same_rhs: same_rhs0_rules) {
-          //           if (right_cell.exists_edge(same_rhs.rhs1)) {
-            //             for(const auto & rule: same_rhs) {
-              //               ++ nb_rules[rule->get_lhs()];
-            //             }
-            //           }
-            //         }
-            //       }
-            //     }
-            //     // create daughters
-            //     result_cell.reserve_binary_daughters(nb_rules);
-            //   }
+  //               BLOCKTIMING("get_candidates counting");
+  // count the number of daughters to create
+  //     std::vector<int> nb_rules(result_cell.get_max_size(), 0);
+  //     for (const auto & same_rhs0_rules: brules) {
+  //       if (left_cell.exists_edge(same_rhs0_rules.rhs0)) {
+  //         for(const auto & same_rhs: same_rhs0_rules) {
+  //           if (right_cell.exists_edge(same_rhs.rhs1)) {
+  //             for(const auto & rule: same_rhs) {
+  //               ++ nb_rules[rule->get_lhs()];
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     // create daughters
+  //     result_cell.reserve_binary_daughters(nb_rules);
+  //   }
   {
     //               BLOCKTIMING("get_candidates creating");
     //iterating through all the rules P -> L R, indexed by L
+
+
     for (const auto & same_rhs0_rules: brules) {
+
+      //std::cout << "accessing left" << std::endl;
+
       Edge & left_edge = left_cell.get_edge(same_rhs0_rules.rhs0) ;
       if (not left_edge.is_closed()) {
+
+        //std::cout << "accessing LR1" << std::endl;
         double LR1 = left_edge.get_annotations().inside_probabilities.array[0];
+
         //iterating through all the rules P -> L R, indexed by R, L fixed
         for(const auto & same_rhs: same_rhs0_rules) {
+
+          // std::cout << "accessing right" << std::endl;
           Edge & right_edge = right_cell.get_edge(same_rhs.rhs1);
           if (not right_edge.is_closed()) {
+
+            // std::cout << "accessing LR" << std::endl;
             double LR = LR1 * right_edge.get_annotations().inside_probabilities.array[0];
 
             //iterating through all the rules P -> L R, indexed by P, R and L fixed
@@ -155,6 +174,8 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
   const unsigned & end   = cell.get_end();
   const bool & isroot = cell.get_top();
 
+  //std::cout << "processing (" << begin << "," << end << ")" << std::endl;
+
   // look for all possible new edges
 
   //application of binary rules
@@ -163,15 +184,21 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
     for (unsigned m = begin; m < end; ++m) {
       // m is the mid-point
       Cell& left_cell = chart->access(begin,m);
+      //  std::cout << "here1" << std::endl;
       if(!left_cell.is_closed()) {
         Cell& right_cell = chart->access(m+1,end);
+        //std::cout << "here2" << std::endl;
         if( !right_cell.is_closed())
+          //std::cout << "here3" << std::endl;
           get_candidates(left_cell,right_cell,cell);
+          //std::cout << "here4" << std::endl;
       }
     }
-    //  std::cout << result_cell << std::endl;
   }
   //unary rules
+
+  //  std::clog << "unaries" << std::endl;
+
   {
     // BLOCKTIMING("process_cell unary");
     add_unary_internal(cell, isroot);
