@@ -190,7 +190,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
     all_annot_descendants.push_back(annot_descendants);
 
 
-    std::cout << "here" << std::endl;
+    //std::cout << "here" << std::endl;
 
     std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs;
     if(config.exists("alternate-grammar")) {

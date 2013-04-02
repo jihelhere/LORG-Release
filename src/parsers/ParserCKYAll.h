@@ -75,6 +75,8 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   */
   virtual void extract_solution()=0;
 
+  virtual void simple_extract_solution()=0;
+
   virtual   void initialise_chart(const std::vector< Word >& s,
                                   const std::vector<bracketing>& bs) = 0;
 
@@ -83,9 +85,18 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   virtual void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
                           std::vector<std::pair<PtbPsTree *,double> >& best_trees) = 0;
 
+  virtual std::set< std::tuple<const AnnotatedRule*,int,int> >
+  get_vectorized_representation(int start_symbol) = 0;
+
+  virtual void update_relaxations(std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>&, bool) = 0;
+
   virtual void clean() = 0;
 
   virtual void set_nbthreads(unsigned)=0;
+
+
+  virtual double get_best_score(int) const =0 ;
+
 
  protected: // attributes
   std::vector<AGrammar *> grammars; ///< the grammars to beam
@@ -178,6 +189,11 @@ public:
      \return a score
   */
   double get_sentence_probability() const;
+
+  double get_best_score(int start_symbol) const
+  {
+    return chart->get_score(start_symbol,0);
+  }
 
 
   void initialise_chart(const std::vector< Word >& sentence, const std::vector<bracketing>& brackets)
@@ -294,6 +310,10 @@ protected:
 
   void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
                   std::vector<std::pair<PtbPsTree *,double> >& best_trees);
+
+  std::set< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
+
+  void update_relaxations(std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>&, bool);
 
 
  protected: // attributes

@@ -66,6 +66,31 @@ void ParserCKYAllMinDivKB::extract_solution()
 }
 
 
+void ParserCKYAllMinDivKB::simple_extract_solution()
+{
+  /* min divergence computation here ! : fixed point iterations */
+  while (false) {
+    compute_inside_outside_q_probabilities();
+    update_q();
+  }
+
+  // compute the probability of the best subtree starting at each edge daughter
+  // and initialize structures "candidates" and "derivations" of the edge
+  {
+    //     BLOCKTIMING("initialise_candidates");
+    initialise_candidates();
+  }
+  //  std::cout << "after init cand" << std::endl;
+
+  // complete structures "derivations" of the edge
+  // from structures "candidates"
+  {
+    //     BLOCKTIMING("extend_all_derivations");
+    extend_all_derivations();
+  }
+}
+
+
 #include "parsers/ParserCKYAll.hpp"
 #include "MinDivDaughters.hpp"
 

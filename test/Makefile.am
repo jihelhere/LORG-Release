@@ -7,6 +7,16 @@ check_PROGRAMS              = twostage_lorgparser_test
 noinst_PROGRAMS             = $(check_PROGRAMS)
 AM_CPPFLAGS= -I${top_srcdir}/src -I${top_srcdir}/src/utils -I${top_srcdir}/src/classifier -I${top_srcdir}/src/lexicon -I${top_srcdir}/src/parsers -I${top_srcdir}/src/edges -I${top_srcdir}/src/grammars
 
+
+#    ../src/edges/MaxRuleLogInsideComputer.h
+#    ../src/edges/MaxRuleProbabilityKB.h
+#    ../src/edges/MaxRuleProbabilityMultiple.h
+#    ../src/edges/ViterbiProbability.h
+#    ../src/parsers/ParserCKYAllMaxVar.h
+#    ../src/parsers/ParserCKYAllMaxVarKB.h
+#    ../src/parsers/ParserCKYAllMaxVarMultiple.h
+#    ../src/parsers/ParserCKYAllViterbi.h
+
 common_sources = ../src/Bracketing.h \
     ../src/ChartCKY.h \
     ../src/classifier/Classifier.h \
@@ -16,14 +26,10 @@ common_sources = ../src/Bracketing.h \
     ../src/edges/AnnotationInfo.h \
     ../src/edges/BinaryTrainingTree.h \
     ../src/edges/Edge.h \
-    ../src/edges/MaxRuleLogInsideComputer.h \
-    ../src/edges/MaxRuleProbabilityKB.h \
-    ../src/edges/MaxRuleProbabilityMultiple.h \
     ../src/edges/PackedEdge.h \
     ../src/edges/PackedEdgeDaughters.h \
     ../src/edges/PackedEdgeProbability.h \
     ../src/edges/TrainingNode.h \
-    ../src/edges/ViterbiProbability.h \
     ../src/grammars/AnnotatedLabelsInfo.h \
     ../src/grammars/compact_binary_rules.h \
     ../src/grammars/Grammar.h \
@@ -44,10 +50,6 @@ common_sources = ../src/Bracketing.h \
     ../src/parsers/ParserCKY.h \
     ../src/parsers/ParserCKYAll.h \
     ../src/parsers/ParserCKYAllFactory.h \
-    ../src/parsers/ParserCKYAllMaxVar.h \
-    ../src/parsers/ParserCKYAllMaxVarKB.h \
-    ../src/parsers/ParserCKYAllMaxVarMultiple.h \
-    ../src/parsers/ParserCKYAllViterbi.h \
     ../src/parsers/ParserCKYBest.h \
     ../src/ParseSolution.h \
     ../src/PCKYAllCell.h \

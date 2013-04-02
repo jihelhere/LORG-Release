@@ -18,6 +18,8 @@ public:
   virtual ~ParserCKYAllViterbi() { delete fine_grammar; fine_grammar = NULL;};
 
   void extract_solution();
+  void simple_extract_solution();
+
   const AGrammar& get_fine_grammar() const;
 
 private: // attributes

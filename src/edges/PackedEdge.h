@@ -193,11 +193,23 @@ public:
 
   PtbPsTree * to_ptbpstree(int lhs, unsigned ith_deriv, bool append_annot, bool output_forms) const;
 
+  void to_set(std::set<const PackedEdge*>& set) const;
+
+  void set_cell(const Cell* c) {cell = c;};
+
+  const Cell* get_cell() const {return cell;};
+
+
   bool has_solution(unsigned i) const ;
 
   bool no_daughters() { return binary_daughters.empty() and unary_daughters.empty() and lexical_daughters.empty(); }
   bool is_closed() const { return not open; }
   void close() { open=false; Edge::~Edge(); }
+
+  void update_relaxations(
+      std::map<int, std::map<int,double>>& u,
+      bool positive);
+
 
 protected :
   bvector binary_daughters;    ///< set of possible daughters
@@ -211,9 +223,12 @@ protected :
 
 private:
   ProbaModel best;
+  const Cell* cell;
+
 
   void to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index,
                     bool append_annot, bool outpu_forms) const;
+
 
 public:
   void process(function<void(const LexicalDaughter &)> f) const {for(const auto& d: get_lexical_daughters()) f(d);}

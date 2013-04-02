@@ -139,6 +139,7 @@ public:
   inline ~ParserCKYAllMinDivKB() {};
 
   void extract_solution();
+  void simple_extract_solution();
 
 private:
   /** also computes marginals for each daughter */

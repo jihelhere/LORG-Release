@@ -78,7 +78,11 @@ inline void MaxRuleProbability1B::update_lexical(Edge & edge,  const LexicalDaug
 {
     const LexicalRuleC2f* rule = dtr.get_rule();
 
-    double probability = QInsideComputer::compute(edge.get_annotations(), rule, log_normalisation_factor);
+    double probability = QInsideComputer::compute(edge.get_annotations(), rule, log_normalisation_factor) + dtr.get_relaxation();
+
+    // if (dtr.get_relaxation() != 0.0)
+    //   std::cout << "lexical relax "<< dtr.get_relaxation() << std::endl;
+
 
     if (probability > best.probability) {
         best.probability = probability;
@@ -98,7 +102,12 @@ inline void MaxRuleProbability1B::update_unary (Edge & e, const UnaryDaughter & 
   // std::cout << left.get_prob_model().get(0).dtrs << std::endl;
   if(left.get_prob_model().get(0).dtrs && (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())) {
     //    std::cout << "unary case" << std::endl;
-    probability =  QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor);
+
+    // if (dtr.get_relaxation() != 0.0)
+    //   std::cout << "unary relax "<< dtr.get_relaxation() << std::endl;
+
+
+    probability =  QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor) + dtr.get_relaxation();
   }
 
   if (probability > best.probability) {
@@ -114,7 +123,10 @@ MaxRuleProbability1B::update_binary (Edge & e, const BinaryDaughter & dtr)
 {
   //  std::cout << "update with " << *(dtr.get_rule()) << std::endl;
 
-  double probability = QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor);
+  double probability = QInsideComputer::compute(e.get_annotations(), dtr, log_normalisation_factor) + dtr.get_relaxation();
+
+  // if (dtr.get_relaxation() != 0.0)
+  //   std::cout << "binary relax "<< dtr.get_relaxation() << std::endl;
 
   if (probability > best.probability)
     {

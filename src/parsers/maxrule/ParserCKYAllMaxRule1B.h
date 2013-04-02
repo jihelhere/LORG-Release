@@ -24,6 +24,7 @@ public:
 
   void extract_solution();
 
+  void simple_extract_solution();
 
 protected:
 

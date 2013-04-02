@@ -21,6 +21,7 @@ class ParserCKYAllVariational : public ParserCKYAllMaxRule<VariationalTypes>
   ~ParserCKYAllVariational() {};
 
   void extract_solution();
+  void simple_extract_solution();
 
  private:
   void initialise_candidates();

@@ -561,4 +561,35 @@ void ParserCKYAll_Impl<Types>::compute_inside_outside_probabilities()
   compute_outside_probabilities();
 }
 
+
+template <class Types>
+std::set< std::tuple<const AnnotatedRule*,int,int> >
+ParserCKYAll_Impl<Types>::get_vectorized_representation(int start_symbol)
+{
+  std::set< std::tuple<const AnnotatedRule*,int,int> > res;
+  std::set<const typename Chart::Edge*> res_orig;
+  if(chart->has_solution(start_symbol, 0))
+  {
+    res_orig = chart->get_rules_best_solution(start_symbol);
+  }
+
+  for (const auto& e: res_orig)
+  {
+    const AnnotatedRule* r = e->get_prob_model().get(0).dtrs->get_rule();
+    res.insert(std::make_tuple(r,e->get_cell()->get_begin(),e->get_cell()->get_end()));
+  }
+
+  return res;
+}
+
+template <class Types>
+void
+ParserCKYAll_Impl<Types>::update_relaxations(
+    std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>& u,
+    bool positive)
+{
+  chart->update_relaxations(u, positive);
+}
+
+
 #endif

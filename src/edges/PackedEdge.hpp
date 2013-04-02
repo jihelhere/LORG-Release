@@ -16,8 +16,7 @@ void PackedEdge<Types>::add_daughters(Edge & left, const UnaryRule* rule)
 
 template<class Types>
 inline
-void PackedEdge<Types>::add_daughters(Edge & left,
-                                        Edge & right, const BinaryRule* rule)
+void PackedEdge<Types>::add_daughters(Edge & left, Edge & right, const BinaryRule* rule)
 {
   //               BLOCKTIMING("PackedEdge add_daughters(binary)");
   if (not this->open) {
@@ -324,29 +323,33 @@ unsigned decode_path(PtbPsTree& tree,
 }
 
 
-// // to prevent a bug on maia
-// // it seems that inf and nan are the same on the cluster :(
-// bool my_isinvalid(const double& input)
-// {
+template <class Types>
+void PackedEdge<Types>::to_set(std::set<const PackedEdge<Types>*>& results ) const
+{
+  results.insert(this);
 
-//     bool b1 = std::isnan(input);
-//     bool b2 = input != input;
+  if(best.get(0).dtrs->is_binary())
+  {
+    const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(best.get(0).dtrs);
+      daughters->left_daughter().to_set(results);
+      daughters->right_daughter().to_set(results);
+  }
+  else
+    if(best.get(0).dtrs->is_lexical())
+    {
+    }
+    else
+    {
+      const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(best.get(0).dtrs);
+      daughters->left_daughter().to_set(results);
+      //std::cout << *(daughters->get_rule()) << std::endl;
+    }
 
-//     bool b3 = false;
-//     if(- std::numeric_limits<double>::infinity() == input) {
-//       //    std::cout << "-inf" << std::endl;
-//         b3 = true;
-//     }
-
-//     if(std::numeric_limits<double>::infinity() == input) {
-//       //        std::cout << "+inf" << std::endl;
-//  b3 = false;
-//     }
-
-//     return b3 || b1 || b2;
+}
 
 
-// }
+
+
 
 
 template <class Types>
@@ -622,5 +625,100 @@ double PackedEdge<Types>::marginalise() const
 
 }
 
+
+
+
+template <typename Types>
+void PackedEdge<Types>::update_relaxations(std::map<int, std::map<int,double>>& u,
+                                           bool first)
+{
+
+  std::function<unsigned(unsigned)> simplified_nt =
+      [](unsigned id )
+      {
+        //std::cout << id << std::endl;
+        std::string name = SymbolTable::instance_nt().get_label_string(id);
+
+        //        std::cout << name << std::endl;
+
+        static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
+        static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+        boost::cmatch matched;
+        bool is_artificial = false;
+
+        if(boost::regex_match(name.c_str(), matched, exp_artifical))
+        {
+          name = std::string(matched[1].first, matched[1].second);
+          is_artificial = true;
+        }
+
+        if(boost::regex_match(name.c_str(),matched,exp_funct))
+        {
+          name = std::string(matched[1].first, matched[1].second);
+        }
+
+        if(is_artificial)
+        {
+          name = "[(" + name + ")>]";
+        }
+
+        //std::cout << name << std::endl;
+
+        return SymbolTable::instance_nt().get_label_id(name);
+      };
+
+
+
+  for (auto& e : u)
+  {
+    int rhs0 = e.first;
+    for (auto& f : e.second)
+    {
+      int rhs1 = f.first;
+      double update = first ? f.second : - f.second;
+
+      switch(rhs1)
+      {
+        case -2 : // lexical
+          for(auto& l : lexical_daughters)
+          {
+            if(l.get_rule()->get_rhs0() == rhs0)
+            {
+              l.set_relaxation(update);
+              //              std::cout << "lexical update" << std::endl;
+              break;
+            }
+          }
+          break;
+        case -1 : // unary
+          for(auto& u : unary_daughters)
+          {
+            if(simplified_nt(u.get_rule()->get_rhs0()) == unsigned(rhs0))
+            {
+              u.set_relaxation(update);
+              //              std::cout << "unary update" << std::endl;
+              //break;
+            }
+          }
+
+          break;
+
+        default : // binary
+
+          for(auto& b : binary_daughters)
+          {
+            if(simplified_nt(b.get_rule()->get_rhs0()) == unsigned(rhs0)
+               && simplified_nt(b.get_rule()->get_rhs1()) == unsigned(rhs1))
+            {
+              b.set_relaxation(update);
+              //if(update != 0.0)
+                //                std::cout << "binary update " << b.get_relaxation() << std::endl;
+              //break;
+            }
+          }
+      }
+    }
+  }
+}
 
 #endif

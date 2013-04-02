@@ -28,6 +28,7 @@ struct packed_edge_probability
   void init()
   {
     probability = -std::numeric_limits<double>::infinity();
+    dtrs = nullptr;
     //    left_index = 0;
     //    right_index = 0;
   }

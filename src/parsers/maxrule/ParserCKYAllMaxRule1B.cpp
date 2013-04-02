@@ -41,4 +41,9 @@ void ParserCKYAllMaxRule1B::calculate_chart_specific_rule_probabilities_and_best
   ParserCKYAllMaxRule::calculate_maxrule_probabilities();
 }
 
+void ParserCKYAllMaxRule1B::simple_extract_solution()
+{
+  ParserCKYAllMaxRule::calculate_maxrule_probabilities();
+}
+
 #endif /* _PARSERCKYALLMAXVARONEBEST_H_ */
