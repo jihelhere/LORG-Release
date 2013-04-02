@@ -21,14 +21,19 @@ class PackedEdgeDaughters
 {
 protected:
   const AnnotatedRule * rule;
+  double relaxation;
+
 
 public:
-  PackedEdgeDaughters(const AnnotatedRule * r = 0) : rule(r) {};
+  PackedEdgeDaughters(const AnnotatedRule * r = 0) : rule(r), relaxation(0.0) {};
   ~PackedEdgeDaughters() {};
 
   inline bool is_unary() const {return get_rule()->is_unary();}
   inline bool is_binary() const {return get_rule()->is_binary();}
   inline bool is_lexical() const {return get_rule()->is_lexical();}
+
+  inline double get_relaxation() const {return relaxation;}
+  inline void set_relaxation(double v) {relaxation = v;}
 
 // protected:
   inline const AnnotatedRule * get_rule() const {return rule;}
@@ -164,12 +169,9 @@ public:
   protected:
   const Word* word;
 
-  //  double relaxation;
-
 public:
   LexicalPackedEdgeDaughters(const Rule * ru, const Word* w) :
   Parent(ru), word(w)
-  //  , relaxation(0)
   {};
 
   ~LexicalPackedEdgeDaughters() {};

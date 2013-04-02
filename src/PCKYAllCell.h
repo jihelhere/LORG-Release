@@ -165,6 +165,9 @@ public:
   void change_rules_resize(const AnnotatedLabelsInfo& next_annotations, const std::vector<std::vector<std::vector<unsigned> > >& annot_descendants_current);
   void change_rules_resize(unsigned new_size, unsigned fienr_idx);
 
+  void update_relaxations(std::map<int, std::map<int, std::map<int,double>>>& u,
+                          bool first);
+
 
 
   /**
@@ -231,6 +234,12 @@ inline
 void PCKYAllCell<Types>::init(bool cl, unsigned b, unsigned e, typename Types::Edge * first_edge, bool t)
 {
   begin = b; end = e; top = t; closed = cl; edges = first_edge;
+
+  for (size_t i = 0; i < max_size; ++i)
+  {
+    (edges+i)->set_cell(this);
+  }
+
 }
 
 template<class Types>

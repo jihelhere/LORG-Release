@@ -81,6 +81,8 @@ public:
 
   PtbPsTree* get_best_tree(int start_symbol, unsigned k, bool always_output_forms, bool output_annotations) const;
 
+  std::set<const Edge*> get_rules_best_solution(int start_symbol) const;
+
   double get_score(int start_symbol, unsigned k) const;
 
 
@@ -108,6 +110,13 @@ public:
   void opencells_apply_top_down_nothread( std::function<void(const Cell &)> f ) const;
 
   std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << endl; }); return out; }
+
+
+  void update_relaxations(
+      std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>& u,
+      bool positive);
+
+
 };
 
 

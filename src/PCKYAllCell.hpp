@@ -488,4 +488,57 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 }
 
 
+
+template<class Types>
+void
+PCKYAllCell<Types>::update_relaxations(std::map<int, std::map<int, std::map<int,double>>>& u,
+                        bool first)
+{
+
+  std::function<unsigned(unsigned)> simplified_nt =
+      [](unsigned id )
+      {
+        //std::cout << id << std::endl;
+        std::string name = SymbolTable::instance_nt().get_label_string(id);
+
+        //        std::cout << name << std::endl;
+
+        static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
+        static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+        boost::cmatch matched;
+        bool is_artificial = false;
+
+        if(boost::regex_match(name.c_str(), matched, exp_artifical))
+        {
+          name = std::string(matched[1].first, matched[1].second);
+          is_artificial = true;
+        }
+
+        if(boost::regex_match(name.c_str(),matched,exp_funct))
+        {
+          name = std::string(matched[1].first, matched[1].second);
+        }
+
+        if(is_artificial)
+        {
+          name = "[(" + name + ")>]";
+        }
+
+        //std::cout << name << std::endl;
+
+        return SymbolTable::instance_nt().get_label_id(name);
+      };
+
+
+  for(unsigned i = 0; i < max_size; ++i)
+    if(not edges[i].is_closed())
+    {
+      int i_s = simplified_nt(i);
+      if(u.count(i_s))
+      {
+        edges[i].update_relaxations(u.at(i_s), first);
+      }
+    }
+}
+
 #endif //PCKYALLCELL_HPP

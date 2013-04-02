@@ -23,6 +23,7 @@ public:
   */
   void extract_solution();
 
+  void simple_extract_solution();
 
   const AGrammar& get_fine_grammar(unsigned i, unsigned j) const;
 

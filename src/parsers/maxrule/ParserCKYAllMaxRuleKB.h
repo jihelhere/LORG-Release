@@ -22,6 +22,8 @@ class ParserCKYAllMaxRuleKB : public ParserCKYAllMaxRule<MaxRuleKBTypes>
 
   void extract_solution();
 
+  void simple_extract_solution();
+
  private:
   void initialise_candidates();
 

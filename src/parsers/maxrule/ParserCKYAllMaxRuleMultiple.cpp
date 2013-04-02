@@ -174,6 +174,11 @@ void ParserCKYAllMaxRuleMultiple::extract_solution()
 
 }
 
+void ParserCKYAllMaxRuleMultiple::simple_extract_solution()
+{
+  throw std::runtime_error("not implemented yet");
+}
+
 
 void ParserCKYAllMaxRuleMultiple::calculate_maxrule_probabilities()
 {

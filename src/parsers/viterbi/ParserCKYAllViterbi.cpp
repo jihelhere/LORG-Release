@@ -49,6 +49,13 @@ void ParserCKYAllViterbi::extract_solution()
   );
 }
 
+
+void ParserCKYAllViterbi::simple_extract_solution()
+{
+  extract_solution();
+}
+
+
 inline
 const ParserCKYAll::AGrammar& ParserCKYAllViterbi::get_fine_grammar() const
 {

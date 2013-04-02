@@ -15,7 +15,7 @@ common_sources = rules/Types4Rules.h rules/MetaProduction.h \
 	rules/Rule.cpp rules/Rule.h \
 	grammars/compact_binary_rules.h grammars/compact_binary_rules.cpp \
 	grammars/Grammar.h grammars/Grammar.cpp \
-	src/utils/threads.h \
+	utils/threads.h \
 	utils/SymbolTable.cpp utils/SymbolTable.h \
 	utils/Tagger.h utils/Tagger.cpp \
 	utils/TokeniserFactory.h utils/TokeniserFactory.cpp\
@@ -63,7 +63,7 @@ simple_lorgparser_SOURCES += simple_lorgparser.cpp \
 	utils/data_parsers/RuleInputParser.cpp utils/data_parsers/RuleInputParser.h \
 	edges/Edge.cpp edges/Edge.h \
 	parsers/ParserCKYBest.cpp parsers/ParserCKYBest.h \
-	PCKYBestCell.cpp PCKYBestCell.h \
+	SimpleChartCKY.h SimpleChartCKY.hpp PCKYBestCell.cpp PCKYBestCell.h \
 	SimpleLorgParseApp.h SimpleLorgParseApp.cpp
 
 
@@ -94,7 +94,7 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	utils/data_parsers/BURuleInputParser.cpp utils/data_parsers/BURuleInputParser.h \
 	utils/data_parsers/AnnotHistoriesParser.h utils/data_parsers/AnnotHistoriesParser.cpp \
 	edges/PackedEdge.h edges/PackedEdge.hpp edges/PackedEdgeDaughters.h edges/PackedEdgeProbability.h \
-	edges/BestProbability.h \
+	edges/BestProbability.h emptystruct.h \
 	parsers/maxrule/MaxRuleProbability1B.h parsers/maxrule/MaxRuleProbability1B.cpp \
 	parsers/maxrule/MaxRuleProbabilityKB.h parsers/maxrule/MaxRuleProbabilityKB.cpp \
 	parsers/maxrule/MaxRuleProbabilityMultiple.h parsers/maxrule/MaxRuleProbabilityMultiple.cpp \
@@ -105,7 +105,7 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	parsers/variational/VariationalTypes.h \
 	parsers/variational/ParserCKYAllVariational.cpp parsers/variational/ParserCKYAllVariational.h \
 	parsers/variational/VariationalProbabilityKB.cpp parsers/variational/VariationalProbabilityKB.h \
-	PCKYAllCell.h parsers/ParserCKYAll.h parsers/ParserCKYAll.hpp \
+	PCKYAllCell.h PCKYAllCell.hpp parsers/ParserCKYAll.h parsers/ParserCKYAll.hpp \
 	parsers/viterbi/ParserCKYAllViterbi.h parsers/viterbi/ParserCKYAllViterbi.cpp \
 	parsers/viterbi/ViterbiProbability.h parsers/viterbi/ViterbiProbability.cpp \
 	parsers/mindivkb/ParserCKYAllMinDivKB.h parsers/mindivkb/ParserCKYAllMinDivKB.cpp \

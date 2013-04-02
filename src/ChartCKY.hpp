@@ -562,10 +562,11 @@ public:
   {
     //iterate through all the words in the sentence
     for(typename std::vector<MyWord>::const_iterator w_itr(sentence.begin());
-        w_itr != sentence.end(); ++w_itr)  {
+        w_itr != sentence.end(); ++w_itr)
+    {
       Cell& cell = this->access(w_itr->get_start(), w_itr->get_end() -1);
-    cell.add_word(*w_itr);
-        }
+      cell.add_word(*w_itr);
+    }
   }
 
   template<class MyWord>
@@ -638,5 +639,42 @@ public:
   {
     return !get_root().is_closed() && get_root().exists_edge(start_symbol);
   }
+
+
+  template<class Types>
+  std::set<const typename ChartCKY<Types>::Edge*> ChartCKY<Types>::get_rules_best_solution(int start_symbol) const
+  {
+    std::set<const typename ChartCKY<Types>::Edge*> result;
+
+    const Cell & root_cell = this->get_root();
+
+    if (!root_cell.is_closed() && root_cell.exists_edge(start_symbol)) {
+      root_cell.get_edge(start_symbol).to_set(result);
+    }
+
+    return result;
+  }
+
+
+template<class Types>
+void ChartCKY<Types>::update_relaxations(
+    std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>& u,
+    bool positive)
+{
+
+  for(unsigned i = 0; i < size; ++i)
+  {
+    for(unsigned j = i; j < size; ++j)
+    {
+      auto& cell = access(i,j);
+      auto& case_u = u[i][j];
+
+      cell.update_relaxations(case_u, positive);
+    }
+  }
+
+
+}
+
 
 #endif

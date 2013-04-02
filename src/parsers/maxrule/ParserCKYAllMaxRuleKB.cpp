@@ -59,6 +59,21 @@ void ParserCKYAllMaxRuleKB::extract_solution()
 }
 
 
+void ParserCKYAllMaxRuleKB::simple_extract_solution()
+{
+  {
+//     BLOCKTIMING("initialize_candidates");
+    initialise_candidates();
+  }
+  //  std::cout << "after init cand" << std::endl;
+
+  {
+//     BLOCKTIMING("extend_all_derivations");
+    extend_all_derivations();
+  }
+}
+
+
 void ParserCKYAllMaxRuleKB::initialise_candidates()
 {
 
