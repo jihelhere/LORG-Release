@@ -563,9 +563,9 @@ void GrammarAnnotated<Bin, Un, Lex>::linear_smooth(double internal_threshold, do
       }
                     );
 #else
-  for(auto& rule:  binary_rules) {rule.linear_smooth(internal_threshold);}
-  for(auto& rule:   unary_rules) {rule.linear_smooth(internal_threshold);}
-  for(auto& rule: lexical_rules) {rule.linear_smooth( lexical_threshold);}
+  for(auto& rule: this->binary_rules)  {rule.linear_smooth(internal_threshold);}
+  for(auto& rule: this->unary_rules)   {rule.linear_smooth(internal_threshold);}
+  for(auto& rule: this->lexical_rules) {rule.linear_smooth( lexical_threshold);}
 #endif
 }
 
