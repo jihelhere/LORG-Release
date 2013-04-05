@@ -11,10 +11,6 @@
 
 #include "utils/tick_count.h"
 
-
-
-
-
 unsigned simplified_nt( unsigned id )
 {
   std::string name = SymbolTable::instance_nt().get_label_string(id);
@@ -78,16 +74,16 @@ int TwoStageLorgParseApp::run()
 
     if(sentence.size() <=  max_length && sentence.size() > 0) {
 
-      /*Extra verbose
-        if(verbose) {
-        std::clog << "Tokens: ";
-        for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
-        std::clog << "<" << i->get_form() << ">";
-        std::clog << "\n";
-        }*/
+      // //Extra verbose
+      // if(verbose) {
+      //   std::clog << "Tokens: ";
+      //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+      //     std::clog << "<" << i->get_form() << ">";
+      //   std::clog << "\n";
+      // }
 
-        //double lu = -std::numeric_limits<double>::infinity();
-        double lu = 0;
+      //double lu = -std::numeric_limits<double>::infinity();
+      double lu = 0;
 
       for (size_t i = 0; i < parsers.size(); ++i)
       {
@@ -101,7 +97,7 @@ int TwoStageLorgParseApp::run()
         // create and initialise chart
         {
           //                             BLOCKTIMING("initialise_chart");
-          //std::cout << "intialisation " << i << std::endl;
+          //          std::cout << "intialisation " << i << std::endl;
           parsers[i]->initialise_chart(sentence, brackets);
         }
 
@@ -109,15 +105,17 @@ int TwoStageLorgParseApp::run()
         // parse, aka create the coarse forest
         {
           //                             BLOCKTIMING("parse");
-          //std::cout << "parsing " << i << std::endl;
+          //          std::cout << "parsing " << i << std::endl;
           parsers[i]->parse(start_symbol);
+          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
         }
 
         //use intermediate grammars to prune the chart
         {
           //                             BLOCKTIMING("beam_c2f");
-          //std::cout << "beaming " << i << std::endl;
+          //          std::cout << "beaming " << i << std::endl;
           parsers[i]->beam_c2f(start_symbol);
+          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
         }
 
 
@@ -131,7 +129,32 @@ int TwoStageLorgParseApp::run()
         }
         if(parsers[i]->is_chart_valid(start_symbol))
         {
+          //          std::cout << "reading " << i << std::endl;
+
+          //std::cout << parsers[i]->get_best_score(start_symbol) << std::endl;
+
           lu += parsers[i]->get_best_score(start_symbol);
+
+
+          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
+
+          // std::cout << "reading " << i << std::endl;
+          // std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
+          // if(parsers[i]->is_chart_valid(start_symbol))
+          // {
+          //   //                             BLOCKTIMING("get_parses");
+
+          //   std::cout << "getting " << i << std::endl;
+          //   parsers[i]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+
+          // }
+
+          // if (best_trees[0].first == nullptr)
+          //   std::cout << "NULL" << std::endl ;
+
+          // std::cout << best_trees[0].second << " : " << *(best_trees[0].first) << std::endl;
+          // delete best_trees[0].first;
+
         }
       }
 
@@ -142,177 +165,181 @@ int TwoStageLorgParseApp::run()
           valid = false;
       }
 
+      if(parsers.size() == 1)
+        valid = false;
+
       unsigned k = 0;
       if (valid)
       {
-      std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>> u;
-      double c = 1;
-      double t = 0;
+        std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>> u;
+        double c = 1;
+        double t = 0;
 
-      //double delta_k = 0.05;
-      //      double delta_k = c / (t + 1);
+        //double delta_k = 0.05;
+        //      double delta_k = c / (t + 1);
 
-      for (k = 0; k < 1000; ++k)
-      {
-        // std::cout << "k = " << k << std::endl;
-        // std::cout << "lu = " << lu << std::endl;
-        // std::cout << "t = " << t << std::endl;
-        double delta_k = c / (t + 1);
-        double nlu = 0;
-
-
-        std::vector<std::set<std::tuple<const AnnotatedRule*,int,int> > > sets(parsers.size());
-        std::vector<std::vector< std::vector<int> >> sets_v(parsers.size());
-
-        for (size_t i = 0; i < parsers.size(); ++i)
+        for (k = 0; k < 1000; ++k)
         {
+          // std::cout << "k = " << k << std::endl;
+          // std::cout << "lu = " << lu << std::endl;
+          // std::cout << "t = " << t << std::endl;
+          double delta_k = c / (t + 1);
+          double nlu = 0;
 
-          sets[i] = parsers[i]->get_vectorized_representation(start_symbol);
 
-          for (auto& e: sets[i])
+          std::vector<std::set<std::tuple<const AnnotatedRule*,int,int> > > sets(parsers.size());
+          std::vector<std::vector< std::vector<int> >> sets_v(parsers.size());
+
+          for (size_t i = 0; i < parsers.size(); ++i)
           {
-            //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
+            sets[i] = parsers[i]->get_vectorized_representation(start_symbol);
+            // if (sets[i].empty())
+            //   break;
 
-            auto& case_u = u[std::get<1>(e)][std::get<2>(e)];
-
-            const AnnotatedRule* r = std::get<0>(e);
-
-            int l, r0, r1;
-
-            if(r->is_binary())
+            for (auto& e: sets[i])
             {
-              const BRule * br = static_cast<const BRule*>(r);
-              l  = simplified_nt( br->get_lhs());
-              r0 = simplified_nt( br->get_rhs0());
-              r1 = simplified_nt( br->get_rhs1());
+              //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
 
-              sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+              auto& case_u = u[std::get<1>(e)][std::get<2>(e)];
 
-            }
-            else
-            {
-              if(r->is_lexical())
+              const AnnotatedRule* r = std::get<0>(e);
+
+              int l, r0, r1;
+
+              if(r->is_binary())
               {
-                const LexicalRule * lr = static_cast<const LexicalRule*>(r);
-                l  = simplified_nt( lr->get_lhs());
-                r0 = lr->get_rhs0();
-                r1 = -2; // for lexical rules
+                const BRule * br = static_cast<const BRule*>(r);
+                l  = simplified_nt( br->get_lhs());
+                r0 = simplified_nt( br->get_rhs0());
+                r1 = simplified_nt( br->get_rhs1());
+
                 sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+
               }
               else
               {
-                const URule * ur = static_cast<const URule*>(r);
-                l  = simplified_nt( ur->get_lhs());
-                r0 = simplified_nt( ur->get_rhs0());
-                r1 = -1; // for unary rules
-                sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+                if(r->is_lexical())
+                {
+                  const LexicalRule * lr = static_cast<const LexicalRule*>(r);
+                  l  = simplified_nt( lr->get_lhs());
+                  r0 = lr->get_rhs0();
+                  r1 = -2; // for lexical rules
+                  sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+                }
+                else
+                {
+                  const URule * ur = static_cast<const URule*>(r);
+                  l  = simplified_nt( ur->get_lhs());
+                  r0 = simplified_nt( ur->get_rhs0());
+                  r1 = -1; // for unary rules
+                  sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+                }
+              }
+              if ((i % 2) == 0)
+              {
+                case_u[l][r0][r1] -= delta_k;
+              }
+              else
+              {
+                case_u[l][r0][r1] += delta_k;
+              }
+
+            }
+          }
+          // check same solution
+          bool same = false;
+          if (sets_v[0].size() == sets_v[1].size())
+          {
+            same = true;
+            for(const auto&s : sets_v[0])
+            {
+              if (std::find(sets_v[1].begin(), sets_v[1].end(),s) == sets_v[1].end())
+              {
+                same = false;
+                break;
               }
             }
-            if ((i % 2) == 0)
-            {
-              case_u[l][r0][r1] -= delta_k;
-            }
-            else
-            {
-              case_u[l][r0][r1] += delta_k;
-            }
-
           }
-        }
-        // check same solution
-        bool same = false;
-        if (sets_v[0].size() == sets_v[1].size())
-        {
-          same = true;
-          for(const auto&s : sets_v[0])
+
+          if(same)
           {
-            if (std::find(sets_v[1].begin(), sets_v[1].end(),s) == sets_v[1].end())
+            break;
+          }
+
+          // for(auto& a : u)
+          // {
+          //   int i = a.first;
+          //   for(auto& b : a.second)
+          //   {
+          //     int j = b.first;
+          //     for(auto& c : b.second)
+          //     {
+          //       int l = c.first;
+          //       for(auto& d : c.second)
+          //       {
+          //         int r0 = d.first;
+          //         for(auto& e : d.second)
+          //         {
+          //           int r1 = e.first;
+          //           double weight = e.second;
+
+          //           std::cout << "(" << i << "," << j << ") : "
+          //                     << SymbolTable::instance_nt().get_label_string(l)
+          //                     << " -> "
+          //                     << (r1 == -2 ? SymbolTable::instance_word().get_label_string(r0) : SymbolTable::instance_nt().get_label_string(r0))
+          //                     << " "
+          //                     << (r1 < 0 ? "" : SymbolTable::instance_nt().get_label_string(r1))
+          //                     << " || " << weight
+          //                     << std::endl;
+
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
+
+
+
+
+          // update relaxations
+          for (size_t i = 0; i < parsers.size(); ++i)
+          {
+            if(parsers[i]->is_chart_valid(start_symbol))
             {
-              same = false;
-              break;
+              parsers[i]->update_relaxations(u, (i % 2) == 0);
             }
           }
-        }
 
-        if(same)
-        {
-          break;
-        }
-
-        // for(auto& a : u)
-        // {
-        //   int i = a.first;
-        //   for(auto& b : a.second)
-        //   {
-        //     int j = b.first;
-        //     for(auto& c : b.second)
-        //     {
-        //       int l = c.first;
-        //       for(auto& d : c.second)
-        //       {
-        //         int r0 = d.first;
-        //         for(auto& e : d.second)
-        //         {
-        //           int r1 = e.first;
-        //           double weight = e.second;
-
-        //           std::cout << "(" << i << "," << j << ") : "
-        //                     << SymbolTable::instance_nt().get_label_string(l)
-        //                     << " -> "
-        //                     << (r1 == -2 ? SymbolTable::instance_word().get_label_string(r0) : SymbolTable::instance_nt().get_label_string(r0))
-        //                     << " "
-        //                     << (r1 < 0 ? "" : SymbolTable::instance_nt().get_label_string(r1))
-        //                     << " || " << weight
-        //                     << std::endl;
-
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
-
-
-
-
-        // update relaxations
-        for (size_t i = 0; i < parsers.size(); ++i)
-        {
-          if(parsers[i]->is_chart_valid(start_symbol))
+          // update solutions
+          for (size_t i = 0; i < parsers.size(); ++i)
           {
-            parsers[i]->update_relaxations(u, (i % 2) == 0);
-          }
-        }
+            if(parsers[i]->is_chart_valid(start_symbol))
+            {
+              //                             BLOCKTIMING("extract_solution");
 
-        // update solutions
-        for (size_t i = 0; i < parsers.size(); ++i)
-        {
-          if(parsers[i]->is_chart_valid(start_symbol))
+              //std::cout << "extracting " << i << std::endl;
+              parsers[i]->simple_extract_solution();
+              nlu += parsers[i]->get_best_score(start_symbol);
+            }
+          }
+          //        std::cout << std::endl;
+
+
+          // std::cout << "nlu = " << nlu << std::endl;
+          // std::cout << "lu = " << lu << std::endl;
+          if (nlu > lu )//|| (k % 20) == 0)
           {
-            //                             BLOCKTIMING("extract_solution");
-
-            //std::cout << "extracting " << i << std::endl;
-            parsers[i]->simple_extract_solution();
-            nlu += parsers[i]->get_best_score(start_symbol);
+            t++;
           }
+          lu = nlu;
+          //          std::cerr << nlu << std::endl;
         }
-        //        std::cout << std::endl;
-
-
-        // std::cout << "nlu = " << nlu << std::endl;
-        // std::cout << "lu = " << lu << std::endl;
-        if (nlu < lu )//|| (k % 20) == 0)
-        {
-          t++;
-        }
-        lu = nlu;
-        std::cerr << nlu << std::endl;
-      }
       }
 
-      std::cerr << "k: " << k << std::endl;
+      //std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
-      //for (size_t i = 0; i < parsers.size(); ++i)
+        //for (size_t i = 0; i < parsers.size(); ++i)
       {
         std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
         if(parsers[i]->is_chart_valid(start_symbol))
@@ -382,7 +409,12 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   this->parsers = ParserCKYAllFactory::create_parser(configuration);
   if(this->parsers.empty()) return false;
 
-  parsers[0]->set_nbthreads(this->nbthreads);
+#ifdef USE_THREADS
+  for (const auto& p: this->parsers)
+  {
+    p->set_nbthreads(this->nbthreads);
+  }
+#endif
 
   if(verbose) {std::clog << "ok" << std::endl;}
 

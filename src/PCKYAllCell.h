@@ -180,6 +180,15 @@ public:
     }
   }
 
+  template<typename... Function>
+  void apply_on_all_edges(Function&&... args) {
+    for(unsigned i=0; i<get_max_size(); ++i) {/*std::cout << "edge " << i << std::endl ;*/
+      get_edge(i).apply(args...);
+    }
+  }
+
+
+
   inline static unsigned get_max_size() { return max_size; }
 
 private:

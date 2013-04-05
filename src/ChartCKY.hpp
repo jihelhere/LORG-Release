@@ -513,7 +513,7 @@ public:
   ChartCKY<Types>::~ChartCKY()
   {
     opencells_apply([](Cell&cell){cell.Cell::~Cell();});
-//     for (unsigned i=0; i<nb_cells * Cell::get_max_size(); ++i) {if (not the_edges[i].is_closed()) the_edges[i].Edge::~Edge();}
+    // for (unsigned i=0; i<nb_cells * Cell::get_max_size(); ++i) {if (not the_edges[i].is_closed()) the_edges[i].Edge::~Edge();}
     delete [] (char*) the_cells;
     delete [] (char*) the_edges;
 
@@ -579,11 +579,6 @@ public:
     }
     return res;
   }
-
-
-
-
-
 
 
   template<class Types>

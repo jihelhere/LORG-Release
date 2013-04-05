@@ -84,9 +84,9 @@ public:
   inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
   inline       packed_edge_probability& get(unsigned idx)       {return derivations[idx];}
 
-  inline void update_lexical(Edge& e, const LexicalDaughter& dtr);
-  inline void update_unary(Edge& e, const UnaryDaughter& dtr);
-  inline void update_binary(Edge& e, const BinaryDaughter& dtr);
+  inline void update_lexical(Edge&, const LexicalDaughter&) { throw std::runtime_error("I shall not be called");}
+  inline void update_unary(Edge&, const UnaryDaughter&) {throw std::runtime_error("I shall not be called");};
+  inline void update_binary(Edge&, const BinaryDaughter&) {throw std::runtime_error("I shall not be called");};
   inline void finalize();
 
   inline void pick_best_lexical(const LexicalDaughter& dtr);
@@ -146,57 +146,67 @@ const double& MaxRuleProbabilityMultiple::get_log_normalisation_factor(unsigned 
   return log_normalisation_factor_backup[i];
 }
 
-void MaxRuleProbabilityMultiple::update_lexical(Edge& e, const LexicalDaughter& dtr)
-{
-  const AnnotationInfo & a = e.get_annotations();
-  double probability(QInsideComputer::compute(a, dtr.get_rule(), log_normalisation_factor));
+// void MaxRuleProbabilityMultiple::update_lexical(Edge& e, const LexicalDaughter& dtr)
+// {
+//   const AnnotationInfo & a = e.get_annotations();
+//   double probability = QInsideComputer::compute(a, dtr.get_rule(), log_normalisation_factor)
 
-  if (probability > derivations[0].probability) {
-    derivations[0].probability = probability;
-    derivations[0].dtrs = &dtr;
-  }
-}
+//       + dtr.get_relaxation();
 
-void MaxRuleProbabilityMultiple::update_unary(Edge& e, const UnaryDaughter & dtr)
-{
-  const AnnotationInfo & a = e.get_annotations();
-  double probability = -std::numeric_limits<double>::infinity();
 
-  Edge& left  = dtr.left_daughter();
-  if(left.get_prob_model().get(0).dtrs && (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())) {
-    probability =  QInsideComputer::compute(a, dtr, log_normalisation_factor);
-  }
-  // else {
-  //   std::cout << "ERROR" << std::endl;
-  // }
 
-  // if(std::isnan(probability))
-  //   return;
 
-  if (probability > derivations[0].probability) {
-    derivations[0].probability = probability;
-    derivations[0].dtrs = &dtr;
-  }
-}
 
-void MaxRuleProbabilityMultiple::update_binary(Edge& e, const BinaryDaughter& dtr)
-{
-  const AnnotationInfo & a = e.get_annotations();
+//   if (probability > derivations[0].probability) {
+//     derivations[0].probability = probability;
+//     derivations[0].dtrs = &dtr;
+//   }
+// }
 
-  //calculate the probability for this edge -
-  //if it's the best probability so far, update the best edge info
+// void MaxRuleProbabilityMultiple::update_unary(Edge& e, const UnaryDaughter & dtr)
+// {
+//   const AnnotationInfo & a = e.get_annotations();
+//   double probability = -std::numeric_limits<double>::infinity();
 
-  double probability = QInsideComputer::compute(a, dtr, log_normalisation_factor);
+//   Edge& left  = dtr.left_daughter();
+//   if(left.get_prob_model().get(0).dtrs && (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())) {
+//     probability =  QInsideComputer::compute(a, dtr, log_normalisation_factor)
+//                    + dtr.get_relaxation();
 
-  // if(std::isnan(probability))
-  //   return;
+//   }
+//   // else {
+//   //   std::cout << "ERROR" << std::endl;
+//   // }
 
-  if (probability > derivations[0].probability)
-    {
-      derivations[0].probability = probability;
-      derivations[0].dtrs = &dtr;
-    }
-}
+//   // if(std::isnan(probability))
+//   //   return;
+
+//   if (probability > derivations[0].probability) {
+//     derivations[0].probability = probability;
+//     derivations[0].dtrs = &dtr;
+//   }
+// }
+
+// void MaxRuleProbabilityMultiple::update_binary(Edge& e, const BinaryDaughter& dtr)
+// {
+//   const AnnotationInfo & a = e.get_annotations();
+
+//   //calculate the probability for this edge -
+//   //if it's the best probability so far, update the best edge info
+
+//   double probability = QInsideComputer::compute(a, dtr, log_normalisation_factor)
+//                        + dtr.get_relaxation();
+//                        ;
+
+//   // if(std::isnan(probability))
+//   //   return;
+
+//   if (probability > derivations[0].probability)
+//     {
+//       derivations[0].probability = probability;
+//       derivations[0].dtrs = &dtr;
+//     }
+// }
 
 
 void MaxRuleProbabilityMultiple::finalize()
@@ -232,12 +242,16 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(const LexicalDaughter & dtr)
     //           << std::log(probability) << " "
     //           << get_log_normalisation_factor(i) << std::endl;
 
+
     double logprob =
         // (get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity()) ?
         // -std::numeric_limits<double>::infinity() :
         std::log(probability) - get_log_normalisation_factor(i);
 
-    p.probability += logprob + std::exp(logprob);
+    // ???
+    //    p.probability += logprob + std::exp(logprob);
+    p.probability += logprob + dtr.get_relaxation();
+
 
     if(p.probability ==-std::numeric_limits<double>::infinity())
       //std::cout << "it's happening!" << std::endl;
@@ -296,6 +310,8 @@ void MaxRuleProbabilityMultiple::pick_best_binary(const BinaryDaughter& dtr)
   //  p.probability += std::exp(p.probability);
   p.probability += left.get_prob_model().get(0).probability + right.get_prob_model().get(0).probability;
 
+  p.probability += dtr.get_relaxation();
+
   if (candidates.empty() || p.probability > derivations[0].probability)
     derivations[0] = p;
   candidates.push_back(p);
@@ -346,9 +362,10 @@ void MaxRuleProbabilityMultiple::pick_best_unary(const UnaryDaughter & dtr)
 
     //    p.probability += std::exp(p.probability);
     p.probability +=  left.get_prob_model().get(0).probability;
+    p.probability += dtr.get_relaxation();
+
+
   }
-
-
 
   if (candidates.empty() || p.probability > derivations[0].probability)
     derivations[0] = p;

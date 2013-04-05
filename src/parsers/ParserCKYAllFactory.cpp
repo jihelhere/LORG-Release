@@ -185,7 +185,6 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         return results;
     }
 
-
     annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
     all_annot_descendants.push_back(annot_descendants);
 
@@ -258,6 +257,32 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         annot_descendants_type annot_descendants2 = create_annot_descendants(grammars2.back()->get_history_trees());
         all_annot_descendants2.push_back(annot_descendants2);
 
+
+
+        ///////////////////
+        if(config.exists("alternate-grammar2"))
+        {
+
+          const auto& filenames = config.get_value<std::vector<std::string>>("alternate-grammar2");
+          if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0)
+          {
+            std::cerr << "Wrong parsing algorithm. Exit program." << std::endl;
+            return results;
+          }
+
+          for(const auto& f : filenames)
+          {
+            if(verbose) std::cerr << "Setting alternate grammar to " << f << ".\n";
+            alt_gs2.push_back(create_grammars(f, verbose));
+            auto annot_descendants2 = create_annot_descendants(alt_gs2.back().back()->get_history_trees());
+            all_annot_descendants2.push_back(annot_descendants2);
+          }
+        }
+
+
+        ///////////////////
+
+
         results.push_back(
           create_parser(grammars2,
             string_to_pa(config.get_value<std::string>("parser-type")),
@@ -267,7 +292,6 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
             config.get_value<int>("stubbornness"),
             config.get_value<unsigned>("kbest"))
         );
-
     }
 
     return results;
@@ -373,7 +397,7 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
     cg->linear_smooth(0.01,0.1);
     // remove zeros
     //      std::clog << "removing zeros" << std::endl;
-    cg->remove_unlikely_annotations_all_rules(1e-6);
+    cg->remove_unlikely_annotations_all_rules(1e-10);
     // done!
     result[i] = cg;
     //      std::clog << "creation finished" << std::endl;
@@ -402,7 +426,7 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
                         cg->linear_smooth(0.01,0.1);
                         // remove zeros
                         //      std::clog << "removing zeros" << std::endl;
-                        cg->remove_unlikely_annotations_all_rules(1e-6);
+                        cg->remove_unlikely_annotations_all_rules(1e-10);
                         // done!
                         result[i] = cg;
                         //      std::clog << "creation finished" <<

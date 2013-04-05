@@ -67,16 +67,17 @@ void ParserCKYAllMaxRuleMultiple::change_rules_load_backup(unsigned backup_idx, 
 {
   //  std::cout << "change_rules_load_backup" << std::endl;
   function<void(Edge&)> replace_rules = std::bind(&Edge::replace_rule_probabilities, std::placeholders::_1, size);
-  function<void(Edge&)> replace_annotations = [backup_idx](Edge& e){e.get_annotations() = e.get_prob_model().get_annotations_backup()[backup_idx];};
+  function<void(Edge&)> replace_annotations =
+      [backup_idx](Edge& e)
+      {
+        e.get_annotations() = e.get_prob_model().get_annotations_backup()[backup_idx];
+      };
 
   chart->opencells_apply(
-    [&replace_rules, &replace_annotations](Cell&cell){
-      cell.apply_on_edges(
-        replace_rules,
-        replace_annotations
-      );
-    }
-  );
+    [&replace_rules, &replace_annotations](Cell&cell)
+    {
+      cell.apply_on_edges(replace_rules, replace_annotations);
+    });
 }
 
 void ParserCKYAllMaxRuleMultiple::modify_backup(unsigned backup_idx) const
@@ -117,6 +118,8 @@ void ParserCKYAllMaxRuleMultiple::multiple_inside_outside_specific()
 {
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
+  MaxRuleProbabilityMultiple::reset_log_normalisation_factor();
+
   for(unsigned i = 0; i < fine_grammars.size() + 1; ++i) {
 
     //    std::cout << "computation " << i << std::endl;
@@ -134,9 +137,6 @@ void ParserCKYAllMaxRuleMultiple::multiple_inside_outside_specific()
       compute_outside_probabilities();
 
       MaxRuleProbabilityMultiple::set_log_normalisation_factor(std::log(get_sentence_probability()));
-
-      // don;t need this anymore
-      // calculate_maxrule_probabilities();
 
     }
 
@@ -169,14 +169,24 @@ void ParserCKYAllMaxRuleMultiple::extract_solution()
 
   //reset to first grammar for next parse
   annot_descendants = all_annot_descendants[0];
-
-  MaxRuleProbabilityMultiple::reset_log_normalisation_factor();
-
 }
 
 void ParserCKYAllMaxRuleMultiple::simple_extract_solution()
 {
-  throw std::runtime_error("not implemented yet");
+  static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+
+  if(!chart->get_root().is_closed() && chart->get_root().exists_edge(start_symbol)) {
+    //    std::cerr << "calculate_best_edge" << std::endl;
+
+    initialise_candidates();
+    extend_all_derivations();
+  }
+
+
+  //reset to first grammar for next parse
+  annot_descendants = all_annot_descendants[0];
+
+  //throw std::runtime_error("not implemented yet");
 }
 
 
