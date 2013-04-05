@@ -53,13 +53,16 @@ Word::Word( const std::string& str, int string_start, int string_end, const std:
     }
     catch(Miss& m) {
       std::cerr << m.what() << std::endl;
-      // try {
-      //   id = SymbolTable::instance_word().get(signature.substr(0, signature.find_last_of("-")));
-      // }
-      // catch(Miss& m) {
-      //   std::cerr << m.what() << std::endl;
+
+      if(start == 0)
+        signature = wordsignature->get_unknown_mapping(form,!start);
+      try {
+        id = SymbolTable::instance_word().get(signature.substr(0, signature.find_last_of("-")));
+      }
+      catch(Miss& m) {
+        std::cerr << m.what() << std::endl;
         id = -1;
-        //      }
+      }
     }
   }
 }
