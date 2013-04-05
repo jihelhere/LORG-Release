@@ -204,7 +204,8 @@ public:
 
   bool no_daughters() { return binary_daughters.empty() and unary_daughters.empty() and lexical_daughters.empty(); }
   bool is_closed() const { return not open; }
-  void close() { open=false; Edge::~Edge(); }
+  void close() { open=false; Edge::~Edge();}
+  //  void destroy() {Edge::~Edge();}
 
   void update_relaxations(
       std::map<int, std::map<int,double>>& u,

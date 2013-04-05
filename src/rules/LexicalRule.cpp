@@ -36,16 +36,16 @@ std::ostream& operator<<(std::ostream& out, const LexicalRule& rule)
 
 void LexicalRule::update_inside_annotations(std::vector<double>& up) const
 {
+  //std::cout << "probabilities size " << probabilities.size() << std::endl;
+
   for(unsigned i = 0 ; i < probabilities.size();++i) {
     //    if(probabilities[i])
     if(up[i] == LorgConstants::NullProba) continue;
     up[i] += probabilities[i];
 
     // if(up[i] < 0.0 || up[i] > 1.0)
-    //   std::cout << *this << " " << up[i] <<std::endl;
+    //std::cout << i << " : " << *this << " " << up[i] <<std::endl;
   }
-
-  //  up = probabilities;
 }
 
 

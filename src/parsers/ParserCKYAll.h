@@ -94,7 +94,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
 
   virtual void set_nbthreads(unsigned)=0;
 
-
+  virtual double get_sentence_probability() const =0;
   virtual double get_best_score(int) const =0 ;
 
 
@@ -208,7 +208,12 @@ public:
   void clean() { delete chart; chart = nullptr;}
 
 
-  void set_nbthreads(unsigned n) {Chart::nbthreads = n;}
+  void set_nbthreads(unsigned n)
+  {
+#ifdef USE_THREADS
+    Chart::nbthreads = n;
+#endif
+  }
 
  private:
   /** \brief Add unary rules at this position in the chart

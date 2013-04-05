@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <numeric>
-//#include <iostream>
+#include <iostream>
 
 URule::URule(short l, short rhs0_, const std::vector<unary_proba_info>& probs) :
   AnnotatedRule(l), rhs0(rhs0_), probabilities()
@@ -169,7 +169,7 @@ void URule::update_inside_annotations(std::vector<double>& up,
     }
 
      // if(up[i] < 0.0 || up[i] > 1.0)
-     //   std::cout << *this << " " << up[i] <<std::endl;
+    //std::cout << *this << " " << up[i] <<std::endl;
 
     assert(up[i] >= 0.0);
     assert(up[i] <= 1.0);

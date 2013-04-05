@@ -46,6 +46,12 @@ void PCKYAllCell<Types>::clear()
 //   static Edge protoEdge;
 //   edges.assign(max_size, protoEdge);
   std::fill((char*)edges, (char*) (edges+max_size), 0);
+
+  for (size_t i = 0; i < max_size; ++i)
+  {
+    (edges+i)->set_cell(this);
+  }
+
 }
 
 
@@ -133,14 +139,16 @@ void PCKYAllCell<Types>::compute_inside_probabilities()
 {
 //     apply_on_edges( & Edge::clean_invalidated_binaries);
 
-  apply_on_edges(std::function<void(Edge&)>([](Edge& edge){
-        /*if
-         *
-         (edge.get_lex())*/
-        edge.get_annotations().reset_probabilities(0.0, true);}) ,
-    & LexicalDaughter::update_inside_annotations  ,
-    &  BinaryDaughter::update_inside_annotations  ,
-    &            Edge::prepare_inside_probability );
+  apply_on_edges(
+      std::function<void(Edge&)>
+      ([](Edge& edge)
+       {
+
+         edge.get_annotations().reset_probabilities(0.0, true);}) ,
+      & LexicalDaughter::update_inside_annotations  ,
+      &  BinaryDaughter::update_inside_annotations  ,
+      &            Edge::prepare_inside_probability
+                 );
 
   apply_on_edges(& UnaryDaughter::update_inside_annotations);
   apply_on_edges(& Edge::         adjust_inside_probability);
@@ -181,6 +189,18 @@ void PCKYAllCell<Types>::clean()
           edge.close();
           changed =  true;
         }
+        // else
+        // {
+        //   std::cout << "clean: still has daughters" << std::endl;
+        //   for (const auto& u :  udaughters)
+        //   {
+        //     std::cout << *(u.get_rule()) << std::endl;
+        //   }
+        //   for (const auto& l :  edge.get_lexical_daughters())
+        //   {
+        //     std::cout << *(l.get_rule()) << std::endl;
+        //   }
+        // }
       }
   } while(changed);
 
@@ -198,6 +218,8 @@ void PCKYAllCell<Types>::clean()
     {
       closed = true;
     }
+  // else
+  //   std::cout << "clean: not closed" << std::endl;
 }
 
 
@@ -314,6 +336,8 @@ void PCKYAllCell<Types>::beam(double log_threshold, double log_sent_prob)
       if(all_invalid) {
         edge.close();
       }
+      // else
+      //   std::cout << "not closed" << std::endl;
     }
   // you must call clean after this method
 }

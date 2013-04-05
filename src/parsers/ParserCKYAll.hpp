@@ -471,7 +471,7 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
     //   std::cout << "top is not in root cell" << std::endl;
 
     if(chart->get_root().is_closed() || !chart->get_root().exists_edge(top_idx)) {
-      //      std::cout << "grammar " << i << " spoiled the fun :(" << std::endl;
+      //std::cout << "grammar " << i << " spoiled the fun :(" << std::endl;
       break;
     }
 
