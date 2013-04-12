@@ -68,6 +68,35 @@ Word::Word( const std::string& str, int string_start, int string_end, const std:
 }
 
 
+// Word& Word::operator=(const Word& other)
+// {
+//   if (this == &other) return *this;
+
+//   this->form  = other.form;
+//   this->start = other.start;
+//   this->end   = other.end;
+//   this->id    = other.id;
+//   this->sigid = other.sigid;
+//   this->tags  = other.tags;
+//   this->rules = other.rules;
+
+//   return *this;
+// }
+
+
+// Word::Word(Word&& other)
+//     :
+//     form(std::move(other.form)),
+//     start(other.start),
+//     end(other.end),
+//     id(other.id),
+//     sigid(other.sigid),
+//     tags(std::move(other.tags)),
+//     rules(std::move(other.rules))
+// {}
+
+
+
 std::ostream& operator<<(std::ostream& out, const Word& word)
 {
   out << word.form ;

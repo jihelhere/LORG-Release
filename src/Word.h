@@ -1,6 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef WORD_H_
-#define WORD_H_
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -23,13 +22,16 @@ public:
   friend std::ostream& operator<<(std::ostream& out, const Word& word);
 
 public:
+  // Word& operator=(const Word&);
+  // Word(Word&&);
 
   /**
      \brief Constructor
      \param str the given word form
+     \param start_idx start posisition in the input sentence (may be a lattice)
+     \param end_idx end position in the input lattice (-1 if sentence)
      \param pos the assigned pos tags
   */
-  //  Word(const std::string& str, int string_position, const std::vector<std::string>& pos  = std::vector<std::string>());
   Word(const std::string& str, int start_idx, int end_idx = -1, const std::vector<std::string>& pos  = std::vector<std::string>());
 
   bool is_tagged() const;
@@ -105,5 +107,3 @@ int Word::get_end() const
 {
   return end;
 }
-
-#endif // WORD_H_

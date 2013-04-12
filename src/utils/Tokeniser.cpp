@@ -220,7 +220,7 @@ bool Tokeniser::tokenise( std::istream& input,
     }
   }
   if(real) {
-    if (m_mode == Lat) // polyline node
+    if (m_mode == Lat) // polyline mode
       this->tokenise_lat(raw_string, input, next_sentence,brackets);
     else // monoline modes
       this->tokenise(raw_string, next_sentence,brackets);
@@ -231,15 +231,14 @@ bool Tokeniser::tokenise( std::istream& input,
 
 void Tokeniser::remove_punctuation( std::vector< Word >& sentence )
 {
-  std::vector< Word >::iterator del = sentence.begin();
-  for(unsigned int i = 0; i < sentence.size(); ++i, ++del)
-    {
-      if(m_unwanted_chars.count(sentence[i].form))
-	{
-	  del = sentence.erase(del);
-	  --i;
-	}
-    }
+
+  sentence.erase(
+      std::remove_if(sentence.begin(),sentence.end(),
+                     [&](const Word& w){return m_unwanted_chars.count(w.form);}
+                     ),
+      sentence.end()
+                 );
+
 }
 
 
