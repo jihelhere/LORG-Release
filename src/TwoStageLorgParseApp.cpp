@@ -88,9 +88,9 @@ int TwoStageLorgParseApp::run()
         }
       }
 
-      int k = 0;
+      //int k = 0;
       if (parsers.size() > 1)
-        k = find_consensus();
+        /*k =*/ find_consensus();
 
       //std::cerr << "k: " << k << std::endl;
 
