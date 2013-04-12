@@ -18,6 +18,9 @@ private:
   bool read_config(ConfigTable& configuration);
   LorgOptions get_options() const;
 
+  int find_consensus();
+
+
   std::vector<ParserCKYAll *> parsers;
   std::vector<Tagger> taggers;
   bool output_annotations;
