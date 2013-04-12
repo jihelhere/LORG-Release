@@ -11,35 +11,6 @@
 
 #include "utils/tick_count.h"
 
-unsigned simplified_nt( unsigned id )
-{
-  std::string name = SymbolTable::instance_nt().get_label_string(id);
-
-  static const boost::regex exp_artificial ("^\\[\\((.*)\\)>\\]$");
-  static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-  boost::cmatch matched;
-  bool is_artificial = false;
-
-  if(boost::regex_match(name.c_str(), matched, exp_artificial))
-  {
-    name = std::string(matched[1].first, matched[1].second);
-    is_artificial = true;
-  }
-
-  if(boost::regex_match(name.c_str(),matched,exp_funct))
-  {
-    name = std::string(matched[1].first, matched[1].second);
-  }
-
-  if(is_artificial)
-  {
-    name = "[(" + name + ")>]";
-  }
-
-  return SymbolTable::instance_nt().get_label_id(name);
-}
-
-
 TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 {
   unix_parse_solution::init();
@@ -82,22 +53,16 @@ int TwoStageLorgParseApp::run()
       //   std::clog << "\n";
       // }
 
-      //double lu = -std::numeric_limits<double>::infinity();
-      double lu = 0;
-
       for (size_t i = 0; i < parsers.size(); ++i)
       {
-        //std::cout << "iteration " << i << std::endl;
         //tag sentence
         {
           //                             BLOCKTIMING("tagger");
-          //std::cout << "tagging " << i << std::endl;
           taggers[i].tag(sentence);
         }
         // create and initialise chart
         {
           //                             BLOCKTIMING("initialise_chart");
-          //          std::cout << "intialisation " << i << std::endl;
           parsers[i]->initialise_chart(sentence, brackets);
         }
 
@@ -105,17 +70,13 @@ int TwoStageLorgParseApp::run()
         // parse, aka create the coarse forest
         {
           //                             BLOCKTIMING("parse");
-          //          std::cout << "parsing " << i << std::endl;
           parsers[i]->parse(start_symbol);
-          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
         }
 
         //use intermediate grammars to prune the chart
         {
           //                             BLOCKTIMING("beam_c2f");
-          //          std::cout << "beaming " << i << std::endl;
           parsers[i]->beam_c2f(start_symbol);
-          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
         }
 
 
@@ -123,218 +84,13 @@ int TwoStageLorgParseApp::run()
         if(parsers[i]->is_chart_valid(start_symbol))
         {
           //                             BLOCKTIMING("extract_solution");
-
-          //          std::cout << "extracting " << i << std::endl;
           parsers[i]->extract_solution();
         }
-        if(parsers[i]->is_chart_valid(start_symbol))
-        {
-          //          std::cout << "reading " << i << std::endl;
-
-          //std::cout << parsers[i]->get_best_score(start_symbol) << std::endl;
-
-          lu += parsers[i]->get_best_score(start_symbol);
-
-
-          //std::cout << parsers[i]->get_sentence_probability() << std::endl;
-
-          // std::cout << "reading " << i << std::endl;
-          // std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
-          // if(parsers[i]->is_chart_valid(start_symbol))
-          // {
-          //   //                             BLOCKTIMING("get_parses");
-
-          //   std::cout << "getting " << i << std::endl;
-          //   parsers[i]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
-
-          // }
-
-          // if (best_trees[0].first == nullptr)
-          //   std::cout << "NULL" << std::endl ;
-
-          // std::cout << best_trees[0].second << " : " << *(best_trees[0].first) << std::endl;
-          // delete best_trees[0].first;
-
-        }
       }
 
-      bool valid = true;
-      for (size_t i = 0; i < parsers.size(); ++i)
-      {
-        if(!parsers[i]->is_chart_valid(start_symbol))
-          valid = false;
-      }
-
-      if(parsers.size() == 1)
-        valid = false;
-
-      unsigned k = 0;
-      if (valid)
-      {
-        std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>> u;
-        double c = 1;
-        double t = 0;
-
-        //double delta_k = 0.05;
-        //      double delta_k = c / (t + 1);
-
-        for (k = 0; k < 1000; ++k)
-        {
-          // std::cout << "k = " << k << std::endl;
-          // std::cout << "lu = " << lu << std::endl;
-          // std::cout << "t = " << t << std::endl;
-          double delta_k = c / (t + 1);
-          double nlu = 0;
-
-
-          std::vector<std::set<std::tuple<const AnnotatedRule*,int,int> > > sets(parsers.size());
-          std::vector<std::vector< std::vector<int> >> sets_v(parsers.size());
-
-          for (size_t i = 0; i < parsers.size(); ++i)
-          {
-            sets[i] = parsers[i]->get_vectorized_representation(start_symbol);
-            // if (sets[i].empty())
-            //   break;
-
-            for (auto& e: sets[i])
-            {
-              //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
-
-              auto& case_u = u[std::get<1>(e)][std::get<2>(e)];
-
-              const AnnotatedRule* r = std::get<0>(e);
-
-              int l, r0, r1;
-
-              if(r->is_binary())
-              {
-                const BRule * br = static_cast<const BRule*>(r);
-                l  = simplified_nt( br->get_lhs());
-                r0 = simplified_nt( br->get_rhs0());
-                r1 = simplified_nt( br->get_rhs1());
-
-                sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
-
-              }
-              else
-              {
-                if(r->is_lexical())
-                {
-                  const LexicalRule * lr = static_cast<const LexicalRule*>(r);
-                  l  = simplified_nt( lr->get_lhs());
-                  r0 = lr->get_rhs0();
-                  r1 = -2; // for lexical rules
-                  sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
-                }
-                else
-                {
-                  const URule * ur = static_cast<const URule*>(r);
-                  l  = simplified_nt( ur->get_lhs());
-                  r0 = simplified_nt( ur->get_rhs0());
-                  r1 = -1; // for unary rules
-                  sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
-                }
-              }
-              if ((i % 2) == 0)
-              {
-                case_u[l][r0][r1] -= delta_k;
-              }
-              else
-              {
-                case_u[l][r0][r1] += delta_k;
-              }
-
-            }
-          }
-          // check same solution
-          bool same = false;
-          if (sets_v[0].size() == sets_v[1].size())
-          {
-            same = true;
-            for(const auto&s : sets_v[0])
-            {
-              if (std::find(sets_v[1].begin(), sets_v[1].end(),s) == sets_v[1].end())
-              {
-                same = false;
-                break;
-              }
-            }
-          }
-
-          if(same)
-          {
-            break;
-          }
-
-          // for(auto& a : u)
-          // {
-          //   int i = a.first;
-          //   for(auto& b : a.second)
-          //   {
-          //     int j = b.first;
-          //     for(auto& c : b.second)
-          //     {
-          //       int l = c.first;
-          //       for(auto& d : c.second)
-          //       {
-          //         int r0 = d.first;
-          //         for(auto& e : d.second)
-          //         {
-          //           int r1 = e.first;
-          //           double weight = e.second;
-
-          //           std::cout << "(" << i << "," << j << ") : "
-          //                     << SymbolTable::instance_nt().get_label_string(l)
-          //                     << " -> "
-          //                     << (r1 == -2 ? SymbolTable::instance_word().get_label_string(r0) : SymbolTable::instance_nt().get_label_string(r0))
-          //                     << " "
-          //                     << (r1 < 0 ? "" : SymbolTable::instance_nt().get_label_string(r1))
-          //                     << " || " << weight
-          //                     << std::endl;
-
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
-
-
-
-
-          // update relaxations
-          for (size_t i = 0; i < parsers.size(); ++i)
-          {
-            if(parsers[i]->is_chart_valid(start_symbol))
-            {
-              parsers[i]->update_relaxations(u, (i % 2) == 0);
-            }
-          }
-
-          // update solutions
-          for (size_t i = 0; i < parsers.size(); ++i)
-          {
-            if(parsers[i]->is_chart_valid(start_symbol))
-            {
-              //                             BLOCKTIMING("extract_solution");
-
-              //std::cout << "extracting " << i << std::endl;
-              parsers[i]->simple_extract_solution();
-              nlu += parsers[i]->get_best_score(start_symbol);
-            }
-          }
-          //        std::cout << std::endl;
-
-
-          // std::cout << "nlu = " << nlu << std::endl;
-          // std::cout << "lu = " << lu << std::endl;
-          if (nlu > lu )//|| (k % 20) == 0)
-          {
-            t++;
-          }
-          lu = nlu;
-          //          std::cerr << nlu << std::endl;
-        }
-      }
+      int k = 0;
+      if (parsers.size() > 1)
+        k = find_consensus();
 
       //std::cerr << "k: " << k << std::endl;
 
@@ -433,4 +189,219 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   output_format = parse_solution::format_from_string(configuration.get_value<std::string>("output-format"));
 
   return true;
+}
+
+//////////////////////////// DD /////////////////////////////
+unsigned simplified_nt( unsigned id )
+{
+  std::string name = SymbolTable::instance_nt().get_label_string(id);
+
+  static const boost::regex exp_artificial ("^\\[\\((.*)\\)>\\]$");
+  static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+  boost::cmatch matched;
+  bool is_artificial = false;
+
+  if(boost::regex_match(name.c_str(), matched, exp_artificial))
+  {
+    name = std::string(matched[1].first, matched[1].second);
+    is_artificial = true;
+  }
+
+  if(boost::regex_match(name.c_str(),matched,exp_funct))
+  {
+    name = std::string(matched[1].first, matched[1].second);
+  }
+
+  if(is_artificial)
+  {
+    name = "[(" + name + ")>]";
+  }
+
+  return SymbolTable::instance_nt().get_label_id(name);
+}
+
+
+int TwoStageLorgParseApp::find_consensus()
+{
+  int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
+
+
+  double lu = 0;
+  bool valid = true;
+
+  for (size_t i = 0; i < parsers.size(); ++i)
+  {
+    if(!parsers[i]->is_chart_valid(start_symbol))
+      valid = false;
+    else
+      lu += parsers[i]->get_best_score(start_symbol);
+  }
+
+  if(!valid) return -1;
+
+  unsigned k = 0;
+  std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>> u;
+  double c = 1;
+  double t = 0;
+
+  for (k = 0; k < 1000; ++k)
+  {
+    // std::cout << "k = " << k << std::endl;
+    // std::cout << "lu = " << lu << std::endl;
+    // std::cout << "t = " << t << std::endl;
+    double delta_k = c / (t + 1);
+    double nlu = 0;
+
+
+    std::vector<std::set<std::tuple<const AnnotatedRule*,int,int> > > sets(this->parsers.size());
+    std::vector<std::vector< std::vector<int> >> sets_v(this->parsers.size());
+
+    for (size_t i = 0; i < parsers.size(); ++i)
+    {
+      sets[i] = parsers[i]->get_vectorized_representation(start_symbol);
+      // if (sets[i].empty())
+      //   break;
+
+      for (auto& e: sets[i])
+      {
+        //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
+
+        auto& case_u = u[std::get<1>(e)][std::get<2>(e)];
+
+        const AnnotatedRule* r = std::get<0>(e);
+
+        int l, r0, r1;
+
+        if(r->is_binary())
+        {
+          const BRule * br = static_cast<const BRule*>(r);
+          l  = simplified_nt(br->get_lhs());
+          r0 = simplified_nt(br->get_rhs0());
+          r1 = simplified_nt(br->get_rhs1());
+
+          sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+        }
+        else
+        {
+          if(r->is_lexical())
+          {
+            const LexicalRule * lr = static_cast<const LexicalRule*>(r);
+            l  = simplified_nt( lr->get_lhs());
+            r0 = lr->get_rhs0();
+            r1 = -2; // for lexical rules
+            sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+          }
+          else //unary
+          {
+            const URule * ur = static_cast<const URule*>(r);
+            l  = simplified_nt( ur->get_lhs());
+            r0 = simplified_nt( ur->get_rhs0());
+            r1 = -1; // for unary rules
+            sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+          }
+        }
+
+        // update u
+        if ((i % 2) == 0)
+        {
+          case_u[l][r0][r1] -= delta_k;
+        }
+        else
+        {
+          case_u[l][r0][r1] += delta_k;
+        }
+
+      }
+    }
+
+
+    // check same solution
+    bool same = false;
+    if (sets_v[0].size() == sets_v[1].size())
+    {
+      same = true;
+      for(const auto&s : sets_v[0])
+      {
+        if (std::find(sets_v[1].begin(), sets_v[1].end(),s) == sets_v[1].end())
+        {
+          same = false;
+          break;
+        }
+      }
+    }
+
+    if(same)
+    {
+      break;
+    }
+
+          // for(auto& a : u)
+          // {
+          //   int i = a.first;
+          //   for(auto& b : a.second)
+          //   {
+          //     int j = b.first;
+          //     for(auto& c : b.second)
+          //     {
+          //       int l = c.first;
+          //       for(auto& d : c.second)
+          //       {
+          //         int r0 = d.first;
+          //         for(auto& e : d.second)
+          //         {
+          //           int r1 = e.first;
+          //           double weight = e.second;
+
+          //           std::cout << "(" << i << "," << j << ") : "
+          //                     << SymbolTable::instance_nt().get_label_string(l)
+          //                     << " -> "
+          //                     << (r1 == -2 ? SymbolTable::instance_word().get_label_string(r0) : SymbolTable::instance_nt().get_label_string(r0))
+          //                     << " "
+          //                     << (r1 < 0 ? "" : SymbolTable::instance_nt().get_label_string(r1))
+          //                     << " || " << weight
+          //                     << std::endl;
+
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
+
+    // update relaxations
+    for (size_t i = 0; i < this->parsers.size(); ++i)
+    {
+      if(this->parsers[i]->is_chart_valid(start_symbol))
+      {
+        this->parsers[i]->update_relaxations(u, (i % 2) == 0);
+      }
+    }
+
+    // update solutions
+    for (size_t i = 0; i < parsers.size(); ++i)
+    {
+      if(parsers[i]->is_chart_valid(start_symbol))
+      {
+        //                             BLOCKTIMING("extract_solution");
+
+        //std::cout << "extracting " << i << std::endl;
+        parsers[i]->simple_extract_solution();
+        nlu += parsers[i]->get_best_score(start_symbol);
+      }
+    }
+    //        std::cout << std::endl;
+
+
+    //update stepsize
+    // std::cout << "nlu = " << nlu << std::endl;
+    // std::cout << "lu = " << lu << std::endl;
+    if (nlu > lu )//|| (k % 20) == 0)
+    {
+      t++;
+    }
+    lu = nlu;
+    //          std::cerr << nlu << std::endl;
+
+  }
+
+  return k;
 }
