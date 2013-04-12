@@ -1,6 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef TOKENISER_H
-#define TOKENISER_H
+#pragma once
 
 #include "TokeniserSpec.h"
 
@@ -72,5 +71,3 @@ private:
   Tokeniser& operator=(const Tokeniser&);
 
 };
-
-#endif // TOKENISER_H
