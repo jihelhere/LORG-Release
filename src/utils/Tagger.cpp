@@ -6,7 +6,9 @@
 
 Tagger::Tagger(const std::vector< std::vector<const MetaProduction*> >* word_2_rule,
 	       bool replace_number,const std::string& num_replace_regex) :
-  word_2_rule_(word_2_rule), replace_number_(replace_number), num_replace_regex_(num_replace_regex)
+    word_2_rule_(word_2_rule),
+    replace_number_(replace_number),
+    num_replace_regex_(num_replace_regex)
 {}
 
 
@@ -28,12 +30,33 @@ void Tagger::replace_number(Word& word) const
   }
 }
 
+
 void Tagger::tag(Word& word) const
 {
-  typedef std::vector<const MetaProduction*>::const_iterator const_iterator;
   // only do this once ...
   static int unknown_id = SymbolTable::instance_word().insert(LorgConstants::token_unknown);
   static const std::vector<const MetaProduction*>& unknown_tags =  (*word_2_rule_)[unknown_id];
+
+  static
+  std::function<bool(Word&,int,const std::vector<const MetaProduction*>&)>
+      find_tags_in_w2r_and_tag
+      = [](Word& w, int tag, const std::vector<const MetaProduction*>& w2r)
+      {
+        bool result = false;
+
+        auto r_iter =  std::find_if(w2r.begin(), w2r.end(),
+                                    [&](const MetaProduction* mp)
+                                       {return mp->get_lhs() == tag;}
+                                    );
+
+        if (r_iter != w2r.end())
+        {
+          w.rules.push_back(*r_iter);
+          result = true;
+        }
+
+        return result;
+      };
 
   if(word.is_tagged()) {
 
@@ -43,40 +66,20 @@ void Tagger::tag(Word& word) const
       int given_tag = word.get_given_tag(i);
       bool found = false;
       if(word.id != -1)
-        // we try to find the first rule with the given tag in lhs position
-        for(const_iterator r_iter = (*word_2_rule_)[word.id].begin(); r_iter != (*word_2_rule_)[word.id].end(); ++r_iter) {
-          if((*r_iter)->get_lhs() == given_tag) {
-            word.rules.push_back(*r_iter);
-            found = true;
-            break;
-          }
-        }
+      {
+        // we try to find the first rule with the given tag in lhs
+        // position
+        found = find_tags_in_w2r_and_tag(word, given_tag, (*word_2_rule_)[word.id]);
+      }
 
       if(!found && word.id != -1 && word.sigid != word.id && word.sigid != -1) {
-
-        for(const_iterator r_iter = (*word_2_rule_)[word.sigid].begin(); r_iter != (*word_2_rule_)[word.sigid].end(); ++r_iter) {
-          if((*r_iter)->get_lhs() == given_tag) {
-            word.rules.push_back(*r_iter);
-            found = true;
-            break;
-          }
-        }
-
-
+        found = find_tags_in_w2r_and_tag(word, given_tag, (*word_2_rule_)[word.sigid]);
       }
 
       //if we couldn't find TAG -> word (or signature)
       //try to look for TAG -> UNKNOWN
       if(!found) {
-
-        for(const_iterator r_iter = (*word_2_rule_)[unknown_id].begin(); r_iter != (*word_2_rule_)[unknown_id].end(); ++r_iter) {
-          if((*r_iter)->get_lhs() == given_tag) {
-            word.rules.push_back(*r_iter);
-            found = true;
-            break;
-          }
-        }
-
+        found = find_tags_in_w2r_and_tag(word, given_tag, (*word_2_rule_)[unknown_id]);
       }
       //maybe throw an exception here ...
       if(!found) {
@@ -112,24 +115,14 @@ void Tagger::tag(Word& word) const
 }
 
 
-struct tag_helper
-{
-  const Tagger& tagger;
-  tag_helper(const Tagger& t) : tagger(t){}
-  void operator()(Word& w) {tagger.tag(w);}
-};
-
-struct replace_number_helper
-{
-  const Tagger& tagger;
-  replace_number_helper(const Tagger& t) : tagger(t){}
-  void operator()(Word& w) {tagger.replace_number(w);}
-};
-
 void Tagger::tag( std::vector< Word >& sentence ) const
 {
   if(replace_number_)
-    std::for_each(sentence.begin(), sentence.end(), replace_number_helper (*this));
+    std::for_each(sentence.begin(), sentence.end(),
+                  [&](Word& w) {this->replace_number(w);}
+                  );
 
-  std::for_each(sentence.begin(), sentence.end(), tag_helper (*this));
+  std::for_each(sentence.begin(), sentence.end(),
+                [&](Word& w){this->tag(w);}
+                );
 }

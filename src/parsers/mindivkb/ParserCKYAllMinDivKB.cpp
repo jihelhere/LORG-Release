@@ -100,7 +100,7 @@ unsigned MinDivProbabilityKB::size = 0;
 
 
 
-ostream & MinDivProbabilityKB::operator>> (ostream & out) const
+std::ostream & MinDivProbabilityKB::operator>> (std::ostream & out) const
 {return out;}
 
 inline void

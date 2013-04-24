@@ -1,6 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef CHARTCKY_H_
-#define CHARTCKY_H_
+#pragma once
 
 #include "utils/PtbPsTree.h"
 #include "utils/LorgConstants.h"
@@ -17,8 +16,6 @@
 
 #include <functional>
 #include <iostream>
-using std::ostream;
-using std::endl;
 
 /**
   \class ChartCKY
@@ -98,7 +95,7 @@ public:
 
   bool is_valid(int start_symbol) const;
 
-  ostream & to_stream(ostream & s) const;
+  std::ostream & to_stream(std::ostream & s) const;
   std::string toString() const ;
 
   void opencells_apply( std::function<void(Cell &)> f );
@@ -109,7 +106,7 @@ public:
   void opencells_apply_top_down_nothread( std::function<void(Cell &)> f );
   void opencells_apply_top_down_nothread( std::function<void(const Cell &)> f ) const;
 
-  std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << endl; }); return out; }
+  std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << std::endl; }); return out; }
 
 
   void update_relaxations(
@@ -118,6 +115,3 @@ public:
 
 
 };
-
-
-#endif /*CHARTCKY_H_*/
