@@ -452,10 +452,10 @@ public:
 
 
   template<class Types>
-  ostream & operator<<(ostream & out, const ChartCKY<Types> & chart) { return chart.to_stream(out) ; }
+  std::ostream & operator<<(std::ostream & out, const ChartCKY<Types> & chart) { return chart.to_stream(out) ; }
 
   template<class Types>
-  ostream & ChartCKY<Types>::to_stream(ostream & s) const {
+  std::ostream & ChartCKY<Types>::to_stream(std::ostream & s) const {
     s << "(begin chart:"<< this << ")" << std::endl;
     opencells_apply_top_down_nothread( [&s](const Cell & cell){
       s << "(span " << cell.get_end()-cell.get_begin()+1 << ", begin " << cell.get_begin() << ")" << std::endl;

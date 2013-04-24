@@ -22,8 +22,9 @@ public:
   friend std::ostream& operator<<(std::ostream& out, const Word& word);
 
 public:
-  // Word& operator=(const Word&);
-  // Word(Word&&);
+// Word& operator=(const Word&);
+// Word& operator=(Word&&);
+// Word(Word&&);
 
   /**
      \brief Constructor

@@ -1,6 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef TAGGER_H
-#define TAGGER_H
+#pragma once
 
 #include "../Word.h"
 #include "SymbolTable.h"
@@ -27,5 +26,3 @@ private:
   bool replace_number_;
   boost::regex num_replace_regex_;
 };
-
-#endif // TAGGER_H
