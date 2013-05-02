@@ -89,8 +89,8 @@ void PCKYAllCell<Types>::process_candidate(const UnaryRule* rule, double L_insid
 {
   assert(rule);
   assert(rule->get_probability().size() > 0);
-  static int i = 0;
-  ++i;
+  // static int i = 0;
+  // ++i;
 
   Edge & e = edges[rule->get_lhs()];
   e.add_daughters(edges[rule->get_rhs0()],rule);

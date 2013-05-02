@@ -206,10 +206,15 @@ void PackedEdge<Types>::prepare_inside_probability()
 template <class Types>
 void PackedEdge<Types>::adjust_inside_probability()
 {
-  for (unsigned i = 0; i < this->get_annotations().inside_probabilities.array.size(); ++i)
+  auto& annot = this->get_annotations();
+
+  for (unsigned i = 0; i < annot.inside_probabilities.array.size(); ++i)
     {
-      if(this->get_annotations().inside_probabilities.array[i] != LorgConstants::NullProba)
-        this->get_annotations().inside_probabilities.array[i] += this->get_annotations().inside_probabilities_unary_temp.array[i];
+      if(annot.inside_probabilities.array[i] != LorgConstants::NullProba)
+        annot.inside_probabilities.array[i] += annot.inside_probabilities_unary_temp.array[i];
+
+      if(annot.inside_probabilities_unary_temp.array[i] == LorgConstants::NullProba)
+        annot.inside_probabilities.array[i] = LorgConstants::NullProba;
     }
 }
 
