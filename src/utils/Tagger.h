@@ -14,8 +14,8 @@ public:
 	 bool replace_number = false,
 	 const std::string& num_replace_regex = "^\\d+([,\\.]\\d+)?(,\\d+)?");
 
-  void tag( std::vector< Word >& sentence ) const;
-  void tag( Word& w ) const;
+  void tag( std::vector< Word >& sentence, const WordSignature& ws) const;
+  void tag( Word& w, const WordSignature& ws ) const;
   void replace_number(Word& word) const;
 
 

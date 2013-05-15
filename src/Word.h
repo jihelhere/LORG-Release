@@ -48,14 +48,11 @@ public:
   int get_start() const;
   int get_end() const;
 
+  void initialize_id(const WordSignature& wordsignature);
 
 public:
-  static void init_lexicon_type(WordSignature* ws){wordsignature = ws;};
-  static void reset_lexicon_type(){delete wordsignature;}
 
 protected:
-  static WordSignature* wordsignature; ///< use this ws to get the unknown word class/signature
-
   std::string form;                         ///< the actual word form
 
   int start;

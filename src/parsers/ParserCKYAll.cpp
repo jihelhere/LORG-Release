@@ -18,20 +18,8 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
   std::vector<URule> un;
   std::vector<LexicalRule> lex;
 
-  std::map<std::string, std::string>  gram_conf;
 
-  BURuleInputParser::read_rulefile(filename, lex, un, bin, history_trees, gram_conf);
-
-  // TODO this should be moved somewhere else
-  if (gram_conf.count("lex_unknown_map"))
-  {
-    std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
-    Word::reset_lexicon_type();
-    Word::init_lexicon_type(
-        WordSignatureFactory::create_wordsignature(
-            WordSignature::string_2_lex_unknown_map(gram_conf.at("lex_unknown_map")),
-            true));
-  }
+  BURuleInputParser::read_rulefile(filename, lex, un, bin, history_trees, this->gram_conf);
 
 
   // std::cout << history_trees.size() << std::endl;
@@ -86,7 +74,8 @@ ParserCKYAll::ParserCKYAll(std::vector<AGrammar*>& cgs,
                            double prior_threshold,
                            const annot_descendants_type& annot_descendants_,
                            bool accurate_,
-                           unsigned min_beam, int stubborn)
+                           unsigned min_beam, int stubborn,
+                           WordSignature* ws)
     :
     Parser(cgs[0]),
     grammars(cgs),
@@ -94,7 +83,8 @@ ParserCKYAll::ParserCKYAll(std::vector<AGrammar*>& cgs,
     annot_descendants(annot_descendants_),
     accurate(accurate_),
     min_length_beam(min_beam),
-    stubbornness(stubborn)
+    stubbornness(stubborn),
+    word_signature(ws)
 {
   // these thresholds look familiar ;)
   if(accurate) {

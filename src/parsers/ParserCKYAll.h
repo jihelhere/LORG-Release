@@ -55,7 +55,8 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   */
   ParserCKYAll(std::vector<AGrammar*>& cgs, const std::vector<double>& prior_map, double beam_threshold,
                const annot_descendants_type& annot_descendants,
-               bool accurate, unsigned min_beam, int stubborn);
+               bool accurate, unsigned min_beam, int stubborn,
+               WordSignature * ws = nullptr);
 
   /**
      \brief parses the sentence using the grammar
@@ -97,6 +98,9 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   virtual double get_sentence_probability() const =0;
   virtual double get_best_score(int) const =0 ;
 
+  virtual const WordSignature* get_word_signature() const {return word_signature;}
+  virtual void set_word_signature(const WordSignature* ws) {word_signature = ws;}
+
 
  protected: // attributes
   std::vector<AGrammar *> grammars; ///< the grammars to beam
@@ -113,7 +117,11 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
 
   unsigned min_length_beam; ///< minimum sentence length to apply beam on
 
-  int stubbornness; ///< number of tries with incremental prior-based pruning
+  int stubbornness; ///< number of tries with incremental prior-based
+                    ///pruning
+
+  const WordSignature * word_signature;
+
 };
 
 

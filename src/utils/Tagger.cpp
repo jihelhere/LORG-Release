@@ -31,7 +31,7 @@ void Tagger::replace_number(Word& word) const
 }
 
 
-void Tagger::tag(Word& word) const
+void Tagger::tag(Word& word, const WordSignature& ws) const
 {
   // only do this once ...
   static int unknown_id = SymbolTable::instance_word().insert(LorgConstants::token_unknown);
@@ -57,6 +57,10 @@ void Tagger::tag(Word& word) const
 
         return result;
       };
+
+
+  word.initialize_id(ws);
+
 
   if(word.is_tagged()) {
 
@@ -115,7 +119,7 @@ void Tagger::tag(Word& word) const
 }
 
 
-void Tagger::tag( std::vector< Word >& sentence ) const
+void Tagger::tag( std::vector< Word >& sentence, const WordSignature& ws ) const
 {
   if(replace_number_)
     std::for_each(sentence.begin(), sentence.end(),
@@ -123,6 +127,6 @@ void Tagger::tag( std::vector< Word >& sentence ) const
                   );
 
   std::for_each(sentence.begin(), sentence.end(),
-                [&](Word& w){this->tag(w);}
+                [&](Word& w){this->tag(w,ws);}
                 );
 }
