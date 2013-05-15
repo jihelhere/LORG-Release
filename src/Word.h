@@ -11,7 +11,7 @@ class MetaProduction;
 /**
   \class Word
   \brief represents a word in a sentence
-  \author Wolfgang Seeker
+  \author Wolfgang Seeker & others
 */
 class Word
 {
