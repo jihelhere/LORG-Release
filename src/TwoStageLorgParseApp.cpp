@@ -91,11 +91,11 @@ int TwoStageLorgParseApp::run()
         }
       }
 
-      //int k = 0;
+      int k = 0;
       if (parsers.size() > 1)
-        /*k =*/ find_consensus();
+        k = find_consensus();
 
-      //std::cerr << "k: " << k << std::endl;
+      std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
         //for (size_t i = 0; i < parsers.size(); ++i)
@@ -206,6 +206,7 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 }
 
 //////////////////////////// DD /////////////////////////////
+
 unsigned simplified_nt( unsigned id )
 {
   std::string name = SymbolTable::instance_nt().get_label_string(id);
@@ -235,8 +236,12 @@ unsigned simplified_nt( unsigned id )
 }
 
 
+
+
+
 int TwoStageLorgParseApp::find_consensus()
 {
+
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
 
 
@@ -254,7 +259,7 @@ int TwoStageLorgParseApp::find_consensus()
   if(!valid) return -1;
 
   unsigned k = 0;
-  std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>> u;
+  MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>> u;
   double c = 1;
   double t = 0;
 
@@ -348,38 +353,6 @@ int TwoStageLorgParseApp::find_consensus()
     {
       break;
     }
-
-          // for(auto& a : u)
-          // {
-          //   int i = a.first;
-          //   for(auto& b : a.second)
-          //   {
-          //     int j = b.first;
-          //     for(auto& c : b.second)
-          //     {
-          //       int l = c.first;
-          //       for(auto& d : c.second)
-          //       {
-          //         int r0 = d.first;
-          //         for(auto& e : d.second)
-          //         {
-          //           int r1 = e.first;
-          //           double weight = e.second;
-
-          //           std::cout << "(" << i << "," << j << ") : "
-          //                     << SymbolTable::instance_nt().get_label_string(l)
-          //                     << " -> "
-          //                     << (r1 == -2 ? SymbolTable::instance_word().get_label_string(r0) : SymbolTable::instance_nt().get_label_string(r0))
-          //                     << " "
-          //                     << (r1 < 0 ? "" : SymbolTable::instance_nt().get_label_string(r1))
-          //                     << " || " << weight
-          //                     << std::endl;
-
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
 
     // update relaxations
     for (size_t i = 0; i < this->parsers.size(); ++i)

@@ -165,7 +165,7 @@ public:
   void change_rules_resize(const AnnotatedLabelsInfo& next_annotations, const std::vector<std::vector<std::vector<unsigned> > >& annot_descendants_current);
   void change_rules_resize(unsigned new_size, unsigned fienr_idx);
 
-  void update_relaxations(std::map<int, std::map<int, std::map<int,double>>>& u,
+  void update_relaxations(MAP<int, MAP<int, MAP<int,double>>>& u,
                           bool first);
 
 

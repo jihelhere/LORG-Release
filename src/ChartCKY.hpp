@@ -653,7 +653,7 @@ public:
 
 template<class Types>
 void ChartCKY<Types>::update_relaxations(
-    std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>& u,
+    MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
     bool positive)
 {
 
