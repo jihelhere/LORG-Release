@@ -323,14 +323,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
             config.get_value<unsigned>("kbest"))
         );
 
-    if (grammars2[0]->gram_conf.count("lex_unknown_map"))
+        if (grammars2.back()->gram_conf.count("lex_unknown_map"))
     {
       if (results.back()->get_word_signature() == nullptr)
       {
         std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
         results.back()->set_word_signature(
             WordSignatureFactory::create_wordsignature(
-                WordSignature::string_2_lex_unknown_map(grammars2[0]->gram_conf.at("lex_unknown_map")),
+                WordSignature::string_2_lex_unknown_map(grammars2.back()->gram_conf.at("lex_unknown_map")),
                 true));
       }
 
