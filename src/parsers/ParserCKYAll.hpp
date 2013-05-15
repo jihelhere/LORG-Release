@@ -605,7 +605,7 @@ ParserCKYAll_Impl<Types>::get_vectorized_representation(int start_symbol)
 template <class Types>
 void
 ParserCKYAll_Impl<Types>::update_relaxations(
-    std::map<int,std::map<int,std::map<int, std::map<int, std::map<int,double>>>>>& u,
+    MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
     bool positive)
 {
   chart->update_relaxations(u, positive);

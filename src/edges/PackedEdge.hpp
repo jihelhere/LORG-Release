@@ -634,7 +634,7 @@ double PackedEdge<Types>::marginalise() const
 
 
 template <typename Types>
-void PackedEdge<Types>::update_relaxations(std::map<int, std::map<int,double>>& u,
+void PackedEdge<Types>::update_relaxations(MAP<int, MAP<int,double>>& u,
                                            bool first)
 {
 

@@ -208,7 +208,7 @@ public:
   //  void destroy() {Edge::~Edge();}
 
   void update_relaxations(
-      std::map<int, std::map<int,double>>& u,
+      MAP<int, MAP<int,double>>& u,
       bool positive);
 
 
