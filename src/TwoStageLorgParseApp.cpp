@@ -11,6 +11,9 @@
 
 #include "utils/tick_count.h"
 
+#include "lexicon/WordSignatureFactory.h"
+
+
 TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 {
   unix_parse_solution::init();
@@ -58,7 +61,7 @@ int TwoStageLorgParseApp::run()
         //tag sentence
         {
           //                             BLOCKTIMING("tagger");
-          taggers[i].tag(sentence);
+          taggers[i].tag(sentence, *(parsers[i]->get_word_signature()));
         }
         // create and initialise chart
         {
@@ -183,6 +186,17 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
     taggers[i].set_word_rules(&(parsers[i]->get_words_to_rules()));
   }
 
+
+  for(const auto& p : this->parsers)
+  {
+    if (p->get_word_signature() == nullptr)
+    {
+      // read parts of the configuration dedicated to word signature
+      // and initialize word class
+      std::cerr << "here" << std::endl;
+      p->set_word_signature(WordSignatureFactory::create_wordsignature(configuration));
+    }
+  }
 
   extract_features = configuration.get_value<bool>("extract-features");
 

@@ -15,7 +15,7 @@
 class Extract
 {
 public:
-  Extract(std::vector<Feature>& features_) : features(features_) {};
+  Extract(const std::vector<Feature>& features_) : features(features_) {};
   Extract() {};
   virtual ~Extract() {};
 

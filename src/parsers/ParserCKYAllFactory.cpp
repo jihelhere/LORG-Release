@@ -16,6 +16,10 @@
 #include "grammars/GrammarAnnotated.hpp"
 #include "utils/data_parsers/AnnotHistoriesParser.h"
 
+#include "lexicon/WordSignatureFactory.h"
+
+
+
 ParserCKYAllFactory::Parsing_Algorithm
 ParserCKYAllFactory::string_to_pa(const std::string& s)
 {
@@ -185,6 +189,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         return results;
     }
 
+
     annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
     all_annot_descendants.push_back(annot_descendants);
 
@@ -238,6 +243,25 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
     );
 
 
+    if (grammars.back()->gram_conf.count("lex_unknown_map"))
+    {
+
+      std::cerr << "gram_conf contains lex_unknown_map info" << std::endl;
+
+      if (results.back()->get_word_signature() == nullptr)
+      {
+        std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+        results.back()->set_word_signature(
+            WordSignatureFactory::create_wordsignature(
+                WordSignature::string_2_lex_unknown_map(grammars.back()->gram_conf.at("lex_unknown_map")),
+                true));
+      }
+
+    }
+
+
+
+
 
     std::vector<double> priors2;
     std::vector<annot_descendants_type> all_annot_descendants2;
@@ -252,6 +276,12 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         //std::clog << "before priors2" << std::endl;
         priors2 = grammars2[0]->compute_priors();
         //std::clog << "after priors2" << std::endl;
+
+
+
+
+
+
 
 
         annot_descendants_type annot_descendants2 = create_annot_descendants(grammars2.back()->get_history_trees());
@@ -292,6 +322,21 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
             config.get_value<int>("stubbornness"),
             config.get_value<unsigned>("kbest"))
         );
+
+    if (grammars2[0]->gram_conf.count("lex_unknown_map"))
+    {
+      if (results.back()->get_word_signature() == nullptr)
+      {
+        std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+        results.back()->set_word_signature(
+            WordSignatureFactory::create_wordsignature(
+                WordSignature::string_2_lex_unknown_map(grammars2[0]->gram_conf.at("lex_unknown_map")),
+                true));
+      }
+
+    }
+
+
     }
 
     return results;
@@ -413,6 +458,7 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
                         //      std::clog << "after mapping " << i << std::endl;
 
                         //      std::clog << "before create_projection" << std::endl;
+                        // std::clog << "create_intermediates i=" << i << std::endl;
                         ParserCKYAll::AGrammar * cg = grammar.create_projection(expected_counts, annotation_mapping);
                         //      std::clog << "after create_projection" << std::endl;
 

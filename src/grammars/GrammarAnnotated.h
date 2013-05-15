@@ -57,6 +57,10 @@ public:
   inline const std::map< short, Tree<unsigned> >&  get_history_trees() const {return history_trees;}
 
 
+  // TODO: private + accessors
+  std::map<std::string, std::string>  gram_conf;
+
+
 private:
     /**
      \brief create new unary rules encoding unary chains
@@ -80,6 +84,10 @@ private:
 
   // history of annotations (trees of numbers)
   std::map<short, Tree<unsigned> > history_trees;
+
+
+
+
 };
 
 
@@ -103,9 +111,6 @@ std::vector<std::vector<std::vector<unsigned> > > compute_mapping(unsigned from,
 std::vector<std::vector<double> >
 calculate_conditional_probs(const std::vector<std::vector<double> >& expected_counts,
                             const std::vector<std::vector<std::vector<unsigned> > >& mapping);
-
-
-
 
 
 /**************************************************************************************
@@ -132,12 +137,8 @@ private:
   std::vector<uomap<unsigned,unsigned> > inverted;
 
 
-
-
   //TODO: iterate on new_probs instead of old_probs
   // would be more efficient (especially for binary rules)
-
-
 
   std::vector<uomap<unsigned,unsigned> > invert_mapping(std::vector<std::vector<std::vector<unsigned> > > mapping);
 };

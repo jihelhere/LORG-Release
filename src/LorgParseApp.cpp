@@ -55,9 +55,6 @@ bool LorgParseApp::read_config(ConfigTable& configuration)
   //get max_length
   max_length = configuration.get_value<unsigned>("max-length");
 
-  // read parts of the configuration dedicated to word signature
-  // and initialize word class
-  Word::init_lexicon_type(WordSignatureFactory::create_wordsignature(configuration));
 
   always_output_forms = configuration.get_value<bool>("always-output-forms");
 

@@ -22,6 +22,7 @@ struct SimpleBestTypes {
   typedef ::Edge Edge;
 };
 
+class WordSignature;
 
 class ParserCKYBest : public ParserCKY< Grammar<Rule,Rule,Rule> >, public SimpleBestTypes
 {
@@ -46,8 +47,13 @@ public:
   */
   void parse(Chart& chart) const;
 
+  void set_word_signature(WordSignature* ws) {word_signature = ws;};
+  const WordSignature* get_word_signature() const {return word_signature;}
+
 
 private:
+  const WordSignature* word_signature;
+
 
   /** \brief Add unary rules at this position in the chart
       (only consider non-terminals created from binary rules)

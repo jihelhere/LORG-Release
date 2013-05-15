@@ -129,8 +129,8 @@ twostage_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
 #flags for debugging
-# twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I. $(TBB_CPPFLAGS) --std=c++0x
-# twostage_lorgparser_CXXFLAGS= -O1 -g -pg -Wall -Wextra -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls
+#twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I. $(TBB_CPPFLAGS) --std=c++0x
+#twostage_lorgparser_CXXFLAGS= -O1 -g -Wall -Wextra -pg -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls
 
 if WANT_TBB
 twostage_lorgparser_CPPFLAGS+=-DUSE_THREADS
