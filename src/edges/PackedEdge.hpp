@@ -329,7 +329,7 @@ unsigned decode_path(PtbPsTree& tree,
 
 
 template <class Types>
-void PackedEdge<Types>::to_set(std::set<const PackedEdge<Types>*>& results ) const
+void PackedEdge<Types>::to_set(SET<const PackedEdge<Types>*>& results ) const
 {
   results.insert(this);
 
@@ -634,7 +634,7 @@ double PackedEdge<Types>::marginalise() const
 
 
 template <typename Types>
-void PackedEdge<Types>::update_relaxations(MAP<int, MAP<int,double>>& u,
+void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u,
                                            bool first)
 {
 
@@ -687,12 +687,12 @@ void PackedEdge<Types>::update_relaxations(MAP<int, MAP<int,double>>& u,
         case -2 : // lexical
           for(auto& l : lexical_daughters)
           {
-            if(l.get_rule()->get_rhs0() == rhs0)
-            {
+            //if(l.get_rule()->get_rhs0() == rhs0)
+            //{
               l.set_relaxation(update);
               //              std::cout << "lexical update" << std::endl;
               break;
-            }
+              //}
           }
           break;
         case -1 : // unary

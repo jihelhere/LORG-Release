@@ -6,6 +6,9 @@
 #define MAP std::unordered_map
 //#define MAP std::map
 
+#define SET std::unordered_set
+
+
 namespace LorgConstants
 {
   static const std::string tree_root_name = "TOP";

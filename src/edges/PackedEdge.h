@@ -193,7 +193,7 @@ public:
 
   PtbPsTree * to_ptbpstree(int lhs, unsigned ith_deriv, bool append_annot, bool output_forms) const;
 
-  void to_set(std::set<const PackedEdge*>& set) const;
+  void to_set(SET<const PackedEdge*>& set) const;
 
   void set_cell(const Cell* c) {cell = c;};
 
@@ -208,7 +208,7 @@ public:
   //  void destroy() {Edge::~Edge();}
 
   void update_relaxations(
-      MAP<int, MAP<int,double>>& u,
+      const MAP<int, MAP<int,double>>& u,
       bool positive);
 
 

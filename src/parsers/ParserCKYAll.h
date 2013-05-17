@@ -86,10 +86,10 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   virtual void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
                           std::vector<std::pair<PtbPsTree *,double> >& best_trees) = 0;
 
-  virtual std::set< std::tuple<const AnnotatedRule*,int,int> >
+  virtual SET< std::tuple<const AnnotatedRule*,int,int> >
   get_vectorized_representation(int start_symbol) = 0;
 
-  virtual void update_relaxations(MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&, bool) = 0;
+  virtual void update_relaxations(const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&, bool) = 0;
 
   virtual void clean() = 0;
 
@@ -324,9 +324,9 @@ protected:
   void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
                   std::vector<std::pair<PtbPsTree *,double> >& best_trees);
 
-  std::set< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
+  SET< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
 
-  void update_relaxations(MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&, bool);
+  void update_relaxations(const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&, bool);
 
 
  protected: // attributes

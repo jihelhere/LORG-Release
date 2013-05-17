@@ -637,9 +637,9 @@ public:
 
 
   template<class Types>
-  std::set<const typename ChartCKY<Types>::Edge*> ChartCKY<Types>::get_rules_best_solution(int start_symbol) const
+  SET<const typename ChartCKY<Types>::Edge*> ChartCKY<Types>::get_rules_best_solution(int start_symbol) const
   {
-    std::set<const typename ChartCKY<Types>::Edge*> result;
+    SET<const typename ChartCKY<Types>::Edge*> result;
 
     const Cell & root_cell = this->get_root();
 
@@ -653,7 +653,7 @@ public:
 
 template<class Types>
 void ChartCKY<Types>::update_relaxations(
-    MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
+    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
     bool positive)
 {
 
@@ -661,10 +661,13 @@ void ChartCKY<Types>::update_relaxations(
   {
     for(unsigned j = i; j < size; ++j)
     {
-      auto& cell = access(i,j);
-      auto& case_u = u[i][j];
+      if(u.count(i) and u.at(i).count(j))
+      {
+        auto& case_u = u.at(i).at(j);
+        auto& cell = access(i,j);
 
-      cell.update_relaxations(case_u, positive);
+        cell.update_relaxations(case_u, positive);
+      }
     }
   }
 
