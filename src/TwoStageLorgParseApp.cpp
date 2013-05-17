@@ -13,6 +13,9 @@
 
 #include "lexicon/WordSignatureFactory.h"
 
+#include <thread>
+
+
 
 TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 {
@@ -44,52 +47,49 @@ int TwoStageLorgParseApp::run()
   //read input and fill raw_sentence, sentence and brackets
   while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
+    // //Extra verbose
+    // if(verbose) {
+    //   std::clog << "Tokens: ";
+    //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+    //     std::clog << "<" << i->get_form() << ">";
+    //   std::clog << "\n";
+    // }
+
+    std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
+
+
+    std::function<void(int)> process_sentence =
+        [&](int i){
+
+      //      std::cout << i << std::endl;
+
+      taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
+      parsers[i]->initialise_chart(sentences[i], brackets);
+      parsers[i]->parse(start_symbol);
+      parsers[i]->beam_c2f(start_symbol);
+      if(parsers[i]->is_chart_valid(start_symbol))
+      {
+        parsers[i]->extract_solution();
+      }
+
+    };
+
+    std::vector<std::thread> threads;
+
     tick_count sent_start = tick_count::now();
 
     if(sentence.size() <=  max_length && sentence.size() > 0) {
 
-      // //Extra verbose
-      // if(verbose) {
-      //   std::clog << "Tokens: ";
-      //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
-      //     std::clog << "<" << i->get_form() << ">";
-      //   std::clog << "\n";
-      // }
-
-      for (size_t i = 0; i < parsers.size(); ++i)
+      for(size_t i = 0; i < parsers.size(); ++i)
       {
-        //tag sentence
-        {
-          //                             BLOCKTIMING("tagger");
-          taggers[i].tag(sentence, *(parsers[i]->get_word_signature()));
-        }
-        // create and initialise chart
-        {
-          //                             BLOCKTIMING("initialise_chart");
-          parsers[i]->initialise_chart(sentence, brackets);
-        }
-
-
-        // parse, aka create the coarse forest
-        {
-          //                             BLOCKTIMING("parse");
-          parsers[i]->parse(start_symbol);
-        }
-
-        //use intermediate grammars to prune the chart
-        {
-          //                             BLOCKTIMING("beam_c2f");
-          parsers[i]->beam_c2f(start_symbol);
-        }
-
-
-        // extract best solution with the finest grammar
-        if(parsers[i]->is_chart_valid(start_symbol))
-        {
-          //                             BLOCKTIMING("extract_solution");
-          parsers[i]->extract_solution();
-        }
+        threads.push_back(std::thread(process_sentence,i));
       }
+
+      for(auto& thread : threads)
+      {
+        thread.join();
+      }
+
 
       int k = 0;
       if (parsers.size() > 1)
@@ -250,7 +250,7 @@ int TwoStageLorgParseApp::find_consensus()
 
   for (size_t i = 0; i < parsers.size(); ++i)
   {
-    if(!parsers[i]->is_chart_valid(start_symbol))
+    if(not parsers[i]->is_chart_valid(start_symbol))
       valid = false;
     else
       lu += parsers[i]->get_best_score(start_symbol);
@@ -271,8 +271,7 @@ int TwoStageLorgParseApp::find_consensus()
     double delta_k = c / (t + 1);
     double nlu = 0;
 
-
-    std::vector<std::set<std::tuple<const AnnotatedRule*,int,int> > > sets(this->parsers.size());
+    std::vector<SET<std::tuple<const AnnotatedRule*,int,int> > > sets(this->parsers.size());
     std::vector<std::vector< std::vector<int> >> sets_v(this->parsers.size());
 
     for (size_t i = 0; i < parsers.size(); ++i)
@@ -306,7 +305,8 @@ int TwoStageLorgParseApp::find_consensus()
           {
             const LexicalRule * lr = static_cast<const LexicalRule*>(r);
             l  = simplified_nt( lr->get_lhs());
-            r0 = lr->get_rhs0();
+            //r0 = lr->get_rhs0();
+            r0 = -1; // for lexical rules
             r1 = -2; // for lexical rules
             sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
           }
@@ -354,24 +354,53 @@ int TwoStageLorgParseApp::find_consensus()
       break;
     }
 
+
     // update relaxations
+    std::vector<std::thread> threads;
     for (size_t i = 0; i < this->parsers.size(); ++i)
     {
-      if(this->parsers[i]->is_chart_valid(start_symbol))
-      {
-        this->parsers[i]->update_relaxations(u, (i % 2) == 0);
-      }
+      threads.push_back(
+          std::thread([&](int i)
+                      {
+                        if(this->parsers[i]->is_chart_valid(start_symbol))
+                        {
+                          this->parsers[i]->update_relaxations(u, (i % 2) == 0);
+                        }
+
+                        },i));
+    }
+    for(auto& thread : threads)
+    {
+      thread.join();
     }
 
+
+    //    std::cout << "HERE" << std::endl;
+
     // update solutions
+    threads.clear();
+    for (size_t i = 0; i < parsers.size(); ++i)
+    {
+      threads.push_back(
+          std::thread([&](int i)
+                      {if(parsers[i]->is_chart_valid(start_symbol))
+                        {
+                          parsers[i]->simple_extract_solution();
+                        }
+                      },i)
+                        );
+    }
+
+    for(auto& thread : threads)
+    {
+      thread.join();
+    }
+
+
     for (size_t i = 0; i < parsers.size(); ++i)
     {
       if(parsers[i]->is_chart_valid(start_symbol))
       {
-        //                             BLOCKTIMING("extract_solution");
-
-        //std::cout << "extracting " << i << std::endl;
-        parsers[i]->simple_extract_solution();
         nlu += parsers[i]->get_best_score(start_symbol);
       }
     }

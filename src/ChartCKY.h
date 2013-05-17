@@ -78,7 +78,7 @@ public:
 
   PtbPsTree* get_best_tree(int start_symbol, unsigned k, bool always_output_forms, bool output_annotations) const;
 
-  std::set<const Edge*> get_rules_best_solution(int start_symbol) const;
+  SET<const Edge*> get_rules_best_solution(int start_symbol) const;
 
   double get_score(int start_symbol, unsigned k) const;
 
@@ -110,7 +110,7 @@ public:
 
 
   void update_relaxations(
-      MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
+      const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
       bool positive);
 
 

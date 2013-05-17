@@ -515,7 +515,7 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 
 template<class Types>
 void
-PCKYAllCell<Types>::update_relaxations(MAP<int, MAP<int, MAP<int,double>>>& u,
+PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>& u,
                         bool first)
 {
 
