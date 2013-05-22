@@ -653,20 +653,19 @@ public:
 
 template<class Types>
 void ChartCKY<Types>::update_relaxations(
-    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& u,
-    bool positive)
+    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda)
 {
 
   for(unsigned i = 0; i < size; ++i)
   {
     for(unsigned j = i; j < size; ++j)
     {
-      if(u.count(i) and u.at(i).count(j))
+      if(lambda.count(i) and lambda.at(i).count(j))
       {
-        auto& case_u = u.at(i).at(j);
+        auto& case_l = lambda.at(i).at(j);
         auto& cell = access(i,j);
 
-        cell.update_relaxations(case_u, positive);
+        cell.update_relaxations(case_l);
       }
     }
   }

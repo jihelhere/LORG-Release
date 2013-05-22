@@ -259,32 +259,31 @@ int TwoStageLorgParseApp::find_consensus()
   if(!valid) return -1;
 
   unsigned k = 0;
-  MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>> u;
   double c = 1;
   double t = 0;
 
   for (k = 0; k < 1000; ++k)
   {
-    // std::cout << "k = " << k << std::endl;
-    // std::cout << "lu = " << lu << std::endl;
-    // std::cout << "t = " << t << std::endl;
+    std::cout << "k = " << k << std::endl;
+    std::cout << "lu = " << lu << std::endl;
+    std::cout << "t = " << t << std::endl;
     double delta_k = c / (t + 1);
     double nlu = 0;
 
-    std::vector<SET<std::tuple<const AnnotatedRule*,int,int> > > sets(this->parsers.size());
-    std::vector<std::vector< std::vector<int> >> sets_v(this->parsers.size());
+    std::vector<std::vector< std::vector<int>>> sets_v(this->parsers.size());
+    std::map<std::vector<int>, int> sets_v_all_map;
+
+    std::vector<MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>> lambdas(parsers.size());
+
 
     for (size_t i = 0; i < parsers.size(); ++i)
     {
-      sets[i] = parsers[i]->get_vectorized_representation(start_symbol);
       // if (sets[i].empty())
       //   break;
 
-      for (auto& e: sets[i])
+      for (auto& e: parsers[i]->get_vectorized_representation(start_symbol))
       {
         //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
-
-        auto& case_u = u[std::get<1>(e)][std::get<2>(e)];
 
         const AnnotatedRule* r = std::get<0>(e);
 
@@ -297,7 +296,6 @@ int TwoStageLorgParseApp::find_consensus()
           r0 = simplified_nt(br->get_rhs0());
           r1 = simplified_nt(br->get_rhs1());
 
-          sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
         }
         else
         {
@@ -308,44 +306,38 @@ int TwoStageLorgParseApp::find_consensus()
             //r0 = lr->get_rhs0();
             r0 = -1; // for lexical rules
             r1 = -2; // for lexical rules
-            sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+
           }
-          else //unary
+          else //unary -> don't update because parsers with functions
+               //have more of them anyway
           {
-            const URule * ur = static_cast<const URule*>(r);
-            l  = simplified_nt( ur->get_lhs());
-            r0 = simplified_nt( ur->get_rhs0());
-            r1 = -1; // for unary rules
-            sets_v[i].push_back({std::get<1>(e), std::get<2>(e), l,r0,r1});
+            // const URule * ur = static_cast<const URule*>(r);
+            // l  = simplified_nt( ur->get_lhs());
+            // r0 = simplified_nt( ur->get_rhs0());
+            // r1 = -1; // for unary rules
+
           }
+
         }
 
-        // update u
-        if ((i % 2) == 0)
+        if(r->is_binary() or r->is_lexical())
         {
-          case_u[l][r0][r1] -= delta_k;
+          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l,r0,r1};
+          sets_v[i].push_back(vv);
+          sets_v_all_map[vv] += 1;
         }
-        else
-        {
-          case_u[l][r0][r1] += delta_k;
-        }
-
       }
     }
 
 
     // check same solution
-    bool same = false;
-    if (sets_v[0].size() == sets_v[1].size())
+    bool same = true;
+    for (auto& p : sets_v_all_map)
     {
-      same = true;
-      for(const auto&s : sets_v[0])
+      if (p.second != parsers.size())
       {
-        if (std::find(sets_v[1].begin(), sets_v[1].end(),s) == sets_v[1].end())
-        {
-          same = false;
-          break;
-        }
+        same = false;
+        break;
       }
     }
 
@@ -353,6 +345,43 @@ int TwoStageLorgParseApp::find_consensus()
     {
       break;
     }
+
+    for(size_t i = 0; i < sets_v.size(); ++i)
+    {
+      lambdas[i].clear();
+
+      // add update for things in ith solution
+      for(const auto& v: sets_v[i])
+      {
+        lambdas[i][v[0]][v[1]][v[2]][v[3]][v[4]] =
+            delta_k * (1.0 - double(sets_v_all_map[v]) / parsers.size());
+
+        // std::cout
+        //     << i << " " << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << " " << v[4] << " "
+        //     << double(sets_v_all_map[v]) << " "
+        //     << parsers.size() << " "
+        //     << lambdas[i][v[0]][v[1]][v[2]][v[3]][v[4]] << std::endl;
+
+      }
+
+      // add update for things missing in ith solution
+      for(const auto& v: sets_v_all_map)
+      {
+        if(not lambdas[i].count(v.first[0])
+           or not lambdas[i][v.first[0]].count(v.first[1])
+           or not lambdas[i][v.first[0]][v.first[1]].count(v.first[2])
+           or not lambdas[i][v.first[0]][v.first[1]][v.first[2]].count(v.first[3])
+           or not lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]].count(v.first[4]))
+        {
+        lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]][v.first[4]] =
+            delta_k * (- double(sets_v_all_map[v.first]) / parsers.size());
+        // std::cout
+        //     << i << " " << v.first[0] << " " << v.first[1] << " " << v.first[2] << " " << v.first[3] << " " << v.first[4] << " "
+        //     << lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]][v.first[4]] << std::endl;
+        }
+      }
+    }
+
 
 
     // update relaxations
@@ -364,7 +393,7 @@ int TwoStageLorgParseApp::find_consensus()
                       {
                         if(this->parsers[i]->is_chart_valid(start_symbol))
                         {
-                          this->parsers[i]->update_relaxations(u, (i % 2) == 0);
+                          this->parsers[i]->update_relaxations(lambdas[i]);
                         }
 
                         },i));

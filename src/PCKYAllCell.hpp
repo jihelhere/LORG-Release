@@ -515,8 +515,7 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 
 template<class Types>
 void
-PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>& u,
-                        bool first)
+PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>& case_l)
 {
 
   std::function<unsigned(unsigned)> simplified_nt =
@@ -558,9 +557,9 @@ PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>
     if(not edges[i].is_closed())
     {
       int i_s = simplified_nt(i);
-      if(u.count(i_s))
+      if(case_l.count(i_s))
       {
-        edges[i].update_relaxations(u.at(i_s), first);
+        edges[i].update_relaxations(case_l.at(i_s));
       }
     }
 }

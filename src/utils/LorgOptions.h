@@ -153,6 +153,12 @@ public:
         ("alternate-grammar2,Y", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the second maxn parser (dd)")
 
+        ("grammar3,z", po::value<std::string>(), "sets the third grammar for the parser (dd)")
+        ("alternate-grammar3,Z", po::value< std::vector<std::string> >(),
+         "sets the additional grammars for the third maxn parser (dd)")
+
+
+
         ("parser-type,p",po::value<std::string>()->default_value("max"),
          "sets the type of parsing - vit for Viterbi , max for MaxRule, "
          "maxn for MaxRule with several grammars, kmax for k-best maxrule, "

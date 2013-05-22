@@ -34,6 +34,8 @@ public:
 
   inline double get_relaxation() const {return relaxation;}
   inline void set_relaxation(double v) {relaxation = v;}
+  inline void update_relaxation(double v) {relaxation += v;}
+
 
 // protected:
   inline const AnnotatedRule * get_rule() const {return rule;}
