@@ -634,10 +634,9 @@ double PackedEdge<Types>::marginalise() const
 
 
 template <typename Types>
-void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u,
-                                           bool first)
+void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u)
 {
-
+  static
   std::function<unsigned(unsigned)> simplified_nt =
       [](unsigned id )
       {
@@ -680,27 +679,27 @@ void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u,
     for (auto& f : e.second)
     {
       int rhs1 = f.first;
-      double update = first ? f.second : - f.second;
+      double update = f.second;
 
       switch(rhs1)
       {
         case -2 : // lexical
-          for(auto& l : lexical_daughters)
+          for(auto& le : lexical_daughters)
           {
             //if(l.get_rule()->get_rhs0() == rhs0)
             //{
-              l.set_relaxation(update);
+              le.update_relaxation(-update);
               //              std::cout << "lexical update" << std::endl;
               break;
               //}
           }
           break;
         case -1 : // unary
-          for(auto& u : unary_daughters)
+          for(auto& un : unary_daughters)
           {
-            if(simplified_nt(u.get_rule()->get_rhs0()) == unsigned(rhs0))
+            if(simplified_nt(un.get_rule()->get_rhs0()) == unsigned(rhs0))
             {
-              u.set_relaxation(update);
+              un.update_relaxation(-update);
               //              std::cout << "unary update" << std::endl;
               //break;
             }
@@ -710,12 +709,12 @@ void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u,
 
         default : // binary
 
-          for(auto& b : binary_daughters)
+          for(auto& bi : binary_daughters)
           {
-            if(simplified_nt(b.get_rule()->get_rhs0()) == unsigned(rhs0)
-               && simplified_nt(b.get_rule()->get_rhs1()) == unsigned(rhs1))
+            if(simplified_nt(bi.get_rule()->get_rhs0()) == unsigned(rhs0)
+               && simplified_nt(bi.get_rule()->get_rhs1()) == unsigned(rhs1))
             {
-              b.set_relaxation(update);
+              bi.update_relaxation(-update);
               //if(update != 0.0)
                 //                std::cout << "binary update " << b.get_relaxation() << std::endl;
               //break;
