@@ -19,6 +19,18 @@
 #include "lexicon/WordSignatureFactory.h"
 
 
+#include <fstream>
+
+
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
+typedef boost::archive::text_oarchive oarchive;
+typedef boost::archive::text_iarchive iarchive;
+
+
 
 ParserCKYAllFactory::Parsing_Algorithm
 ParserCKYAllFactory::string_to_pa(const std::string& s)
@@ -100,6 +112,7 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
   //get grammar
   if(verbose) std::cerr << "Setting grammar to " << filename << ".\n";
   ParserCKYAll::AGrammar * cg = new ParserCKYAll::AGrammar(filename);
+
   if(verbose) std::cerr << "Grammar set\n";
 
   // //perform some sanity checks
@@ -147,6 +160,45 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
   grammars.push_back(cg);
   //    std::clog << "creation finished" << std::endl;
 
+  ///////
+
+
+   std::ofstream ofs(filename+"_grammars.arc");
+
+   {
+     oarchive oacg(ofs);
+     // write class instance to archive
+     oacg << grammars;
+     // archive and stream closed when destructors are called
+
+    }
+
+   std::cout << SymbolTable::instance_nt().get_size()
+             << " "
+             << SymbolTable::instance_word().get_size()
+             <<std::endl;
+
+   std::ofstream ofs2(filename+"_nt.arc");
+
+   {
+     oarchive oant(ofs2);
+     // write class instance to archive
+     oant << SymbolTable::instance_nt();
+     // archive and stream closed when destructors are called
+    }
+
+   std::ofstream ofs3(filename+"_lexicon.arc");
+
+   {
+     oarchive oaword(ofs3);
+     // write class instance to archive
+     oaword << SymbolTable::instance_word();
+     // archive and stream closed when destructors are called
+    }
+
+  //////////
+
+
   return grammars;
 }
 
@@ -185,8 +237,37 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         priors = grammars[0]->compute_priors();
     }
     else {
+      if(config.exists("archive_grammar1" )
+         && config.exists("archive_nt")
+         && config.exists("archive_word")
+         )
+
+      {
+        if(verbose) std::cerr << "loading SymbolTable for non terminals" << std::endl;
+        SymbolTable::instance_nt().load(config.get_value<std::vector<std::string>>("archive_nt")[0]);
+
+        if(verbose) std::cerr << "loading SymbolTable for non words" << std::endl;
+        SymbolTable::instance_word().load(config.get_value<std::vector<std::string>>("archive_word")[0]);
+
+        std::cout << SymbolTable::instance_nt().get_size()
+                  << " "
+                  << SymbolTable::instance_word().get_size()
+                  <<std::endl;
+
+
+        if(verbose) std::cerr << "loading grammar archive" << std::endl;
+        std::ifstream ifs(config.get_value<std::string>("archive_grammar1"));
+        iarchive ia(ifs);
+        ia >> grammars;
+
+        if(verbose) std::cerr << "computing priors" << std::endl;
+        priors = grammars[0]->compute_priors();
+      }
+      else
+      {
         std::cerr << "Grammar wasn't set. Exit program." << std::endl;
         return results;
+      }
     }
 
 
@@ -215,6 +296,32 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
           all_annot_descendants.push_back(annot_descendants);
         }
     }
+    if(config.exists("archive_alternategrammars1")) {
+
+        const std::vector<std::string>& filenames = config.get_value<std::vector<std::string> >("archive_alternategrammars1");
+        if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0) {
+            std::cerr << "Wrong parsing algorithm. Exit program." << std::endl;
+            return results;
+        }
+
+        for(unsigned i = 0; i < filenames.size(); ++i)
+        {
+
+          if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
+
+          std::vector<ParserCKYAll::AGrammar*> grammars;
+          std::ifstream ifs(filenames[i]);
+          iarchive ia(ifs);
+          ia >> grammars;
+
+          alt_gs.push_back(grammars);
+
+          annot_descendants_type annot_descendants = create_annot_descendants(alt_gs.back().back()->get_history_trees());
+          all_annot_descendants.push_back(annot_descendants);
+        }
+    }
+
+
 
     double beam_threshold = config.get_value<double>("beam-threshold");
     if(verbose)
@@ -261,6 +368,94 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
 
 
+        std::function<void(std::vector<ParserCKYAll::AGrammar*>&, const SymbolTable&, const SymbolTable&)> align_grammar
+            =[](std::vector<ParserCKYAll::AGrammar*>& gs, const SymbolTable& words, const SymbolTable& nts)
+        {
+          for (auto& g : gs)
+          {
+            for (auto& br: g->binary_rules)
+            {
+              int l = br.get_lhs();
+              std::string ls = nts.get_label_string(l);
+              int l2 = SymbolTable::instance_nt().insert(ls);
+              br.set_lhs(l2);
+
+              int r0 = br.get_rhs0();
+              std::string r0s = nts.get_label_string(r0);
+              int r02 = SymbolTable::instance_nt().insert(r0s);
+              br.set_rhs0(r02);
+
+              int r1 = br.get_rhs1();
+              std::string r1s = nts.get_label_string(r1);
+              int r12 = SymbolTable::instance_nt().insert(r1s);
+              br.set_rhs1(r12);
+            }
+
+            for (auto& ur: g->unary_rules)
+            {
+              int l = ur.get_lhs();
+              std::string ls = nts.get_label_string(l);
+              int l2 = SymbolTable::instance_nt().insert(ls);
+              ur.set_lhs(l2);
+
+              int r0 = ur.get_rhs0();
+              std::string r0s = nts.get_label_string(r0);
+              int r02 = SymbolTable::instance_nt().insert(r0s);
+              ur.set_rhs0(r02);
+            }
+
+            for (auto& lr: g->lexical_rules)
+            {
+              int l = lr.get_lhs();
+              std::string ls = nts.get_label_string(l);
+              int l2 = SymbolTable::instance_nt().insert(ls);
+              lr.set_lhs(l2);
+
+              int r0 = lr.get_rhs0();
+              std::string r0s = words.get_label_string(r0);
+              int r02 = SymbolTable::instance_word().insert(r0s);
+              lr.set_rhs0(r02);
+            }
+
+
+            // align history trees and num_annotations
+            auto& h = g->get_history_trees();
+            //use decltype(h) :  how to remove & ??
+            std::map< short, Tree<unsigned> > h2;
+            for(const auto& p: h)
+            {
+              auto pfs = nts.get_label_string(p.first);
+              auto pf2 = SymbolTable::instance_nt().get_label_id(pfs);
+              h2[pf2] = p.second;
+            }
+            h = h2;
+
+            //
+            auto& ai = g->get_annotations_info();
+            std::vector<short unsigned> v(SymbolTable::instance_nt().get_size(),0);
+            for (size_t i = 0; i < ai.get_number_of_unannotated_labels(); ++i)
+            {
+              auto is = nts.get_label_string(i);
+              auto i2 = SymbolTable::instance_nt().get_label_id(is);
+              v[i2] = ai[i];
+            }
+
+            g->get_annotations_info().set_num_annotations_map(v);
+
+            // std::map<short, unsigned short> map2;
+            // for(const auto& e: g->get_history_trees())
+            // {
+            //   map2.insert(std::make_pair(e.first, e.second.number_of_leaves()));
+            // }
+
+            // g->get_annotations_info().set_num_annotations_map(map2);
+
+          }
+        };
+
+
+
+
 
 
     std::vector<double> priors2;
@@ -268,19 +463,44 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
     std::vector<ParserCKYAll::AGrammar*> grammars2;
     std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs2;
     // get grammars
-    if(config.exists("grammar2")) {
-      const std::string& filename = config.get_value< std::string >("grammar2");
+    if(config.exists("grammar2") or config.exists("archive_grammar2")) {
 
-      grammars2 = create_grammars(filename, verbose);
+
+      if(config.exists("grammar2"))
+      {
+        const std::string& filename = config.get_value< std::string >("grammar2");
+
+        grammars2 = create_grammars(filename, verbose);
+      }
+      if (config.exists("archive_grammar2"))
+      {
+        SymbolTable nt2;
+        nt2.load(config.get_value<std::vector<std::string>>("archive_nt")[1]);
+
+
+        SymbolTable word2;
+        word2.load(config.get_value<std::vector<std::string>>("archive_word")[1]);
+
+
+        std::cout << SymbolTable::instance_nt().get_size()
+                  << " "
+                  << SymbolTable::instance_word().get_size()
+                  <<std::endl;
+
+        std::ifstream ifs(config.get_value<std::string>("archive_grammar2"));
+        iarchive ia(ifs);
+        ia >> grammars2;
+
+        if(verbose) std::cerr << "before alignment" << std::endl;
+        align_grammar(grammars2, word2, nt2);
+        if(verbose) std::cerr << "after alignment" << std::endl;
+
+      }
+
       // compute priors for base grammar
       //std::clog << "before priors2" << std::endl;
       priors2 = grammars2[0]->compute_priors();
       //std::clog << "after priors2" << std::endl;
-
-
-
-
-
 
 
 
@@ -309,6 +529,45 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         }
       }
 
+      if(config.exists("archive_alternategrammars2"))
+      {
+
+        const auto& filenames = config.get_value<std::vector<std::string>>("archive_alternategrammars2");
+        if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0)
+        {
+          std::cerr << "Wrong parsing algorithm. Exit program." << std::endl;
+          return results;
+        }
+
+        for(const auto& f : filenames)
+        {
+          if(verbose) std::cerr << "Setting alternate grammar to " << f << ".\n";
+
+
+        SymbolTable nt2;
+        nt2.load(config.get_value<std::vector<std::string>>("archive_nt")[1]);
+
+
+        SymbolTable word2;
+        word2.load(config.get_value<std::vector<std::string>>("archive_word")[1]);
+
+        std::cout << SymbolTable::instance_nt().get_size()
+                  << " "
+                  << SymbolTable::instance_word().get_size()
+                  <<std::endl;
+
+        std::ifstream ifs(config.get_value<std::string>("archive_grammar2"));
+        iarchive ia(ifs);
+        ia >> grammars2;
+
+        align_grammar(grammars2, word2, nt2);
+
+        alt_gs2.push_back(grammars2);
+
+        auto annot_descendants2 = create_annot_descendants(alt_gs2.back().back()->get_history_trees());
+        all_annot_descendants2.push_back(annot_descendants2);
+        }
+      }
 
       ///////////////////
 
@@ -418,6 +677,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
 
     }
+
 
 
 
@@ -563,7 +823,6 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
                     }
                     );
 #endif
-
 
   return result;
 }

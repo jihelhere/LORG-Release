@@ -1,12 +1,15 @@
 // -*- mode: c++ -*-
-#ifndef ANNOTATEDLABELSINFO_H_
-#define ANNOTATEDLABELSINFO_H_
+#pragma once
 
 #include "rules/BRule.h"
 #include "rules/URule.h"
 #include "rules/LexicalRule.h"
 
 #include <vector>
+
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 class AnnotatedLabelsInfo
 {
@@ -74,6 +77,19 @@ public:
      \return the used ostream
   */
   friend std::ostream& operator<<(std::ostream& out, const AnnotatedLabelsInfo& ali);
+
+
+private:
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & num_annotations_map;
+    }
+
 
 };
 
@@ -145,10 +161,26 @@ public:
      \return the annotation information object for this grammar
   */
   const AnnotatedLabelsInfo& get_annotations_info() const;
+  AnnotatedLabelsInfo& get_annotations_info() ;
+
+
+private:
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & label_annotations;
+    }
+
+
+
 };
 
 inline
 const AnnotatedLabelsInfo&  AnnotatedContents::get_annotations_info()const {return label_annotations;}
 
-
-#endif /*ANNOTATEDLABELSINFO_H_*/
+inline
+AnnotatedLabelsInfo&  AnnotatedContents::get_annotations_info() {return label_annotations;}

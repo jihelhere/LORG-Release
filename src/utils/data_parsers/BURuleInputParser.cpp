@@ -331,20 +331,27 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
   n_aries.reserve(v.size());
   for(auto& r : v)
   {
-    if(r->is_lexical()) {
+    if(r->is_lexical())
+    {
       if(static_cast<LexicalRule*>(r)->get_probability().size()>0)
         lexicals.push_back(*(static_cast<LexicalRule*>(r)));
     }
     else
-      if(r->is_unary()) {
+    {
+      if(r->is_unary())
+      {
         if(static_cast<URule*>(r)->get_probability().size()>0)
           unaries.push_back(*static_cast<URule*>(r));
       }
       else
         if(static_cast<BRule*>(r)->get_probability().size()>0)
           n_aries.push_back(*static_cast<BRule*>(r));
+    }
     delete(r);
   }
+  lexicals.shrink_to_fit();
+  unaries.shrink_to_fit();
+  n_aries.shrink_to_fit();
 
   //std::cout << "got here " << std::endl;
   in_file.close();

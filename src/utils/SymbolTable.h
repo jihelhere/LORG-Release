@@ -1,4 +1,4 @@
-// -*- mode: c++ -*- 
+// -*- mode: c++ -*-
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
@@ -10,6 +10,9 @@
 
 #include <sstream>
 
+
+
+#include <boost/serialization/map.hpp>
 
 /**
    \class Miss
@@ -26,14 +29,14 @@ public:
   };
 
 public:
-  
-  Miss(const std::string& s) 
+
+  Miss(const std::string& s)
     : msg()
   {
     msg = "can't find string \"" + s + "\" in symbol table";
   };
 
-  Miss(const int i) 
+  Miss(const int i)
   : msg()
   {
     std::ostringstream op;
@@ -46,7 +49,7 @@ public:
 private:
   Miss();
   Miss& operator=(const Miss& other);
-}; 
+};
 
 
 /**
@@ -63,24 +66,40 @@ private:
 
   symtab table;  ///< string to integer bijective mapping
   unsigned int cpt;       ///< numbers of strings inserted so far
-  
+
 
   static SymbolTable* NT_instancePtr;   ///< pointer to the one instance of SymbolTable for non terminals
   static SymbolTable* word_instancePtr; ///< pointer to the one instance of SymbolTable for terminals
-    
+
+
 private:
   /**
     \brief private constructor
   */
-  SymbolTable();
+
   SymbolTable(SymbolTable const& ); //not defined, not copyable
   SymbolTable& operator= (SymbolTable const& ); //not defined, not assignable
+
+
+
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & table;
+      ar & cpt;
+    }
+
+public:
+  SymbolTable();
   /**
     \brief Destructor
   */
   ~SymbolTable() {}
 
-public:
   int insert(const std::string& str) throw();
   /**
      \brief Depreciated! See get_string_label() translates the given integer into the associated symbol or returns
@@ -91,7 +110,7 @@ public:
   */
 
   std::string translate(unsigned int i) const throw(Miss);
-  
+
   /**
      \brief translates the given integer into the associated symbol or returns
      the empty string
@@ -102,7 +121,7 @@ public:
 
   std::string get_label_string(unsigned int i) const throw(Miss);
 
-  
+
   /**
      \brief returns the integer for a given symbol
      \param str symbol
@@ -121,7 +140,7 @@ public:
   bool token_exists(const std::string&);
 
   /**
-    \brief Global point of access to SymbolTable for terminals.  
+    \brief Global point of access to SymbolTable for terminals.
 
     If this is the first call to instance() it will create a SymbolTable object and return a pointer
     to it.  Otherwise it will just return the pointer to the object.
@@ -129,7 +148,7 @@ public:
   static SymbolTable& instance_word();
 
   /**
-    \brief Global point of access to SymbolTable for nonterminals.  
+    \brief Global point of access to SymbolTable for nonterminals.
 
     If this is the first call to instance() it will create a SymbolTable object and return a pointer
     to it.  Otherwise it will just return the pointer to the object.
@@ -140,14 +159,19 @@ public:
      \brief Returns the number of distinct symbols in the table
   */
   unsigned int get_symbol_count() const;
-  
+
   bool is_root_label(int id);
-  
+
   static const std::string unknown_string; ///< the string corresponding to the unknown token
-  
+
+  size_t get_size() const {return table.size();}
+
+
+  void load(std::string filename);
+
 };
 
-inline 
+inline
 unsigned int SymbolTable::get_symbol_count() const {return table.size();}
 
 //TODO what if this is called as word instance?

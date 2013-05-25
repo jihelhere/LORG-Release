@@ -1,6 +1,6 @@
 // -*- mode: c++ -*-
-#ifndef _GRAMMARANNOTATED_H_
-#define _GRAMMARANNOTATED_H_
+#pragma once
+
 
 #include "Grammar.h"
 
@@ -22,6 +22,9 @@
 
 
 #define uomap std::unordered_map
+
+#include <boost/serialization/map.hpp>
+#include "utils/unordered_map_serialization.hpp"
 
 
 typedef std::pair< int, unsigned> asymb;
@@ -55,6 +58,7 @@ public:
 
 
   inline const std::map< short, Tree<unsigned> >&  get_history_trees() const {return history_trees;}
+  inline std::map< short, Tree<unsigned> >&  get_history_trees() {return history_trees;}
 
 
   // TODO: private + accessors
@@ -85,6 +89,21 @@ private:
   // history of annotations (trees of numbers)
   std::map<short, Tree<unsigned> > history_trees;
 
+
+ private:
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<Grammar<Bin,Un,Lex>>(*this);
+      ar & boost::serialization::base_object<AnnotatedContents>(*this);
+      ar & gram_conf;
+      ar & viterbi_decoding_paths;
+      ar & history_trees;
+    }
 
 
 
@@ -142,6 +161,3 @@ private:
 
   std::vector<uomap<unsigned,unsigned> > invert_mapping(std::vector<std::vector<std::vector<unsigned> > > mapping);
 };
-
-
-#endif /* _GRAMMARANNOTATED_H_ */

@@ -1,9 +1,14 @@
 // -*- mode: c++ -*-
-#ifndef _C2F_H_
-#define _C2F_H_
+#pragma  once
 
 #include <cassert>
 #include <cmath>
+
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+
 
 namespace {
   void set_log(std::vector<std::vector<std::vector<double> > >& probabilities)
@@ -36,6 +41,8 @@ class C2f : public MyRule
 {
 public:
   C2f(const MyRule& r) : MyRule(r), finers(), coarser(NULL), logmode(false){};
+  C2f() : MyRule(), finers(), coarser(NULL), logmode(false){};
+
   virtual ~C2f() {};
 
   // void set_finers(const std::vector< C2f*>& fs)
@@ -86,13 +93,26 @@ public:
   };
 
 
+
+
 private:
   std::vector< C2f*> finers;
   C2f* coarser;
 
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<MyRule>(*this);
+      ar & finers;
+      ar & coarser;
+      ar & logmode;
+    }
+
 protected:
   bool logmode;
+
 };
-
-
-#endif /* _C2F_H_ */

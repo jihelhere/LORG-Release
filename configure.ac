@@ -66,6 +66,7 @@ AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
+AX_BOOST_SERIALIZATION
 
 AX_TBB([use_tbb=yes], AC_MSG_WARN([cannot find the Intel TBB library consider to give --with-tbb to link it. Will compile without thread (parser only)]))
 

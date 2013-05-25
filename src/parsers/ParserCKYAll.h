@@ -89,7 +89,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   virtual SET< std::tuple<const AnnotatedRule*,int,int> >
   get_vectorized_representation(int start_symbol) = 0;
 
-  virtual void update_relaxations(const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&) = 0;
+  virtual void update_relaxations(const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&) = 0;
 
   virtual void clean() = 0;
 
@@ -326,8 +326,7 @@ protected:
 
   SET< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
 
-  void update_relaxations(const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>&);
-
+  void update_relaxations(const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&);
 
  protected: // attributes
   Chart * chart; // the chart

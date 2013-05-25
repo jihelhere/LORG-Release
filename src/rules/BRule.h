@@ -8,6 +8,10 @@
 
 #include "utils/LorgConstants.h"
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+
 typedef std::vector< std::vector< std::vector<double> > > vector_3d;
 
 /**
@@ -59,6 +63,10 @@ public:
      \brief returns attribute rhs1
   */
   short get_rhs1() const;
+
+void set_rhs0(short r) {rhs0 = r;}
+void set_rhs1(short r) {rhs1 = r;}
+
 
 
   /**
@@ -132,10 +140,10 @@ public:
                                   const std::vector<double>& right_in,
                                   std::vector<double>& left_out,
                                   std::vector<double>& right_out) const;
-  double update_outside_annotations_return_marginal(const std::vector< double >& up_out, 
-                                                  const std::vector< double >& left_in, 
-                                                  const std::vector< double >& right_in, 
-                                                  std::vector< double >& left_out, 
+  double update_outside_annotations_return_marginal(const std::vector< double >& up_out,
+                                                  const std::vector< double >& left_in,
+                                                  const std::vector< double >& right_in,
+                                                  std::vector< double >& left_out,
                                                   std::vector< double >& right_out) const;
   /**
      \brief removes useless zeros from probability vector
@@ -169,6 +177,22 @@ protected:
   short rhs1;
   vector_3d probabilities ; ///< probabilities for a CFG rule  with annotations
 private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<AnnotatedRule>(*this);
+      ar & rhs0;
+      ar & rhs1;
+      ar & probabilities;
+    }
+
+
+
 };
 
 inline
