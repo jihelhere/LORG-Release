@@ -15,6 +15,10 @@
 #include <iostream>
 #include <vector>
 
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 /**
   \class AddNodeToEndException
   \brief Exception class, used to notify an invalid attempt to add a node to end
@@ -239,6 +243,21 @@ private:
   Node<Content>* m_root;     ///< the root node
   unsigned int m_node_cnt;  ///< counts the number of nodes in the tree
   unsigned int m_height;      ///< holds the height of the tree
+
+
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & m_root;
+      ar & m_node_cnt;
+      ar & m_height;
+    }
+
+
 };
 
 

@@ -653,7 +653,8 @@ public:
 
 template<class Types>
 void ChartCKY<Types>::update_relaxations(
-    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda)
+    const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>& lambda)
+    //    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda)
 {
 
   for(unsigned i = 0; i < size; ++i)

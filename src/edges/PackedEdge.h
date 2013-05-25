@@ -208,7 +208,11 @@ public:
   //  void destroy() {Edge::~Edge();}
 
   void update_relaxations(
-      const MAP<int, MAP<int,double>>& u);
+      const
+      //MAP<int, MAP<int,
+      double
+      //>>
+      & u);
 
 
 protected :

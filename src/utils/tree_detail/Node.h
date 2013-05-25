@@ -10,6 +10,10 @@
 #include "ConstTreeIterator.h"
 #include "ConstDepthFirstTreeIterator.h"
 
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 class DoubleRootException{};
 
 template< class Content >
@@ -23,7 +27,7 @@ public:
   friend class DepthFirstTreeIterator<Content>;
   friend class BreadthFirstTreeIterator<Content>;
   friend class LeafTreeIterator<Content>;
-  
+
   friend class ConstTreeIterator<Content>;
   friend class ConstDepthFirstTreeIterator<Content>;
 
@@ -31,9 +35,9 @@ public:
 
 public:
   Node();
-  Node(const Content& content, 
-            Node<Content>* const mother = 0, 
-            Node<Content>* const left_sister = 0, 
+  Node(const Content& content,
+            Node<Content>* const mother = 0,
+            Node<Content>* const left_sister = 0,
             Node<Content>* const right_sister = 0,
             unsigned int height = 1);
   ~Node();
@@ -60,6 +64,28 @@ private:
   Node<Content>* m_last_daughter;
   Node<Content>* m_left_sister;
   Node<Content>* m_right_sister;
+
+ private:
+
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & m_height;
+      ar & m_content;
+      ar & m_mother;
+      ar & m_first_daughter;
+      ar & m_last_daughter;
+      ar & m_left_sister;
+      ar & m_right_sister;
+    }
+
+
+
+
 };
 
 template<class Content>
@@ -75,9 +101,9 @@ Node<Content>::Node()
 }
 
 template<class Content>
-Node<Content>::Node( const Content& content, 
-                                        Node<Content>* const mother, 
-                                        Node<Content>* const left_sister, 
+Node<Content>::Node( const Content& content,
+                                        Node<Content>* const mother,
+                                        Node<Content>* const left_sister,
                                         Node<Content>* const right_sister,
                                         unsigned int height )
 : m_height(height),

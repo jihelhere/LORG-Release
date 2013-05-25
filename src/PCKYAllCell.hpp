@@ -515,9 +515,12 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 
 template<class Types>
 void
-PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>& case_l)
+PCKYAllCell<Types>::update_relaxations(const //MAP<int, MAP<int,
+                                       MAP<int,double>
+                                       //>>
+                                       & case_l)
 {
-
+  static
   std::function<unsigned(unsigned)> simplified_nt =
       [](unsigned id )
       {
@@ -552,7 +555,7 @@ PCKYAllCell<Types>::update_relaxations(const MAP<int, MAP<int, MAP<int,double>>>
         return SymbolTable::instance_nt().get_label_id(name);
       };
 
-
+  // TODO write a version of apply_edges with index (i)
   for(unsigned i = 0; i < max_size; ++i)
     if(not edges[i].is_closed())
     {

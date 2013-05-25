@@ -472,7 +472,7 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
     // std::cout << std::log(get_sentence_probability()) << std::endl;
     // std::cout << get_sentence_probability() << std::endl;
-    //    std::cout << "beaming with grammar: " << i << std::endl;
+    std::cout << "beaming with grammar: " << i << std::endl;
 
 
 
@@ -605,7 +605,8 @@ ParserCKYAll_Impl<Types>::get_vectorized_representation(int start_symbol)
 template <class Types>
 void
 ParserCKYAll_Impl<Types>::update_relaxations(
-    const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda)
+    const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>& lambda)
+    //const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda)
 {
   chart->update_relaxations(lambda);
 }

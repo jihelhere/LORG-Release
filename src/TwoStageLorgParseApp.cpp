@@ -63,10 +63,15 @@ int TwoStageLorgParseApp::run()
 
       //      std::cout << i << std::endl;
 
+      std::cerr << "tag" << std::endl;
       taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
+      std::cerr << "init chart" << std::endl;
       parsers[i]->initialise_chart(sentences[i], brackets);
+      std::cerr << "parse" << std::endl;
       parsers[i]->parse(start_symbol);
+      std::cerr << "beam" << std::endl;
       parsers[i]->beam_c2f(start_symbol);
+      std::cerr << "extract" << std::endl;
       if(parsers[i]->is_chart_valid(start_symbol))
       {
         parsers[i]->extract_solution();
@@ -82,13 +87,17 @@ int TwoStageLorgParseApp::run()
 
       for(size_t i = 0; i < parsers.size(); ++i)
       {
-        threads.push_back(std::thread(process_sentence,i));
+        //        if (i == 0) continue;
+        //        threads.push_back(std::thread(process_sentence,i));
+        std::cerr << i << std::endl;
+        process_sentence(i);
+        std::cerr << i << std::endl;
       }
 
-      for(auto& thread : threads)
-      {
-        thread.join();
-      }
+      // for(auto& thread : threads)
+      // {
+      //   thread.join();
+      // }
 
 
       int k = 0;
@@ -264,16 +273,16 @@ int TwoStageLorgParseApp::find_consensus()
 
   for (k = 0; k < 1000; ++k)
   {
-    std::cout << "k = " << k << std::endl;
-    std::cout << "lu = " << lu << std::endl;
-    std::cout << "t = " << t << std::endl;
+    // std::cout << "k = " << k << std::endl;
+    // std::cout << "lu = " << lu << std::endl;
+    // std::cout << "t = " << t << std::endl;
     double delta_k = c / (t + 1);
     double nlu = 0;
 
-    std::vector<std::vector< std::vector<int>>> sets_v(this->parsers.size());
+    std::vector<std::set< std::vector<int>>> sets_v(this->parsers.size());
     std::map<std::vector<int>, int> sets_v_all_map;
 
-    std::vector<MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>> lambdas(parsers.size());
+    std::vector<MAP<int,MAP<int,MAP<int, /*MAP<int, MAP<int,*/double /*>>*/>>>> lambdas(parsers.size());
 
 
     for (size_t i = 0; i < parsers.size(); ++i)
@@ -287,15 +296,14 @@ int TwoStageLorgParseApp::find_consensus()
 
         const AnnotatedRule* r = std::get<0>(e);
 
-        int l, r0, r1;
+        int l;//, r0, r1;
 
         if(r->is_binary())
         {
           const BRule * br = static_cast<const BRule*>(r);
           l  = simplified_nt(br->get_lhs());
-          r0 = simplified_nt(br->get_rhs0());
-          r1 = simplified_nt(br->get_rhs1());
-
+          //          r0 = simplified_nt(br->get_rhs0());
+          //          r1 = simplified_nt(br->get_rhs1());
         }
         else
         {
@@ -303,27 +311,30 @@ int TwoStageLorgParseApp::find_consensus()
           {
             const LexicalRule * lr = static_cast<const LexicalRule*>(r);
             l  = simplified_nt( lr->get_lhs());
-            //r0 = lr->get_rhs0();
-            r0 = -1; // for lexical rules
-            r1 = -2; // for lexical rules
-
+            // //r0 = lr->get_rhs0();
+            // r0 = -1; // for lexical rules
+            // r1 = -2; // for lexical rules//
           }
           else //unary -> don't update because parsers with functions
                //have more of them anyway
           {
-            // const URule * ur = static_cast<const URule*>(r);
-            // l  = simplified_nt( ur->get_lhs());
+            const URule * ur = static_cast<const URule*>(r);
+            l  = simplified_nt( ur->get_lhs());
             // r0 = simplified_nt( ur->get_rhs0());
             // r1 = -1; // for unary rules
-
           }
 
         }
 
-        if(r->is_binary() or r->is_lexical())
+        //        if(r->is_binary() or r->is_lexical())
+        if(SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
+                                                                     // an
+                                                                     // 'artificial
+                                                                     // node'
         {
-          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l,r0,r1};
-          sets_v[i].push_back(vv);
+
+          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l/*,r0,r1*/};
+          sets_v[i].insert(vv);
           sets_v_all_map[vv] += 1;
         }
       }
@@ -334,7 +345,7 @@ int TwoStageLorgParseApp::find_consensus()
     bool same = true;
     for (auto& p : sets_v_all_map)
     {
-      if (p.second != parsers.size())
+      if (p.second != int(parsers.size()))
       {
         same = false;
         break;
@@ -353,8 +364,9 @@ int TwoStageLorgParseApp::find_consensus()
       // add update for things in ith solution
       for(const auto& v: sets_v[i])
       {
-        lambdas[i][v[0]][v[1]][v[2]][v[3]][v[4]] =
-            delta_k * (1.0 - double(sets_v_all_map[v]) / parsers.size());
+        lambdas[i][v[0]][v[1]][v[2]]
+            //[v[3]][v[4]]
+            = delta_k * (1.0 - double(sets_v_all_map[v]) / parsers.size());
 
         // std::cout
         //     << i << " " << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << " " << v[4] << " "
@@ -370,11 +382,12 @@ int TwoStageLorgParseApp::find_consensus()
         if(not lambdas[i].count(v.first[0])
            or not lambdas[i][v.first[0]].count(v.first[1])
            or not lambdas[i][v.first[0]][v.first[1]].count(v.first[2])
-           or not lambdas[i][v.first[0]][v.first[1]][v.first[2]].count(v.first[3])
-           or not lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]].count(v.first[4]))
+           // or not lambdas[i][v.first[0]][v.first[1]][v.first[2]].count(v.first[3])
+           // or not lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]].count(v.first[4])
+           )
         {
-        lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]][v.first[4]] =
-            delta_k * (- double(sets_v_all_map[v.first]) / parsers.size());
+          lambdas[i][v.first[0]][v.first[1]][v.first[2]]//[v.first[3]][v.first[4]]
+              = delta_k * (- double(sets_v_all_map[v.first]) / parsers.size());
         // std::cout
         //     << i << " " << v.first[0] << " " << v.first[1] << " " << v.first[2] << " " << v.first[3] << " " << v.first[4] << " "
         //     << lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]][v.first[4]] << std::endl;

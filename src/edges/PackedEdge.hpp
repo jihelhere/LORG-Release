@@ -634,7 +634,11 @@ double PackedEdge<Types>::marginalise() const
 
 
 template <typename Types>
-void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u)
+void PackedEdge<Types>::update_relaxations(const
+                                           //MAP<int, MAP<int,
+                                           double
+                                           //>>
+                                           & u)
 {
   static
   std::function<unsigned(unsigned)> simplified_nt =
@@ -672,57 +676,71 @@ void PackedEdge<Types>::update_relaxations(const MAP<int, MAP<int,double>>& u)
       };
 
 
-
-  for (auto& e : u)
+  for(auto& le : lexical_daughters)
   {
-    int rhs0 = e.first;
-    for (auto& f : e.second)
-    {
-      int rhs1 = f.first;
-      double update = f.second;
-
-      switch(rhs1)
-      {
-        case -2 : // lexical
-          for(auto& le : lexical_daughters)
-          {
-            //if(l.get_rule()->get_rhs0() == rhs0)
-            //{
-              le.update_relaxation(-update);
-              //              std::cout << "lexical update" << std::endl;
-              break;
-              //}
-          }
-          break;
-        case -1 : // unary
-          for(auto& un : unary_daughters)
-          {
-            if(simplified_nt(un.get_rule()->get_rhs0()) == unsigned(rhs0))
-            {
-              un.update_relaxation(-update);
-              //              std::cout << "unary update" << std::endl;
-              //break;
-            }
-          }
-
-          break;
-
-        default : // binary
-
-          for(auto& bi : binary_daughters)
-          {
-            if(simplified_nt(bi.get_rule()->get_rhs0()) == unsigned(rhs0)
-               && simplified_nt(bi.get_rule()->get_rhs1()) == unsigned(rhs1))
-            {
-              bi.update_relaxation(-update);
-              //if(update != 0.0)
-                //                std::cout << "binary update " << b.get_relaxation() << std::endl;
-              //break;
-            }
-          }
-      }
-    }
+    le.update_relaxation(-u);
   }
+  for(auto& un : unary_daughters)
+  {
+    un.update_relaxation(-u);
+  }
+  for(auto& bi : binary_daughters)
+  {
+    bi.update_relaxation(-u);
+
+  }
+
+
+  // for (auto& e : u)
+  // {
+  //   int rhs0 = e.first;
+  //   for (auto& f : e.second)
+  //   {
+  //     int rhs1 = f.first;
+  //     double update = f.second;
+
+  //     switch(rhs1)
+  //     {
+  //       case -2 : // lexical
+  //         for(auto& le : lexical_daughters)
+  //         {
+  //           //if(l.get_rule()->get_rhs0() == rhs0)
+  //           //{
+  //             le.update_relaxation(-update);
+  //             //              std::cout << "lexical update" << std::endl;
+  //             break;
+  //             //}
+  //         }
+  //         break;
+  //       case -1 : // unary
+  //         for(auto& un : unary_daughters)
+  //         {
+  //           if(simplified_nt(un.get_rule()->get_rhs0()) == unsigned(rhs0))
+  //           {
+  //             un.update_relaxation(-update);
+  //             //              std::cout << "unary update" << std::endl;
+  //             //break;
+  //           }
+  //         }
+
+  //         break;
+
+  //       default : // binary
+
+  //         for(auto& bi : binary_daughters)
+  //         {
+  //           if(simplified_nt(bi.get_rule()->get_rhs0()) == unsigned(rhs0)
+  //              && simplified_nt(bi.get_rule()->get_rhs1()) == unsigned(rhs1))
+  //           {
+  //             bi.update_relaxation(-update);
+  //             //if(update != 0.0)
+  //               //                std::cout << "binary update " << b.get_relaxation() << std::endl;
+  //             //break;
+  //           }
+  //         }
+  //     }
+  //   }
+  // }
 }
 
 #endif

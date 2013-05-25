@@ -158,6 +158,19 @@ public:
          "sets the additional grammars for the third maxn parser (dd)")
 
 
+        ("archive_nt", po::value<std::vector<std::string>>(), "undocumented")
+        ("archive_word", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("archive_grammar1", po::value<std::string>(), "undocumented")
+        ("archive_alternategrammars1", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("archive_grammar2", po::value<std::string>(), "undocumented")
+        ("archive_alternategrammars2", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("archive_grammar3", po::value<std::string>(), "undocumented")
+        ("archive_alternategrammars3", po::value<std::vector<std::string>>(), "undocumented")
+
+
 
         ("parser-type,p",po::value<std::string>()->default_value("max"),
          "sets the type of parsing - vit for Viterbi , max for MaxRule, "

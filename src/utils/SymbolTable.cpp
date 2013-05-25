@@ -1,5 +1,12 @@
 #include "SymbolTable.h"
 
+
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+#include <fstream>
+
+
 SymbolTable * SymbolTable::NT_instancePtr = nullptr;//initialize singlton pointer
 SymbolTable * SymbolTable::word_instancePtr = nullptr;//initialize singlton pointer
 std::string const SymbolTable::unknown_string  = "UNK"; // TODO: give a more generic unknown string
@@ -57,4 +64,11 @@ std::string SymbolTable::get_label_string(unsigned int i) const throw(Miss)
     throw(Miss(i));
   else
     return find_i->second;
+}
+
+void SymbolTable::load(std::string filename)
+{
+  std::ifstream ifs(filename);
+  boost::archive::text_iarchive ia(ifs);
+  ia >> *this;
 }

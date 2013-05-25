@@ -11,6 +11,9 @@
 
 #include <cassert>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 class URule : public AnnotatedRule
 {
 public:
@@ -44,6 +47,8 @@ public:
      \brief returns attribute rhs0
   */
   short get_rhs0() const;
+
+  void set_rhs0(short r) {rhs0 = r;};
 
   /**
      \brief read access to annotated probabilities
@@ -139,6 +144,21 @@ protected:
   std::vector< std::vector<double> > probabilities ; ///< probabilities for a CFG rule  with annotation
 
 private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<AnnotatedRule>(*this);
+      ar & rhs0;
+      ar & probabilities;
+    }
+
+
+
 };
 
 inline
