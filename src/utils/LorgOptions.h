@@ -141,12 +141,12 @@ public:
 
   void add_2sparser_options()
   {
-    // options for the two stage parser
+    // options for the two stage parwser
     po::options_description parser_opts("two-stage parser options");
     parser_opts.add_options()
 
-        ("grammar,g", po::value<std::string>(), "sets the grammar for the parser")
-        ("alternate-grammar,F", po::value< std::vector<std::string> >(),
+        ("grammar1,g", po::value<std::string>(), "sets the grammar for the parser")
+        ("alternate-grammar1,F", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the maxn parser")
 
         ("grammar2,y", po::value<std::string>(), "sets the second grammar for the parser (dd)")
@@ -157,19 +157,28 @@ public:
         ("alternate-grammar3,Z", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the third maxn parser (dd)")
 
+        ("grammar4,x", po::value<std::string>(), "sets the third grammar for the parser (dd)")
+        ("alternate-grammar4,X", po::value< std::vector<std::string> >(),
+         "sets the additional grammars for the third maxn parser (dd)")
 
-        ("archive_nt", po::value<std::vector<std::string>>(), "undocumented")
-        ("archive_word", po::value<std::vector<std::string>>(), "undocumented")
 
-        ("archive_grammar1", po::value<std::string>(), "undocumented")
-        ("archive_alternategrammars1", po::value<std::vector<std::string>>(), "undocumented")
+        ("archive-nt", po::value<std::vector<std::string>>(), "undocumented")
+        ("archive-word", po::value<std::vector<std::string>>(), "undocumented")
 
-        ("archive_grammar2", po::value<std::string>(), "undocumented")
-        ("archive_alternategrammars2", po::value<std::vector<std::string>>(), "undocumented")
+        ("archive-grammar1", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars1", po::value<std::vector<std::string>>(), "undocumented")
 
-        ("archive_grammar3", po::value<std::string>(), "undocumented")
-        ("archive_alternategrammars3", po::value<std::vector<std::string>>(), "undocumented")
+        ("archive-grammar2", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars2", po::value<std::vector<std::string>>(), "undocumented")
 
+        ("archive-grammar3", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars3", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("archive-grammar4", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars4", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("output-archive", po::value<bool>()->default_value(false),
+         "undocumented")
 
 
         ("parser-type,p",po::value<std::string>()->default_value("max"),
