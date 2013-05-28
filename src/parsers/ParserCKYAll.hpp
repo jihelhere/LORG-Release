@@ -472,7 +472,7 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
     // std::cout << std::log(get_sentence_probability()) << std::endl;
     // std::cout << get_sentence_probability() << std::endl;
-    std::cout << "beaming with grammar: " << i << std::endl;
+    //std::cout << "beaming with grammar: " << i << std::endl;
 
 
 

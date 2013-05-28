@@ -157,7 +157,7 @@ public:
         ("alternate-grammar3,Z", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the third maxn parser (dd)")
 
-        ("grammar4,x", po::value<std::string>(), "sets the third grammar for the parser (dd)")
+        ("grammar4,x", po::value<std::string>(), "sets the fourth grammar for the parser (dd)")
         ("alternate-grammar4,X", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the third maxn parser (dd)")
 

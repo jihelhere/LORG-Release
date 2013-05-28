@@ -44,6 +44,9 @@ public:
   inline const PathMatrix&
   get_unary_decoding_paths() const {return viterbi_decoding_paths;}
 
+  inline PathMatrix&
+  get_unary_decoding_paths() {return viterbi_decoding_paths;}
+
   GrammarAnnotated(const std::string& filename);
 
   GrammarAnnotated * create_projection(const std::vector<std::vector<double> >& expected_counts,
