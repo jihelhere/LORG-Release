@@ -272,13 +272,36 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
             }
 
             g->get_annotations_info().set_num_annotations_map(v);
+
+
+            //unary chains
+            PathMatrix& old = g->get_unary_decoding_paths();
+            PathMatrix new_path;
+            for(auto i : old)
+            {
+              auto is = nts.get_label_string(i.first.first);
+              auto i2 = SymbolTable::instance_nt().get_label_id(is);
+              for(auto j : i.second)
+              {
+
+                auto js = nts.get_label_string(j.first.first);
+                auto j2 = SymbolTable::instance_nt().get_label_id(js);
+
+                auto ks = nts.get_label_string(j.second.first);
+                auto k2 = SymbolTable::instance_nt().get_label_id(ks);
+
+                new_path[{i2,i.first.second}][{j2,j.first.second}] = {k2,j.second.second};
+              }
+            }
+
+            old = new_path;
           }
         };
 
 
     std::function<std::vector<ParserCKYAll::AGrammar*>(std::vector<annot_descendants_type>&, int)>
         build_grammar =
-        [&](std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
+        [&config, &verbose,&align_grammar](std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
         {
           std::vector<ParserCKYAll::AGrammar*> my_grammars;
           // get my_grammars
@@ -302,7 +325,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
                 if(verbose) std::cerr << "loading SymbolTable for non terminals" << std::endl;
                 SymbolTable::instance_nt().load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
 
-                if(verbose) std::cerr << "loading SymbolTable for non words" << std::endl;
+                if(verbose) std::cerr << "loading SymbolTable for words" << std::endl;
                 SymbolTable::instance_word().load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
 
                 if(verbose) std::cerr << "loading grammar archive" << std::endl;
@@ -400,136 +423,159 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         };
 
     ////
-    std::vector<double> priors;
-    std::vector<annot_descendants_type> all_annot_descendants;
-    std::vector<ParserCKYAll::AGrammar*> grammars;
-
-    grammars = build_grammar(all_annot_descendants, 0);
-    // compute priors for base grammar
-    if(verbose) std::cerr << "computing priors" << std::endl;
-    priors = grammars[0]->compute_priors();
-
-    std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs;
-
-    if(config.exists("alternate-grammar1") or config.exists("archive-alternategrammars1"))
     {
-      const std::vector<std::string>& filenames = config.exists("alternate-grammar1") ?
-                                                  config.get_value<std::vector<std::string> >("alternate-grammar") :
-                                                  config.get_value<std::vector<std::string> >("archive-alternategrammars1");
-      if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0)
-      {
-        throw std::runtime_error("incorrect parsing algorithm");
-      }
+      std::vector<double> priors;
+      std::vector<annot_descendants_type> all_annot_descendants;
+      std::vector<ParserCKYAll::AGrammar*> grammars;
 
-      build_alternate(all_annot_descendants, 0);
-    }
-
-    results.push_back(
-      create_parser(grammars,
-        string_to_pa(config.get_value<std::string>("parser-type")),
-        string_to_mpc(config.get_value<std::string>("max-type")),
-        priors, beam_threshold,
-        alt_gs, all_annot_descendants, accurate, min,
-        config.get_value<int>("stubbornness"),
-        config.get_value<unsigned>("kbest"))
-    );
-
-    if (grammars.back()->gram_conf.count("lex_unknown_map"))
-    {
-      std::cerr << "gram_conf contains lex_unknown_map info" << std::endl;
-      if (results.back()->get_word_signature() == nullptr)
-      {
-        std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
-        results.back()->set_word_signature(
-            WordSignatureFactory::create_wordsignature(
-                WordSignature::string_2_lex_unknown_map(grammars.back()->gram_conf.at("lex_unknown_map")),
-                true));
-      }
-    }
-
-    std::vector<double> priors2;
-    std::vector<annot_descendants_type> all_annot_descendants2;
-    std::vector<ParserCKYAll::AGrammar*> grammars2;
-    std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs2;
-    // get grammars
-    if(config.exists("grammar2") or config.exists("archive-grammar2"))
-    {
-      grammars2 = build_grammar(all_annot_descendants2, 1);
+      grammars = build_grammar(all_annot_descendants, 0);
       // compute priors for base grammar
-      priors2 = grammars2[0]->compute_priors();
+      if(verbose) std::cerr << "computing priors" << std::endl;
+      priors = grammars[0]->compute_priors();
 
-      ///////////////////
-      if(config.exists("alternate-grammar2") or config.exists("archive-alternategrammars2"))
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs;
+
+      if(config.exists("alternate-grammar1") or config.exists("archive-alternategrammars1"))
       {
-        alt_gs2 = build_alternate(all_annot_descendants2,1);
+        build_alternate(all_annot_descendants, 0);
       }
 
-      ///////////////////
+      results.push_back( create_parser(grammars, string_to_pa(config.get_value<std::string>("parser-type")),
+                                       string_to_mpc(config.get_value<std::string>("max-type")), priors, beam_threshold,
+                                       alt_gs, all_annot_descendants, accurate, min, config.get_value<int>("stubbornness"),
+                                       config.get_value<unsigned>("kbest")));
 
-
-      results.push_back(
-          create_parser(grammars2,
-                        string_to_pa(config.get_value<std::string>("parser-type")),
-                        string_to_mpc(config.get_value<std::string>("max-type")),
-                        priors2, beam_threshold,
-                        alt_gs2, all_annot_descendants2, accurate, min,
-                        config.get_value<int>("stubbornness"),
-                        config.get_value<unsigned>("kbest"))
-                        );
-
-      if (grammars2.back()->gram_conf.count("lex_unknown_map"))
+      if (grammars.back()->gram_conf.count("lex_unknown_map"))
       {
+        std::cerr << "gram_conf contains lex_unknown_map info" << std::endl;
         if (results.back()->get_word_signature() == nullptr)
         {
           std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
           results.back()->set_word_signature(
               WordSignatureFactory::create_wordsignature(
-                  WordSignature::string_2_lex_unknown_map(grammars2.back()->gram_conf.at("lex_unknown_map")),
+                  WordSignature::string_2_lex_unknown_map(grammars.back()->gram_conf.at("lex_unknown_map")),
                   true));
+        }
+      }
+    }
+
+    {
+      std::vector<double> priors2;
+      std::vector<annot_descendants_type> all_annot_descendants2;
+      std::vector<ParserCKYAll::AGrammar*> grammars2;
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs2;
+      // get grammars
+      if(config.exists("grammar2") or config.exists("archive-grammar2"))
+      {
+        grammars2 = build_grammar(all_annot_descendants2, 1);
+        // compute priors for base grammar
+        priors2 = grammars2[0]->compute_priors();
+
+        ///////////////////
+        if(config.exists("alternate-grammar2") or config.exists("archive-alternategrammars2"))
+        {
+          alt_gs2 = build_alternate(all_annot_descendants2,1);
+        }
+
+        ///////////////////
+
+
+        results.push_back(create_parser(grammars2, string_to_pa(config.get_value<std::string>("parser-type")),
+                                        string_to_mpc(config.get_value<std::string>("max-type")), priors2, beam_threshold,
+                                        alt_gs2, all_annot_descendants2, accurate, min, config.get_value<int>("stubbornness"),
+                                        config.get_value<unsigned>("kbest")));
+
+        if (grammars2.back()->gram_conf.count("lex_unknown_map"))
+        {
+          if (results.back()->get_word_signature() == nullptr)
+          {
+            std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+            results.back()->set_word_signature(
+                WordSignatureFactory::create_wordsignature(
+                    WordSignature::string_2_lex_unknown_map(grammars2.back()->gram_conf.at("lex_unknown_map")),
+                    true));
+          }
         }
       }
     }
 
 
     ////////////////
+    {
+      std::vector<double> priors3;
+      std::vector<annot_descendants_type> all_annot_descendants3;
+      std::vector<ParserCKYAll::AGrammar*> grammars3;
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs3;
+      // get grammars
+      if(config.exists("grammar3") or config.exists("archive-grammar3")) {
 
-    std::vector<double> priors3;
-    std::vector<annot_descendants_type> all_annot_descendants3;
-    std::vector<ParserCKYAll::AGrammar*> grammars3;
-    std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs3;
-    // get grammars
-    if(config.exists("grammar3") or config.exists("archive-grammar3")) {
+        grammars3 = build_grammar(all_annot_descendants3, 2);
+        // compute priors for base grammar
+        priors3 = grammars3[0]->compute_priors();
 
-      grammars3 = build_grammar(all_annot_descendants3, 2);
-      // compute priors for base grammar
-      priors3 = grammars3[0]->compute_priors();
-
-      ///////////////////
-      if(config.exists("alternate-grammar3") or config.exists("archive-alternategrammars3"))
-      {
-        alt_gs3 = build_alternate(all_annot_descendants3,2);
-      }
-
-      ///////////////////
-      results.push_back(
-          create_parser(grammars3,
-                        string_to_pa(config.get_value<std::string>("parser-type")),
-                        string_to_mpc(config.get_value<std::string>("max-type")),
-                        priors3, beam_threshold,
-                        alt_gs3, all_annot_descendants3, accurate, min,
-                        config.get_value<int>("stubbornness"),
-                        config.get_value<unsigned>("kbest"))
-                        );
-
-      if (grammars3.back()->gram_conf.count("lex_unknown_map"))
-      {
-        if (results.back()->get_word_signature() == nullptr)
+        ///////////////////
+        if(config.exists("alternate-grammar3") or config.exists("archive-alternategrammars3"))
         {
+          alt_gs3 = build_alternate(all_annot_descendants3,2);
+        }
+
+        ///////////////////
+        results.push_back(create_parser(grammars3, string_to_pa(config.get_value<std::string>("parser-type")),
+                                        string_to_mpc(config.get_value<std::string>("max-type")), priors3, beam_threshold,
+                                        alt_gs3, all_annot_descendants3, accurate, min, config.get_value<int>("stubbornness"),
+                                        config.get_value<unsigned>("kbest")));
+
+        if (grammars3.back()->gram_conf.count("lex_unknown_map"))
+        {
+          if (results.back()->get_word_signature() == nullptr)
+          {
+            std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+            results.back()->set_word_signature(
+                WordSignatureFactory::create_wordsignature(
+                    WordSignature::string_2_lex_unknown_map(grammars3.back()->gram_conf.at("lex_unknown_map")),
+                    true));
+          }
+        }
+      }
+    }
+
+
+
+    ////////////////
+    {
+      std::vector<double> priors4;
+      std::vector<annot_descendants_type> all_annot_descendants4;
+      std::vector<ParserCKYAll::AGrammar*> grammars4;
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs4;
+      // get grammars
+      if(config.exists("grammar4") or config.exists("archive-grammar4")) {
+
+        grammars4 = build_grammar(all_annot_descendants4, 3);
+        // compute priors for base grammar
+        priors4 = grammars4[0]->compute_priors();
+
+        ///////////////////
+        if(config.exists("alternate-grammar4") or config.exists("archive-alternategrammars4"))
+        {
+          alt_gs4 = build_alternate(all_annot_descendants4,3);
+        }
+
+        ///////////////////
+        results.push_back(create_parser(grammars4, string_to_pa(config.get_value<std::string>("parser-type")),
+                                        string_to_mpc(config.get_value<std::string>("max-type")), priors4, beam_threshold,
+                                        alt_gs4, all_annot_descendants4, accurate, min, config.get_value<int>("stubbornness"),
+                                        config.get_value<unsigned>("kbest")));
+
+        if (grammars4.back()->gram_conf.count("lex_unknown_map"))
+        {
+          if (results.back()->get_word_signature() == nullptr)
+          {
           std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
           results.back()->set_word_signature(
               WordSignatureFactory::create_wordsignature(
-                  WordSignature::string_2_lex_unknown_map(grammars3.back()->gram_conf.at("lex_unknown_map")),
+                  WordSignature::string_2_lex_unknown_map(grammars4.back()->gram_conf.at("lex_unknown_map")),
                   true));
+          }
         }
       }
     }

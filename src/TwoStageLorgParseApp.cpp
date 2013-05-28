@@ -63,15 +63,15 @@ int TwoStageLorgParseApp::run()
 
       //      std::cout << i << std::endl;
 
-      std::cerr << "tag" << std::endl;
+      //std::cerr << "tag" << std::endl;
       taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
-      std::cerr << "init chart" << std::endl;
+      //      std::cerr << "init chart" << std::endl;
       parsers[i]->initialise_chart(sentences[i], brackets);
-      std::cerr << "parse" << std::endl;
+      //      std::cerr << "parse" << std::endl;
       parsers[i]->parse(start_symbol);
-      std::cerr << "beam" << std::endl;
+      //      std::cerr << "beam" << std::endl;
       parsers[i]->beam_c2f(start_symbol);
-      std::cerr << "extract" << std::endl;
+      //      std::cerr << "extract" << std::endl;
       if(parsers[i]->is_chart_valid(start_symbol))
       {
         parsers[i]->extract_solution();
@@ -87,17 +87,16 @@ int TwoStageLorgParseApp::run()
 
       for(size_t i = 0; i < parsers.size(); ++i)
       {
-        //        if (i == 0) continue;
-        //        threads.push_back(std::thread(process_sentence,i));
-        std::cerr << i << std::endl;
-        process_sentence(i);
-        std::cerr << i << std::endl;
+        threads.push_back(std::thread(process_sentence,i));
+        // std::cerr << i << std::endl;
+        // process_sentence(i);
+        // std::cerr << i << std::endl;
       }
 
-      // for(auto& thread : threads)
-      // {
-      //   thread.join();
-      // }
+      for(auto& thread : threads)
+      {
+        thread.join();
+      }
 
 
       int k = 0;
@@ -271,7 +270,7 @@ int TwoStageLorgParseApp::find_consensus()
   double c = 1;
   double t = 0;
 
-  for (k = 0; k < 1000; ++k)
+  for (k = 0; k < 100; ++k)
   {
     // std::cout << "k = " << k << std::endl;
     // std::cout << "lu = " << lu << std::endl;
@@ -326,16 +325,29 @@ int TwoStageLorgParseApp::find_consensus()
 
         }
 
-        //        if(r->is_binary() or r->is_lexical())
-        if(SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
-                                                                     // an
-                                                                     // 'artificial
-                                                                     // node'
+        // //        if(r->is_binary() or r->is_lexical())
+        // if(SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
+        //                                                              // an
+        //                                                              // 'artificial
+        //                                                              // node'
+        // {
+        //   std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l/*,r0,r1*/};
+        //   sets_v[i].insert(vv);
+        //   sets_v_all_map[vv] += 1;
+        // }
+
+        if(//std::get<1>(e) != std::get<2>(e) &&
+               SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
+          // an
+          // 'artificial
+          // node'
         {
 
           std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l/*,r0,r1*/};
-          sets_v[i].insert(vv);
-          sets_v_all_map[vv] += 1;
+          if(sets_v[i].insert(vv).second)
+          {
+            sets_v_all_map[vv] += 1;
+          }
         }
       }
     }
