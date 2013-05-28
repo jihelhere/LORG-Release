@@ -55,7 +55,7 @@ common_sources = rules/Types4Rules.h rules/MetaProduction.h \
 	LorgParseApp.h LorgParseApp.cpp \
 	feature_extract/Extract.h feature_extract/Extract.cpp \
 	feature_extract/Feature.h feature_extract/Feature.cpp \
-	TagGuesser.h
+	TagGuesser.h utils/unordered_map_serialization.hpp
 
 simple_lorgparser_SOURCES = ${common_sources}
 simple_lorgparser_SOURCES += simple_lorgparser.cpp \
