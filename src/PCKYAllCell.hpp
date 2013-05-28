@@ -104,8 +104,8 @@ template<class Types>
 inline
 void PCKYAllCell<Types>::add_word(const Word & word)
 {
-  typedef typename Types::LexicalDaughter LDaughters;
-//   assert(edges.size() == max_size);
+  //typedef typename Types::LexicalDaughter LDaughters;
+  //assert(edges.size() == max_size);
   for(const auto & rule : word.get_rules())
   {
     const typename Types::LRule* r = static_cast<const typename Types::LRule*>(rule);
