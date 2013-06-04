@@ -82,6 +82,10 @@ void BRule::update_inside_annotations(std::vector<double>& up,
     assert(up[i] >= 0.0);
     assert(up[i] <= 1.0);
   }
+
+  // for(size_t i = 0; i < up.size(); ++i)
+  //   std::cout << i << " b : " << up[i] << " ";
+  // std::cout <<std::endl;
 }
 
 

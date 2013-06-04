@@ -89,7 +89,10 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
       }
       for (std::vector<unsigned>::const_iterator it(m.begin()); it != m.end(); ++it)
       {
-        result_i[*it] /= sum;
+        if(sum == 0.0) // is this a bug from the trainer ??
+          result_i[*it] = 0;
+        else
+          result_i[*it] /= sum;
       }
     }
   }
@@ -293,10 +296,10 @@ calculate_conditional_probs(const std::vector<std::vector<double> >& expected_co
 
     for (unsigned i = 0; i < result.size(); ++i)
     {
-      //        std::cout << SymbolTable::instance_nt().translate(i) << std::endl;
+      //std::cout << SymbolTable::instance_nt().translate(i) << std::endl;
 
       if((int) i == root_id) {
-        //          std::cout << result[0][0] << std::endl;
+        //std::cout << result[0][0] << std::endl;
         continue;
       }
 

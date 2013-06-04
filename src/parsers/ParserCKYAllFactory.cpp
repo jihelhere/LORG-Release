@@ -437,7 +437,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
       if(config.exists("alternate-grammar1") or config.exists("archive-alternategrammars1"))
       {
-        build_alternate(all_annot_descendants, 0);
+        alt_gs = build_alternate(all_annot_descendants, 0);
       }
 
       results.push_back( create_parser(grammars, string_to_pa(config.get_value<std::string>("parser-type")),
@@ -661,6 +661,9 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
   std::vector<std::vector<double> > expected_counts;
   calculate_expected_counts(transition_probabilities, grammar.get_annotations_info(), expected_counts);
   //  std::clog << "after expected counts" << std::endl;
+  // for(size_t i = 0; i < expected_counts.size(); ++i)
+  //   for(size_t j = 0; j < expected_counts[i].size(); ++j)
+  //     std::cout << expected_counts[i][j] << std::endl;
 
 #ifndef USE_THREADS
   for (unsigned i = 0; i < annot_descendants.size() - 1; ++i) {

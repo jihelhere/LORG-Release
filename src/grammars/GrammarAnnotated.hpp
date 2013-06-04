@@ -365,6 +365,11 @@ GrammarAnnotated<Bin,Un,Lex>::create_projection(const std::vector<std::vector<do
 
   std::vector<std::vector<double> > conditional_probabilities = calculate_conditional_probs(expected_counts, annotation_mapping);
 
+  // for(size_t i = 0; i < conditional_probabilities.size(); ++i)
+  //   for(size_t j = 0; j < conditional_probabilities[i].size(); ++j)
+  //     std::cout << conditional_probabilities[i][j] << std::endl;
+
+
   GrammarAnnotated * result =  new GrammarAnnotated(conditional_probabilities, annotation_mapping,
                                                     Grammar<Bin,Un,Lex>::binary_rules,
                                                     Grammar<Bin,Un,Lex>::unary_rules,
@@ -404,6 +409,7 @@ void GrammarAnnotated<Bin,Un,Lex>::compute_transition_probabilities(uomap<int, u
         {
           rhs0_entry += probs_i_j[k];
           rhs1_map[k] += probs_i_j[k];
+          //std::cout << rhs1_map[k] << std::endl;
         }
       }
     }
@@ -423,6 +429,7 @@ void GrammarAnnotated<Bin,Un,Lex>::compute_transition_probabilities(uomap<int, u
       for (unsigned j = 0; j < probs_i.size(); ++j)
       {
         rhs0_map[j] += probs_i[j];
+        //std::cout << rhs0_map[j] << std::endl;
       }
     }
   }
@@ -469,7 +476,7 @@ GrammarAnnotated<Bin,Un,Lex>::GrammarAnnotated(const std::vector<std::vector<dou
   std::transform(old_binary_rules.begin(),old_binary_rules.end(),
                   std::back_inserter(Grammar<Bin,Un,Lex>::binary_rules),
                   pr);
-  //  std::clog << "after binaries" << std::endl;
+  // std::clog << "after binaries" << std::endl;
   // std::copy(Grammar<Bin,Un,Lex>::binary_rules.begin(),
   // 	    Grammar<Bin,Un,Lex>::binary_rules.end(),
   //   	    std::ostream_iterator<Bin> (std::clog, "\n"));
