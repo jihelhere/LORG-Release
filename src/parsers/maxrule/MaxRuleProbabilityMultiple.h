@@ -624,9 +624,9 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
             d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
           p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                                                     get_log_normalisation_factor(i),
-                                                                                     leftannots[i],
-                                                                                     rule_probs);
+                                                           get_log_normalisation_factor(i),
+                                                           leftannots[i],
+                                                           rule_probs);
         }
 
       p.probability +=  left.get_prob_model().get(p.left_index).probability;

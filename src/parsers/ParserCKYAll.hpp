@@ -309,6 +309,7 @@ template <class Types>
 void ParserCKYAll_Impl<Types>::compute_inside_probabilities()
 {
   this->chart->opencells_apply_bottom_up( & Cell::compute_inside_probabilities );
+  //this->chart->opencells_apply_bottom_up_nothread( & Cell::compute_inside_probabilities );
 }
 
 
@@ -470,8 +471,6 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
     double beam_threshold = io_beam_thresholds[i + 1];
 
-    // std::cout << std::log(get_sentence_probability()) << std::endl;
-    // std::cout << get_sentence_probability() << std::endl;
     //std::cout << "beaming with grammar: " << i << std::endl;
 
 
@@ -482,6 +481,9 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
     //   std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
     //}
+    // std::cout << std::log(get_sentence_probability()) << std::endl;
+    // std::cout << get_sentence_probability() << std::endl;
+
 
 
 

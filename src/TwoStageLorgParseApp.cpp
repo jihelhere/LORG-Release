@@ -65,13 +65,13 @@ int TwoStageLorgParseApp::run()
 
       //std::cerr << "tag" << std::endl;
       taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
-      //      std::cerr << "init chart" << std::endl;
+      //std::cerr << "init chart" << std::endl;
       parsers[i]->initialise_chart(sentences[i], brackets);
-      //      std::cerr << "parse" << std::endl;
+      //std::cerr << "parse" << std::endl;
       parsers[i]->parse(start_symbol);
-      //      std::cerr << "beam" << std::endl;
+      //std::cerr << "beam" << std::endl;
       parsers[i]->beam_c2f(start_symbol);
-      //      std::cerr << "extract" << std::endl;
+      //std::cerr << "extract" << std::endl;
       if(parsers[i]->is_chart_valid(start_symbol))
       {
         parsers[i]->extract_solution();

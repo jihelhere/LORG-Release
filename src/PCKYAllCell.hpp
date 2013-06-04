@@ -137,7 +137,10 @@ void PCKYAllCell<Types>::adjust_inside_probability()
 template<class Types>
 void PCKYAllCell<Types>::compute_inside_probabilities()
 {
-//     apply_on_edges( & Edge::clean_invalidated_binaries);
+  //     apply_on_edges( & Edge::clean_invalidated_binaries);
+
+  //     std::cout << begin << ":" << end << std::endl;
+
 
   apply_on_edges(
       std::function<void(Edge&)>

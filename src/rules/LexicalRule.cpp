@@ -45,6 +45,7 @@ void LexicalRule::update_inside_annotations(std::vector<double>& up) const
 
     // if(up[i] < 0.0 || up[i] > 1.0)
     //std::cout << i << " : " << *this << " " << up[i] <<std::endl;
+    //std::cout << i << " l : " << up[i] <<std::endl;
   }
 }
 
