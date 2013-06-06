@@ -100,15 +100,17 @@ int TwoStageLorgParseApp::run()
 
 
       int k = 0;
+
+      std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
+
       if (parsers.size() > 1)
-        k = find_consensus();
+        k = find_consensus(best_trees);
 
       std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
         //for (size_t i = 0; i < parsers.size(); ++i)
       {
-        std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
         if(parsers[i]->is_chart_valid(start_symbol))
         {
           //                             BLOCKTIMING("get_parses");
@@ -125,13 +127,13 @@ int TwoStageLorgParseApp::run()
         p_typed->print(*out);
         delete p_typed;
 
-
-        //sanity
-        for(unsigned l = 0; l < best_trees.size(); ++l) { // delete solutions
-          delete best_trees[l].first;
-        }
-        best_trees.clear();
       }
+      //sanity
+      for(unsigned l = 0; l < best_trees.size(); ++l) { // delete solutions
+        delete best_trees[l].first;
+      }
+      best_trees.clear();
+
       for (size_t i = 0; i < parsers.size(); ++i)
       {
         parsers[i]->clean();
@@ -247,7 +249,7 @@ unsigned simplified_nt( unsigned id )
 
 
 
-int TwoStageLorgParseApp::find_consensus()
+int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& best_trees)
 {
 
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
@@ -270,7 +272,7 @@ int TwoStageLorgParseApp::find_consensus()
   double c = 1;
   double t = 0;
 
-  for (k = 0; k < 100; ++k)
+  for (k = 0; k < 1000; ++k)
   {
     // std::cout << "k = " << k << std::endl;
     // std::cout << "lu = " << lu << std::endl;
@@ -456,6 +458,10 @@ int TwoStageLorgParseApp::find_consensus()
       if(parsers[i]->is_chart_valid(start_symbol))
       {
         nlu += parsers[i]->get_best_score(start_symbol);
+        if (i == 0)
+        {
+          parsers[i]->get_parses(start_symbol, 1, always_output_forms, output_annotations, best_trees);
+        }
       }
     }
     //        std::cout << std::endl;
