@@ -18,7 +18,7 @@ private:
   bool read_config(ConfigTable& configuration);
   LorgOptions get_options() const;
 
-  int find_consensus();
+  int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&);
 
 
   std::vector<ParserCKYAll *> parsers;
