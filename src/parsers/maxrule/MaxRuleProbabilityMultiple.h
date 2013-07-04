@@ -89,9 +89,9 @@ public:
   inline void update_binary(Edge&, const BinaryDaughter&) {throw std::runtime_error("I shall not be called");};
   inline void finalize();
 
-  inline void pick_best_lexical(const LexicalDaughter& dtr);
-  inline void pick_best_binary(const BinaryDaughter& dtr);
-  inline void pick_best_unary(const UnaryDaughter& dtr);
+  inline void pick_best_lexical(LexicalDaughter& dtr);
+  inline void pick_best_binary(BinaryDaughter& dtr);
+  inline void pick_best_unary(UnaryDaughter& dtr);
   inline void pick_best();
 
   inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
@@ -146,118 +146,64 @@ const double& MaxRuleProbabilityMultiple::get_log_normalisation_factor(unsigned 
   return log_normalisation_factor_backup[i];
 }
 
-// void MaxRuleProbabilityMultiple::update_lexical(Edge& e, const LexicalDaughter& dtr)
-// {
-//   const AnnotationInfo & a = e.get_annotations();
-//   double probability = QInsideComputer::compute(a, dtr.get_rule(), log_normalisation_factor)
-
-//       + dtr.get_relaxation();
-
-
-
-
-
-//   if (probability > derivations[0].probability) {
-//     derivations[0].probability = probability;
-//     derivations[0].dtrs = &dtr;
-//   }
-// }
-
-// void MaxRuleProbabilityMultiple::update_unary(Edge& e, const UnaryDaughter & dtr)
-// {
-//   const AnnotationInfo & a = e.get_annotations();
-//   double probability = -std::numeric_limits<double>::infinity();
-
-//   Edge& left  = dtr.left_daughter();
-//   if(left.get_prob_model().get(0).dtrs && (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())) {
-//     probability =  QInsideComputer::compute(a, dtr, log_normalisation_factor)
-//                    + dtr.get_relaxation();
-
-//   }
-//   // else {
-//   //   std::cout << "ERROR" << std::endl;
-//   // }
-
-//   // if(std::isnan(probability))
-//   //   return;
-
-//   if (probability > derivations[0].probability) {
-//     derivations[0].probability = probability;
-//     derivations[0].dtrs = &dtr;
-//   }
-// }
-
-// void MaxRuleProbabilityMultiple::update_binary(Edge& e, const BinaryDaughter& dtr)
-// {
-//   const AnnotationInfo & a = e.get_annotations();
-
-//   //calculate the probability for this edge -
-//   //if it's the best probability so far, update the best edge info
-
-//   double probability = QInsideComputer::compute(a, dtr, log_normalisation_factor)
-//                        + dtr.get_relaxation();
-//                        ;
-
-//   // if(std::isnan(probability))
-//   //   return;
-
-//   if (probability > derivations[0].probability)
-//     {
-//       derivations[0].probability = probability;
-//       derivations[0].dtrs = &dtr;
-//     }
-// }
-
 
 void MaxRuleProbabilityMultiple::finalize()
 {
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_lexical(const LexicalDaughter & dtr)
+void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr)
 {
   packed_edge_probability p;
   p.dtrs = &dtr;
 
-  const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
-  const LexicalDaughter* d = static_cast<const LexicalDaughter*>(p.dtrs);
+  LexicalDaughter* d = static_cast<LexicalDaughter*>(p.dtrs);
 
-  p.probability = 0;
-  for (unsigned i = 0; i < upannots.size(); ++i)
+  if (p.dtrs->is_calculated())
   {
-    if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
-      continue;
+    p.probability = p.dtrs->get_q_score();
+  }
+  else
+  {
+    const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
 
-    const std::vector<double>& rule_probs = d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
+    p.probability = 0;
+    for (unsigned i = 0; i < upannots.size(); ++i)
+    {
+      if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+        continue;
 
-    double probability = 0;
-    for(unsigned j = 0; j < rule_probs.size(); ++j) {
-      if(!upannots[i].valid_prob_at(j, LorgConstants::NullProba)) continue;
-      //std::cout << "out: " << upannots[i].outside_probabilities.array[j] << std::endl;
-      //std::cout << "prb: " << rule_probs[j] << std::endl;
-      probability += rule_probs[j] * upannots[i].outside_probabilities.array[j];
+      const std::vector<double>& rule_probs = d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
+
+      double probability = 0;
+      for(unsigned j = 0; j < rule_probs.size(); ++j)
+      {
+        if(!upannots[i].valid_prob_at(j, LorgConstants::NullProba)) continue;
+        //std::cout << "out: " << upannots[i].outside_probabilities.array[j] << std::endl;
+        //std::cout << "prb: " << rule_probs[j] << std::endl;
+        probability += rule_probs[j] * upannots[i].outside_probabilities.array[j];
+      }
+
+
+      double logprob =
+          // (get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity()) ?
+          // -std::numeric_limits<double>::infinity() :
+          std::log(probability) - get_log_normalisation_factor(i);
+
+      // ???
+      //    p.probability += logprob + std::exp(logprob);
+      p.probability += logprob;
+
+      if(p.probability ==-std::numeric_limits<double>::infinity())
+        //std::cout << "it's happening!" << std::endl;
+        break;
     }
 
-    // std::cout << probability << " "
-    //           << std::log(probability) << " "
-    //           << get_log_normalisation_factor(i) << std::endl;
-
-
-    double logprob =
-        // (get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity()) ?
-        // -std::numeric_limits<double>::infinity() :
-        std::log(probability) - get_log_normalisation_factor(i);
-
-    // ???
-    //    p.probability += logprob + std::exp(logprob);
-    p.probability += logprob + dtr.get_relaxation();
-
-
-    if(p.probability ==-std::numeric_limits<double>::infinity())
-      //std::cout << "it's happening!" << std::endl;
-      break;
-
+    p.dtrs->set_calculated(true);
+    p.dtrs->set_q_score(p.probability);
   }
+
+  p.probability += dtr.get_relaxation();
 
   //p.probability += std::exp(p.probability);
 
@@ -266,50 +212,54 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(const LexicalDaughter & dtr)
   candidates.push_back(p);
 }
 
-void MaxRuleProbabilityMultiple::pick_best_binary(const BinaryDaughter& dtr)
+void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr)
 {
+  //    std::cout << "binary case" << std::endl;
+
   packed_edge_probability p;
   p.dtrs = &dtr;
 
-  const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
-
-  //    std::cout << "binary case" << std::endl;
-
-  const BinaryDaughter * d = static_cast<const BinaryDaughter*>(p.dtrs);
-
+  BinaryDaughter * d = static_cast<BinaryDaughter*>(p.dtrs);
   Edge& left  = d->left_daughter();
-  const std::vector<AnnotationInfo>& leftannots = left.get_prob_model().get_annotations_backup();
-
   Edge& right = d->right_daughter();
-  const std::vector<AnnotationInfo>& rightannots = right.get_prob_model().get_annotations_backup();
 
-  p.probability = 0;
-
-  for (unsigned i = 0; i < upannots.size(); ++i)
+  if (p.dtrs->is_calculated())
   {
-    if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
-      continue;
-    //          std::cout << *( d->get_rule()->get_coarser(upannots.size() - i + 1)) << std::endl;
-
-    const std::vector<std::vector<std::vector<double> > >& rule_probs =
-        d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
-
-    p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                     get_log_normalisation_factor(i),
-                                                     leftannots[i],
-                                                     rightannots[i],
-                                                     rule_probs);
-
-    if(p.probability ==-std::numeric_limits<double>::infinity())
-      //std::cout << "it's happening! (b)" << std::endl;
-      break;
+    p.probability = p.dtrs->get_q_score();
   }
+  else
+  {
+    const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
+    const std::vector<AnnotationInfo>& leftannots = left.get_prob_model().get_annotations_backup();
+    const std::vector<AnnotationInfo>& rightannots = right.get_prob_model().get_annotations_backup();
 
+    p.probability = 0;
+
+    for (unsigned i = 0; i < upannots.size(); ++i)
+    {
+      if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+        continue;
+      //          std::cout << *( d->get_rule()->get_coarser(upannots.size() - i + 1)) << std::endl;
+
+      const std::vector<std::vector<std::vector<double> > >& rule_probs =
+          d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
+
+      p.probability += QInsideComputer::compute_simple(upannots[i], get_log_normalisation_factor(i),
+                                                       leftannots[i], rightannots[i],
+                                                       rule_probs);
+
+      if(p.probability == -std::numeric_limits<double>::infinity())
+        //std::cout << "it's happening! (b)" << std::endl;
+        break;
+    }
+
+    p.dtrs->set_calculated(true);
+    p.dtrs->set_q_score(p.probability);
+  }
 
 
   //  p.probability += std::exp(p.probability);
   p.probability += left.get_prob_model().get(0).probability + right.get_prob_model().get(0).probability;
-
   p.probability += dtr.get_relaxation();
 
   if (candidates.empty() || p.probability > derivations[0].probability)
@@ -318,59 +268,58 @@ void MaxRuleProbabilityMultiple::pick_best_binary(const BinaryDaughter& dtr)
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_unary(const UnaryDaughter & dtr)
+void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr)
 {
-  packed_edge_probability p;
-  p.dtrs = &dtr;
-
-  const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
-
-
-  const UnaryDaughter* d = static_cast<const UnaryDaughter*>(p.dtrs);
-
-  Edge& left  = d->left_daughter();
+  Edge& left  = dtr.left_daughter();
 
   if(left.get_prob_model().get(0).dtrs && // should be an assertion
-     // only branch on a binary or a lexical : prevent unary chains
-     (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())
-     )
+       // only branch on a binary or a lexical : prevent unary chains
+       (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary())
+       )
   {
+    packed_edge_probability p;
+    p.dtrs = &dtr;
 
-    const std::vector<AnnotationInfo>& leftannots = left.get_prob_model().get_annotations_backup();
+    UnaryDaughter* d = static_cast<UnaryDaughter*>(p.dtrs);
 
-    p.probability = 0;
-
-
-    for (unsigned i = 0; i < upannots.size(); ++i)
+    if (p.dtrs->is_calculated())
     {
-      if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
-        continue;
-      const std::vector<std::vector<double> >& rule_probs =
-          d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
+      p.probability = p.dtrs->get_q_score();
+    }
+    else
+    {
+      const std::vector<AnnotationInfo>& upannots = get_annotations_backup();
+      const std::vector<AnnotationInfo>& leftannots = left.get_prob_model().get_annotations_backup();
 
-      p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                       get_log_normalisation_factor(i),
-                                                       leftannots[i],
-                                                       rule_probs);
+      p.probability = 0;
 
-    if(p.probability ==-std::numeric_limits<double>::infinity())
-      //std::cout << "it's happening! (u)" << std::endl;
-      break;
+      for (unsigned i = 0; i < upannots.size(); ++i)
+      {
+        if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+          continue;
+        const auto& rule_probs = d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
+        p.probability += QInsideComputer::compute_simple(upannots[i], get_log_normalisation_factor(i),
+                                                         leftannots[i], rule_probs);
+
+        if(p.probability ==-std::numeric_limits<double>::infinity())
+          //std::cout << "it's happening! (u)" << std::endl;
+          break;
+      }
+
+      p.dtrs->set_calculated(true);
+      p.dtrs->set_q_score(p.probability);
 
     }
-
     //    p.probability += std::exp(p.probability);
     p.probability +=  left.get_prob_model().get(0).probability;
     p.probability += dtr.get_relaxation();
 
+    if (candidates.empty() || p.probability > derivations[0].probability)
+      derivations[0] = p;
 
+    candidates.push_back(p);
   }
-
-  if (candidates.empty() || p.probability > derivations[0].probability)
-    derivations[0] = p;
-
-  candidates.push_back(p);
 }
 
 //read scores and pick best

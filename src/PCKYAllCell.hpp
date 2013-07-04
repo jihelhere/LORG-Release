@@ -2,7 +2,7 @@
 #ifndef PCKYALLCELL_HPP
 #define PCKYALLCELL_HPP
 
-#include "./PCKYAllCell.h"
+#include "PCKYAllCell.h"
 #include "edges/AnnotationInfo.h"
 #include "edges/PackedEdge.hpp"
 
@@ -518,19 +518,19 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 
 template<class Types>
 void
-PCKYAllCell<Types>::update_relaxations(const //MAP<int, MAP<int,
-                                       MAP<int,double>
-                                       //>>
-                                       & case_l)
+PCKYAllCell<Types>::update_relaxations(const MAP<int,double>& case_l)
 {
   static
-  std::function<unsigned(unsigned)> simplified_nt =
+  std::function<int(unsigned)> simplified_nt =
       [](unsigned id )
       {
         //std::cout << id << std::endl;
         std::string name = SymbolTable::instance_nt().get_label_string(id);
 
         //        std::cout << name << std::endl;
+        if(name[0] == '[')
+          return -1;
+
 
         static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
         static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
@@ -555,7 +555,7 @@ PCKYAllCell<Types>::update_relaxations(const //MAP<int, MAP<int,
 
         //std::cout << name << std::endl;
 
-        return SymbolTable::instance_nt().get_label_id(name);
+        return int(SymbolTable::instance_nt().get_label_id(name));
       };
 
   // TODO write a version of apply_edges with index (i)

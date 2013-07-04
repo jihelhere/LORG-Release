@@ -13,7 +13,7 @@ class PackedEdgeDaughters;
 struct packed_edge_probability
 {
   double probability;	   ///< the best probabilities for all each edge in this packed edge
-  const PackedEdgeDaughters* dtrs;        ///< the best rhs for each edge in this packed edge
+  PackedEdgeDaughters* dtrs;        ///< the best rhs for each edge in this packed edge
 
   unsigned left_index;     ///< the indices to the best edge for the left dtrs in best_dtrs;
   unsigned right_index;    ///< the indices to the best edge for the right dtrs in best_dtrs;

@@ -64,7 +64,7 @@ public:
   inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
 
   template<class TDaughter>
-  inline void update_best(const TDaughter& dtr);
+  inline void update_best(TDaughter& dtr);
   inline void finalize_best();
 
   inline void find_succ(packed_edge_probability& pep, bool licence_unaries);

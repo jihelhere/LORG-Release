@@ -207,12 +207,7 @@ public:
   void close() { open=false; Edge::~Edge();}
   //  void destroy() {Edge::~Edge();}
 
-  void update_relaxations(
-      const
-      //MAP<int, MAP<int,
-      double
-      //>>
-      & u);
+  void update_relaxations(const double & u);
 
 
 protected :
@@ -256,6 +251,11 @@ public:
   void process(function<void(ProbaModel &, Edge &, const LexicalDaughter &)> f) {for(const auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d);}
   void process(function<void(ProbaModel &, Edge &, const UnaryDaughter &)> f) {for(const auto& d: get_unary_daughters()) f(get_prob_model(), *this, d);}
   void process(function<void(ProbaModel &, Edge &, const BinaryDaughter &)> f) {for(const auto& d: get_binary_daughters()) f(get_prob_model(), *this, d);}
+
+  void process(function<void(ProbaModel &, Edge &, LexicalDaughter &)> f) {for( auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d);}
+  void process(function<void(ProbaModel &, Edge &, UnaryDaughter &)> f) {for( auto& d: get_unary_daughters()) f(get_prob_model(), *this, d);}
+  void process(function<void(ProbaModel &, Edge &, BinaryDaughter &)> f) {for( auto& d: get_binary_daughters()) f(get_prob_model(), *this, d);}
+
 
   void process(function<void(ProbaModel &, const LexicalDaughter &)> f) {for(const auto& d: get_lexical_daughters()) f(get_prob_model(), d);}
   void process(function<void(ProbaModel &, const UnaryDaughter &)> f) {for(const auto& d: get_unary_daughters()) f(get_prob_model(), d);}

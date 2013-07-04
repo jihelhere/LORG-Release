@@ -634,46 +634,42 @@ double PackedEdge<Types>::marginalise() const
 
 
 template <typename Types>
-void PackedEdge<Types>::update_relaxations(const
-                                           //MAP<int, MAP<int,
-                                           double
-                                           //>>
-                                           & u)
+void PackedEdge<Types>::update_relaxations(const double & u)
 {
-  static
-  std::function<unsigned(unsigned)> simplified_nt =
-      [](unsigned id )
-      {
-        //std::cout << id << std::endl;
-        std::string name = SymbolTable::instance_nt().get_label_string(id);
+  // static
+  // std::function<unsigned(unsigned)> simplified_nt =
+  //     [](unsigned id )
+  //     {
+  //       //std::cout << id << std::endl;
+  //       std::string name = SymbolTable::instance_nt().get_label_string(id);
 
-        //        std::cout << name << std::endl;
+  //       //        std::cout << name << std::endl;
 
-        static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
-        static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-        boost::cmatch matched;
-        bool is_artificial = false;
+  //       static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
+  //       static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+  //       boost::cmatch matched;
+  //       bool is_artificial = false;
 
-        if(boost::regex_match(name.c_str(), matched, exp_artifical))
-        {
-          name = std::string(matched[1].first, matched[1].second);
-          is_artificial = true;
-        }
+  //       if(boost::regex_match(name.c_str(), matched, exp_artifical))
+  //       {
+  //         name = std::string(matched[1].first, matched[1].second);
+  //         is_artificial = true;
+  //       }
 
-        if(boost::regex_match(name.c_str(),matched,exp_funct))
-        {
-          name = std::string(matched[1].first, matched[1].second);
-        }
+  //       if(boost::regex_match(name.c_str(),matched,exp_funct))
+  //       {
+  //         name = std::string(matched[1].first, matched[1].second);
+  //       }
 
-        if(is_artificial)
-        {
-          name = "[(" + name + ")>]";
-        }
+  //       if(is_artificial)
+  //       {
+  //         name = "[(" + name + ")>]";
+  //       }
 
-        //std::cout << name << std::endl;
+  //       //std::cout << name << std::endl;
 
-        return SymbolTable::instance_nt().get_label_id(name);
-      };
+  //       return SymbolTable::instance_nt().get_label_id(name);
+  //     };
 
 
   for(auto& le : lexical_daughters)

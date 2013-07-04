@@ -87,16 +87,17 @@ int TwoStageLorgParseApp::run()
 
       for(size_t i = 0; i < parsers.size(); ++i)
       {
-        threads.push_back(std::thread(process_sentence,i));
+        //        threads.push_back(std::thread(process_sentence,i));
         // std::cerr << i << std::endl;
-        // process_sentence(i);
+        process_sentence(i); // for replicability
+        // TODO : find why solutions are different in multithreaded code
         // std::cerr << i << std::endl;
       }
 
-      for(auto& thread : threads)
-      {
-        thread.join();
-      }
+      // for(auto& thread : threads)
+      // {
+      //   thread.join();
+      // }
 
 
       int k = 0;
@@ -274,7 +275,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
   for (k = 0; k < 1000; ++k)
   {
-    // std::cout << "k = " << k << std::endl;
+    //std::cout << "k = " << k << std::endl;
     // std::cout << "lu = " << lu << std::endl;
     // std::cout << "t = " << t << std::endl;
     double delta_k = c / (t + 1);
@@ -283,14 +284,11 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     std::vector<std::set< std::vector<int>>> sets_v(this->parsers.size());
     std::map<std::vector<int>, int> sets_v_all_map;
 
-    std::vector<MAP<int,MAP<int,MAP<int, /*MAP<int, MAP<int,*/double /*>>*/>>>> lambdas(parsers.size());
+    std::vector<MAP<int,MAP<int,MAP<int,double>>>> lambdas(parsers.size());
 
 
     for (size_t i = 0; i < parsers.size(); ++i)
     {
-      // if (sets[i].empty())
-      //   break;
-
       for (auto& e: parsers[i]->get_vectorized_representation(start_symbol))
       {
         //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
@@ -316,8 +314,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
             // r0 = -1; // for lexical rules
             // r1 = -2; // for lexical rules//
           }
-          else //unary -> don't update because parsers with functions
-               //have more of them anyway
+          else
           {
             const URule * ur = static_cast<const URule*>(r);
             l  = simplified_nt( ur->get_lhs());
@@ -344,8 +341,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
           // 'artificial
           // node'
         {
-
-          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l/*,r0,r1*/};
+          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l};
           if(sets_v[i].insert(vv).second)
           {
             sets_v_all_map[vv] += 1;
@@ -361,6 +357,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     {
       if (p.second != int(parsers.size()))
       {
+        //std::cout << p.second << std::endl;
         same = false;
         break;
       }
@@ -379,7 +376,6 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       for(const auto& v: sets_v[i])
       {
         lambdas[i][v[0]][v[1]][v[2]]
-            //[v[3]][v[4]]
             = delta_k * (1.0 - double(sets_v_all_map[v]) / parsers.size());
 
         // std::cout
@@ -396,8 +392,6 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         if(not lambdas[i].count(v.first[0])
            or not lambdas[i][v.first[0]].count(v.first[1])
            or not lambdas[i][v.first[0]][v.first[1]].count(v.first[2])
-           // or not lambdas[i][v.first[0]][v.first[1]][v.first[2]].count(v.first[3])
-           // or not lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]].count(v.first[4])
            )
         {
           lambdas[i][v.first[0]][v.first[1]][v.first[2]]//[v.first[3]][v.first[4]]
@@ -409,18 +403,16 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       }
     }
 
-
-
     // update relaxations
     std::vector<std::thread> threads;
     for (size_t i = 0; i < this->parsers.size(); ++i)
     {
       threads.push_back(
-          std::thread([&](int i)
+          std::thread([&](int j)
                       {
-                        if(this->parsers[i]->is_chart_valid(start_symbol))
+                        if(this->parsers[j]->is_chart_valid(start_symbol))
                         {
-                          this->parsers[i]->update_relaxations(lambdas[i]);
+                          this->parsers[j]->update_relaxations(lambdas[j]);
                         }
 
                         },i));
@@ -438,10 +430,10 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     for (size_t i = 0; i < parsers.size(); ++i)
     {
       threads.push_back(
-          std::thread([&](int i)
-                      {if(parsers[i]->is_chart_valid(start_symbol))
+          std::thread([&](int j)
+                      {if(parsers[j]->is_chart_valid(start_symbol))
                         {
-                          parsers[i]->simple_extract_solution();
+                          parsers[j]->simple_extract_solution();
                         }
                       },i)
                         );
@@ -476,6 +468,22 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     }
     lu = nlu;
     //          std::cerr << nlu << std::endl;
+  }
+
+  if (k == 1000)
+  {
+    std::vector<std::pair<PtbPsTree *,double> > trees;
+
+    for (const auto& p : parsers)
+    {
+      p->get_parses(start_symbol, 1, always_output_forms, output_annotations, trees);
+    }
+    for(const auto& t : trees)
+    {
+      t.first->unbinarise();
+      std::cout << *(t.first) << std::endl;
+      delete t.first;
+    }
 
   }
 

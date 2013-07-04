@@ -457,7 +457,7 @@ inline void ParserCKYAllMinDivKB::update_q()
 /**************************************************************/
 
 template<class TDaughter>
-inline void MinDivProbabilityKB::update_best(const TDaughter& dtr)
+inline void MinDivProbabilityKB::update_best(TDaughter& dtr)
 {
 //   std::cout << "updating "<<*this << "(dtr: " << *dtr.get_rule() << ")" << std::endl;
   packed_edge_probability pep;
