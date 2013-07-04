@@ -246,8 +246,10 @@ void URule::compact()
       }
     }
     if(allzeros)
-      //probabilities[i] = std::vector<double>();
-      std::vector<double>().swap(probabilities[i]);
+    {
+      probabilities[i].clear();
+    }
+    std::vector<double>(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
   }
 }
 

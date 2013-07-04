@@ -217,11 +217,11 @@ void BRule::compact()
           break;
         }
       }
-      if(allzeros) {
-        //probabilities[i][j] = std::vector<double>();
-        //std::cout << "brule::compact inner level" << std::endl;
-        std::vector<double>().swap(probabilities[i][j]);
+      if(allzeros)
+      {
+        probabilities[i][j].clear();
       }
+      std::vector<double>(probabilities[i][j].begin(), probabilities[i][j].end()).swap(probabilities[i][j]);
     }
 
   //get rid of lines of empty vectors
@@ -233,11 +233,11 @@ void BRule::compact()
         break;
       }
     }
-    if(allempty) {
-      //probabilities[i] = std::vector< std::vector<double> >();
-      std::vector< std::vector<double> >().swap(probabilities[i]);
-      //      std::cout << "brule::compact outer level" << std::endl;
+    if(allempty)
+    {
+      probabilities[i].clear();
     }
+    std::vector< std::vector<double> >(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
   }
 }
 
