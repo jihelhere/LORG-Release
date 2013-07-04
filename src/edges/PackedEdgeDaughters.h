@@ -22,10 +22,14 @@ class PackedEdgeDaughters
 protected:
   const AnnotatedRule * rule;
   double relaxation;
-
+  bool calculated;
+  double q_score;
 
 public:
-  PackedEdgeDaughters(const AnnotatedRule * r = 0) : rule(r), relaxation(0.0) {};
+  PackedEdgeDaughters(const AnnotatedRule * r = 0)
+      : rule(r), relaxation(0.0),
+        calculated(false), q_score(-std::numeric_limits<double>::infinity())
+  {};
   ~PackedEdgeDaughters() {};
 
   inline bool is_unary() const {return get_rule()->is_unary();}
@@ -36,8 +40,13 @@ public:
   inline void set_relaxation(double v) {relaxation = v;}
   inline void update_relaxation(double v) {relaxation += v;}
 
+  inline bool is_calculated() const {return calculated;}
+  inline void set_calculated(bool v) {calculated = v;}
 
-// protected:
+  inline double get_q_score() const {return q_score;}
+  inline void set_q_score(double v) {q_score = v;}
+
+  // protected:
   inline const AnnotatedRule * get_rule() const {return rule;}
   inline void set_rule(const AnnotatedRule * r) {rule = r;}
 

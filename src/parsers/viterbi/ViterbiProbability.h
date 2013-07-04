@@ -54,9 +54,9 @@ public:
   packed_edge_probability& get(unsigned index)
   {return best[index];}
 
-  void update_lexical(Edge& e,  const LexicalDaughter& dtr);
-  void update_unary(Edge& e, const UnaryDaughter& dtr);
-  void update_binary(Edge& e, const BinaryDaughter& dtr);
+  void update_lexical(Edge& e, LexicalDaughter& dtr);
+  void update_unary(Edge& e, UnaryDaughter& dtr);
+  void update_binary(Edge& e, BinaryDaughter& dtr);
   void finalize() {};
 
   bool has_solution(unsigned i) const {return i == 0;} ;

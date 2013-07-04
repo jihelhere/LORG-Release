@@ -60,9 +60,9 @@ public:
 
   inline void init() {}
   inline void store_marginals(const Edge& edge);
-  inline void update_lexical(Edge& e, const LexicalDaughter& dtr);
-  inline void update_unary(Edge& e, const UnaryDaughter& dtr);
-  inline void update_binary(Edge& e, const BinaryDaughter& dtr);
+  inline void update_lexical(Edge& e, LexicalDaughter& dtr);
+  inline void update_unary(Edge& e, UnaryDaughter& dtr);
+  inline void update_binary(Edge& e, BinaryDaughter& dtr);
   inline void finalize();
 
   inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
@@ -99,7 +99,7 @@ inline std::ostream& operator<<(std::ostream& out, const VariationalProbabilityK
 }
 
 
-void VariationalProbabilityKB::update_lexical(Edge& e, const LexicalDaughter& dtr)
+void VariationalProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
 {
    //BLOCKTIMING("VariationalProbabilityKB::update_lexical");
   const AnnotationInfo & a = e.get_annotations();
@@ -124,7 +124,7 @@ void VariationalProbabilityKB::update_lexical(Edge& e, const LexicalDaughter& dt
 //   std::cout << *this << std::endl;
 }
 
-void VariationalProbabilityKB::update_unary(Edge& e, const UnaryDaughter& dtr)
+void VariationalProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
 {
   //BLOCKTIMING("VariationalProbabilityKB::update_unary");
   const AnnotationInfo & a = e.get_annotations();
@@ -146,7 +146,7 @@ void VariationalProbabilityKB::update_unary(Edge& e, const UnaryDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void VariationalProbabilityKB::update_binary(Edge& e, const BinaryDaughter& dtr)
+void VariationalProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr)
 {
   //BLOCKTIMING("VariationalProbabilityKB::update_binary");
   const AnnotationInfo & a = e.get_annotations();

@@ -304,7 +304,6 @@ public:
    return -std::numeric_limits < double >::infinity ();
   }
 
-
   static  double compute_simple (const AnnotationInfo& up_annotations,
                                  double normalisation_factor,
                                  const AnnotationInfo& left_annotations,

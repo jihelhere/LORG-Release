@@ -9,7 +9,7 @@ std::ostream& operator<<(std::ostream& out, const ViterbiProbability & prob)
 }
 
 
-void ViterbiProbability::update_lexical(Edge& edge, const LexicalDaughter& dtr)
+void ViterbiProbability::update_lexical(Edge& edge, LexicalDaughter& dtr)
 {
   const AnnotationInfo& a = edge.get_annotations();
   const LexicalRuleC2f* rule = dtr.get_rule();
@@ -26,7 +26,7 @@ void ViterbiProbability::update_lexical(Edge& edge, const LexicalDaughter& dtr)
   }
 }
 
-void ViterbiProbability::update_unary(Edge& edge, const UnaryDaughter& dtr)
+void ViterbiProbability::update_unary(Edge& edge, UnaryDaughter& dtr)
 {
   const AnnotationInfo& a = edge.get_annotations();
   const std::vector<std::vector<double> >& rule_probs = dtr.get_rule()->get_probability();
@@ -51,7 +51,7 @@ void ViterbiProbability::update_unary(Edge& edge, const UnaryDaughter& dtr)
   }
 }
 
-void ViterbiProbability::update_binary(Edge& edge, const BinaryDaughter& dtr)
+void ViterbiProbability::update_binary(Edge& edge, BinaryDaughter& dtr)
 {
 
   const AnnotationInfo& a = edge.get_annotations();

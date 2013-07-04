@@ -69,9 +69,9 @@ public:
   inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
 
 
-  inline void update_lexical(Edge& e, const LexicalDaughter& dtr);
-  inline void update_unary(Edge& e, const UnaryDaughter& dtr);
-  inline void update_binary(Edge& e, const BinaryDaughter& dtr);
+  inline void update_lexical(Edge& e, LexicalDaughter& dtr);
+  inline void update_unary(Edge& e, UnaryDaughter& dtr);
+  inline void update_binary(Edge& e, BinaryDaughter& dtr);
   inline void finalize();
 
 
@@ -107,7 +107,7 @@ inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbabilityKB & 
 }
 
 
-void MaxRuleProbabilityKB::update_lexical(Edge& e, const LexicalDaughter& dtr)
+void MaxRuleProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
 {
    //BLOCKTIMING("MaxRuleProbabilityKB::update_lexical");
  const AnnotationInfo & a = e.get_annotations();
@@ -132,7 +132,7 @@ void MaxRuleProbabilityKB::update_lexical(Edge& e, const LexicalDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void MaxRuleProbabilityKB::update_unary(Edge& e, const UnaryDaughter& dtr)
+void MaxRuleProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_unary");
   const AnnotationInfo & a = e.get_annotations();
@@ -154,7 +154,7 @@ void MaxRuleProbabilityKB::update_unary(Edge& e, const UnaryDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void MaxRuleProbabilityKB::update_binary(Edge& e, const BinaryDaughter& dtr)
+void MaxRuleProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_binary");
   const AnnotationInfo & a = e.get_annotations();
