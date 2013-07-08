@@ -324,22 +324,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
         }
 
-        // //        if(r->is_binary() or r->is_lexical())
-        // if(SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
-        //                                                              // an
-        //                                                              // 'artificial
-        //                                                              // node'
-        // {
-        //   std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l/*,r0,r1*/};
-        //   sets_v[i].insert(vv);
-        //   sets_v_all_map[vv] += 1;
-        // }
-
         if(//std::get<1>(e) != std::get<2>(e) &&
-               SymbolTable::instance_nt().get_label_string(l)[0] != '[') // not
-          // an
-          // 'artificial
-          // node'
+               SymbolTable::instance_nt().get_label_string(l)[0] != '[')
+          // not an 'artificial node'
         {
           std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l};
           if(sets_v[i].insert(vv).second)
