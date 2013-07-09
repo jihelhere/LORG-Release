@@ -109,7 +109,7 @@ public:
   std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << std::endl; }); return out; }
 
 
-  void update_relaxations(
+  void update_relaxations(bool,
       const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&);
   //      const MAP<int,MAP<int,MAP<int, MAP<int, MAP<int,double>>>>>& lambda);
 

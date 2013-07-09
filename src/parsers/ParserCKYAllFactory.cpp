@@ -457,6 +457,13 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
                   true));
         }
       }
+      if (grammars.back()->gram_conf.count("remove_functions"))
+      {
+        if(grammars.back()->gram_conf.at("remove_functions") == "0")
+        {
+          results.back()->set_is_funct(true);
+        }
+      }
     }
 
     {
@@ -494,6 +501,13 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
                 WordSignatureFactory::create_wordsignature(
                     WordSignature::string_2_lex_unknown_map(grammars2.back()->gram_conf.at("lex_unknown_map")),
                     true));
+          }
+        }
+        if (grammars2.back()->gram_conf.count("remove_functions"))
+        {
+          if(grammars2.back()->gram_conf.at("remove_functions") == "0")
+          {
+            results.back()->set_is_funct(true);
           }
         }
       }
@@ -536,9 +550,15 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
                     true));
           }
         }
+        if (grammars3.back()->gram_conf.count("remove_functions"))
+        {
+          if(grammars3.back()->gram_conf.at("remove_functions") == "0")
+          {
+            results.back()->set_is_funct(true);
+          }
+        }
       }
     }
-
 
 
     ////////////////
@@ -575,6 +595,13 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
               WordSignatureFactory::create_wordsignature(
                   WordSignature::string_2_lex_unknown_map(grammars4.back()->gram_conf.at("lex_unknown_map")),
                   true));
+          }
+        }
+        if (grammars4.back()->gram_conf.count("remove_functions"))
+        {
+          if(grammars4.back()->gram_conf.at("remove_functions") == "0")
+          {
+            results.back()->set_is_funct(true);
           }
         }
       }

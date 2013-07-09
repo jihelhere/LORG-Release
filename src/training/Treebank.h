@@ -127,6 +127,9 @@ public:
 
   void output_unbinarised(std::ostream& out) const;
 
+  const treebank_options& get_options() const {return options;}
+
+
 };
 
 

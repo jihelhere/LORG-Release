@@ -248,10 +248,28 @@ unsigned simplified_nt( unsigned id )
 
 
 
-
-
 int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& best_trees)
 {
+
+  struct anchored_symbol
+  {
+    int symbol;
+    int begin;
+    int end;
+
+    anchored_symbol(int n, int b, int e) : symbol(n), begin(b), end(e) {};
+
+    bool operator<(const anchored_symbol& other) const
+    {
+      return
+          (begin < other.begin)
+          or
+          (begin == other.begin and end < other.end)
+          or
+          (begin == other.begin and end == other.end  and symbol < other.symbol);
+    }
+  };
+
 
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
 
@@ -273,6 +291,12 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
   double c = 1;
   double t = 0;
 
+  size_t fun_parser_size = 0;
+  for(auto& p : parsers)
+  {
+    if(p->get_is_funct()) ++ fun_parser_size;
+  }
+
   for (k = 0; k < 1000; ++k)
   {
     //std::cout << "k = " << k << std::endl;
@@ -281,10 +305,15 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     double delta_k = c / (t + 1);
     double nlu = 0;
 
-    std::vector<std::set< std::vector<int>>> sets_v(this->parsers.size());
-    std::map<std::vector<int>, int> sets_v_all_map;
+    std::vector<std::set< anchored_symbol >> z_parser(this->parsers.size());
+    std::map<anchored_symbol, int> z_average;
+    std::vector<MAP<int,MAP<int,MAP<int,double>>>> z_lambdas(parsers.size());
 
-    std::vector<MAP<int,MAP<int,MAP<int,double>>>> lambdas(parsers.size());
+
+    // fun
+    std::vector<std::set< anchored_symbol >> f_parser(this->parsers.size());
+    std::map<anchored_symbol, int> f_average;
+    std::vector<MAP<int,MAP<int,MAP<int,double>>>> f_lambdas(parsers.size());
 
 
     for (size_t i = 0; i < parsers.size(); ++i)
@@ -295,43 +324,27 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
         const AnnotatedRule* r = std::get<0>(e);
 
-        int l;//, r0, r1;
+        int l;
+        l  = simplified_nt(r->get_lhs());
 
-        if(r->is_binary())
-        {
-          const BRule * br = static_cast<const BRule*>(r);
-          l  = simplified_nt(br->get_lhs());
-          //          r0 = simplified_nt(br->get_rhs0());
-          //          r1 = simplified_nt(br->get_rhs1());
-        }
-        else
-        {
-          if(r->is_lexical())
-          {
-            const LexicalRule * lr = static_cast<const LexicalRule*>(r);
-            l  = simplified_nt( lr->get_lhs());
-            // //r0 = lr->get_rhs0();
-            // r0 = -1; // for lexical rules
-            // r1 = -2; // for lexical rules//
-          }
-          else
-          {
-            const URule * ur = static_cast<const URule*>(r);
-            l  = simplified_nt( ur->get_lhs());
-            // r0 = simplified_nt( ur->get_rhs0());
-            // r1 = -1; // for unary rules
-          }
-
-        }
-
-        if(//std::get<1>(e) != std::get<2>(e) &&
-               SymbolTable::instance_nt().get_label_string(l)[0] != '[')
+        if(SymbolTable::instance_nt().get_label_string(l)[0] != '[')
           // not an 'artificial node'
         {
-          std::vector<int> vv = {std::get<1>(e), std::get<2>(e), l};
-          if(sets_v[i].insert(vv).second)
+          anchored_symbol vv(l, std::get<1>(e), std::get<2>(e));
+          if(z_parser[i].insert(vv).second)
           {
-            sets_v_all_map[vv] += 1;
+            z_average[vv] += 1;
+          }
+        }
+
+        if (parsers[i]->get_is_funct() && (SymbolTable::instance_nt().get_label_string(l)[0] != '['))
+        {
+          int f = r->get_lhs();
+
+          anchored_symbol ff(f, std::get<1>(e), std::get<2>(e));
+          if(f_parser[i].insert(ff).second)
+          {
+            f_average[ff] += 1;
           }
         }
       }
@@ -340,9 +353,18 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
     // check same solution
     bool same = true;
-    for (auto& p : sets_v_all_map)
+    for (auto& p : z_average)
     {
       if (p.second != int(parsers.size()))
+      {
+        //std::cout << p.second << std::endl;
+        same = false;
+        break;
+      }
+    }
+    for (auto& p : f_average)
+    {
+      if (p.second != int(fun_parser_size))
       {
         //std::cout << p.second << std::endl;
         same = false;
@@ -355,40 +377,60 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       break;
     }
 
-    for(size_t i = 0; i < sets_v.size(); ++i)
+    for(size_t i = 0; i < z_parser.size(); ++i)
     {
-      lambdas[i].clear();
+      z_lambdas[i].clear();
 
       // add update for things in ith solution
-      for(const auto& v: sets_v[i])
+      for(const auto& v: z_parser[i])
       {
-        lambdas[i][v[0]][v[1]][v[2]]
-            = delta_k * (1.0 - double(sets_v_all_map[v]) / parsers.size());
-
-        // std::cout
-        //     << i << " " << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << " " << v[4] << " "
-        //     << double(sets_v_all_map[v]) << " "
-        //     << parsers.size() << " "
-        //     << lambdas[i][v[0]][v[1]][v[2]][v[3]][v[4]] << std::endl;
-
+        z_lambdas[i][v.begin][v.end][v.symbol]
+            = delta_k * (1.0 - double(z_average[v]) / parsers.size());
       }
 
       // add update for things missing in ith solution
-      for(const auto& v: sets_v_all_map)
+      for(const auto& v: z_average)
       {
-        if(not lambdas[i].count(v.first[0])
-           or not lambdas[i][v.first[0]].count(v.first[1])
-           or not lambdas[i][v.first[0]][v.first[1]].count(v.first[2])
+        if(not z_lambdas[i].count(v.first.begin)
+           or not z_lambdas[i][v.first.begin].count(v.first.end)
+           or not z_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
            )
         {
-          lambdas[i][v.first[0]][v.first[1]][v.first[2]]//[v.first[3]][v.first[4]]
-              = delta_k * (- double(sets_v_all_map[v.first]) / parsers.size());
-        // std::cout
-        //     << i << " " << v.first[0] << " " << v.first[1] << " " << v.first[2] << " " << v.first[3] << " " << v.first[4] << " "
-        //     << lambdas[i][v.first[0]][v.first[1]][v.first[2]][v.first[3]][v.first[4]] << std::endl;
+          z_lambdas[i][v.first.begin][v.first.end][v.first.symbol]
+              = delta_k * (- double(z_average[v.first]) / parsers.size());
         }
       }
     }
+
+
+    for(size_t i = 0; i < z_parser.size(); ++i)
+    {
+      if(not parsers[i]->get_is_funct()) continue;
+
+      f_lambdas[i].clear();
+
+      // add update for things in ith solution
+      for(const auto& v: f_parser[i])
+      {
+        f_lambdas[i][v.begin][v.end][v.symbol]
+            = delta_k * (1.0 - double(f_average[v]) / fun_parser_size);
+      }
+
+      // add update for things missing in ith solution
+      for(const auto& v: f_average)
+      {
+        if(not f_lambdas[i].count(v.first.begin)
+           or not f_lambdas[i][v.first.begin].count(v.first.end)
+           or not f_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
+           )
+        {
+          f_lambdas[i][v.first.begin][v.first.end][v.first.symbol]
+              = delta_k * (- double(f_average[v.first]) / fun_parser_size);
+        }
+      }
+    }
+
+
 
     // update relaxations
     std::vector<std::thread> threads;
@@ -399,7 +441,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
                       {
                         if(this->parsers[j]->is_chart_valid(start_symbol))
                         {
-                          this->parsers[j]->update_relaxations(lambdas[j]);
+                          this->parsers[j]->update_relaxations(true,  z_lambdas[j]);
+                          if(parsers[j]->get_is_funct())
+                            this->parsers[j]->update_relaxations(false, f_lambdas[j]);
                         }
 
                         },i));
@@ -451,28 +495,28 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     // std::cout << "lu = " << lu << std::endl;
     if (nlu > lu )//|| (k % 20) == 0)
     {
-      t++;
+      ++t;
     }
     lu = nlu;
     //          std::cerr << nlu << std::endl;
   }
 
-  if (k == 1000)
-  {
-    std::vector<std::pair<PtbPsTree *,double> > trees;
+  // if (k == 1000)
+  // {
+  //   std::vector<std::pair<PtbPsTree *,double> > trees;
 
-    for (const auto& p : parsers)
-    {
-      p->get_parses(start_symbol, 1, always_output_forms, output_annotations, trees);
-    }
-    for(const auto& t : trees)
-    {
-      t.first->unbinarise();
-      std::cout << *(t.first) << std::endl;
-      delete t.first;
-    }
+  //   for (const auto& p : parsers)
+  //   {
+  //     p->get_parses(start_symbol, 1, always_output_forms, output_annotations, trees);
+  //   }
+  //   for(const auto& t : trees)
+  //   {
+  //     t.first->unbinarise();
+  //     std::cout << *(t.first) << std::endl;
+  //     delete t.first;
+  //   }
 
-  }
+  // }
 
   return k;
 }

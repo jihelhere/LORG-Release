@@ -89,7 +89,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   virtual SET< std::tuple<const AnnotatedRule*,int,int> >
   get_vectorized_representation(int start_symbol) = 0;
 
-  virtual void update_relaxations(const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&) = 0;
+  virtual void update_relaxations(bool simplify, const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&) = 0;
 
   virtual void clean() = 0;
 
@@ -100,6 +100,9 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
 
   virtual const WordSignature* get_word_signature() const {return word_signature;}
   virtual void set_word_signature(const WordSignature* ws) {word_signature = ws;}
+
+  virtual bool get_is_funct() const {return is_funct;}
+  virtual void set_is_funct(bool v) {is_funct = v;}
 
 
  protected: // attributes
@@ -121,6 +124,9 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
                     ///pruning
 
   const WordSignature * word_signature;
+
+  bool is_funct; // is the parser taking function labels into account?
+
 
 };
 
@@ -326,7 +332,8 @@ protected:
 
   SET< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
 
-  void update_relaxations(const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&);
+  void update_relaxations(bool simplify, const MAP<int,MAP<int, /*MAP<int, MAP<int,*/ MAP<int,double>/*>>*/>>&);
+
 
  protected: // attributes
   Chart * chart; // the chart
