@@ -652,7 +652,7 @@ public:
 
 
 template<class Types>
-void ChartCKY<Types>::update_relaxations(
+void ChartCKY<Types>::update_relaxations(bool simplify,
     const MAP<int,MAP<int, MAP<int,double>>>& lambda)
 {
   for (const auto& k1 : lambda)
@@ -660,27 +660,9 @@ void ChartCKY<Types>::update_relaxations(
     for (const auto& k2: k1.second)
     {
       auto& cell = access(k1.first, k2.first);
-      cell.update_relaxations(k2.second);
+      cell.update_relaxations(simplify, k2.second);
     }
   }
-
-
-
-  // for(unsigned i = 0; i < size; ++i)
-  // {
-  //   for(unsigned j = i; j < size; ++j)
-  //   {
-  //     if(lambda.count(i) and lambda.at(i).count(j))
-  //     {
-  //       auto& case_l = lambda.at(i).at(j);
-  //       auto& cell = access(i,j);
-
-  //       cell.update_relaxations(case_l);
-  //     }
-  //   }
-  // }
-
-
 }
 
 

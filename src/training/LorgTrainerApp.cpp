@@ -145,6 +145,13 @@ void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::st
 
 
         file_out << grammar.get_lexicon()->header_string() << '\n';
+
+        // TODO find a proper way to do that
+        if (tb->get_options().func)
+          file_out << "// conf: remove_functions 0\n";
+        else
+          file_out << "// conf: remove_functions 1\n";
+
         file_out << grammar << std::flush;
         file_out.close();
     }

@@ -84,7 +84,8 @@ ParserCKYAll::ParserCKYAll(std::vector<AGrammar*>& cgs,
     accurate(accurate_),
     min_length_beam(min_beam),
     stubbornness(stubborn),
-    word_signature(ws)
+    word_signature(ws),
+    is_funct(false)
 {
   // these thresholds look familiar ;)
   if(accurate) {
