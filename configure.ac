@@ -5,7 +5,7 @@ AC_INIT([lorg_tools], [git], [jleroux@computing.dcu.ie])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 LT_INIT
 
@@ -16,8 +16,14 @@ AC_PROG_CXX
 
 AC_LANG_CPLUSPLUS
 
-AC_CONFIG_HEADERS([config.h])
 
+AX_CXX_COMPILE_STDCXX_11([noext])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \
+-Wno-unused-parameter],\
+[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \
+-Wno-unused-parameter"])
+
+AC_CONFIG_HEADERS([config.h])
 
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LDFLAGS)
