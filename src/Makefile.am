@@ -67,8 +67,8 @@ simple_lorgparser_SOURCES += simple_lorgparser.cpp \
 	SimpleLorgParseApp.h SimpleLorgParseApp.cpp
 
 
-simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. --std=c++0x -DNDEBUG
-simple_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
+simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+simple_lorgparser_CXXFLAGS= -O6 -pipe
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
@@ -122,8 +122,8 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	rules/LexicalRule.h rules/LexicalRule.cpp rules/LexicalRuleC2f.h \
 	TwoStageLorgParseApp.h
 
-twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. --std=c++0x -DNDEBUG
-twostage_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
+twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+twostage_lorgparser_CXXFLAGS= -O6 -pipe
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
@@ -150,7 +150,7 @@ twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM
 # # gram2clmodel_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) -lprofiler -ltcmalloc
 
 
-feature_extractor_CXXFLAGS= -O3 -Wall -Wextra -pipe -std=c++0x
+feature_extractor_CXXFLAGS= -O3 -pipe
 feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	feature_extract/ExtractApp.cpp \
 	LorgApp.h LorgApp.cpp \
@@ -169,8 +169,5 @@ feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	utils/SymbolTable.h utils/SymbolTable.cpp \
 	rules/Types4Rules.h rules/MetaProduction.h \
 	rules/Production.cpp rules/Production.h
-
-#\	rules/Rule.cpp rules/Rule.h
-
 
 feature_extractor_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB)
