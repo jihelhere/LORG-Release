@@ -60,6 +60,9 @@ private:
 
   bool final_lex_em;
 
+  bool keep_fun;
+
+
   // prevent copying
   LorgTrainerApp(const LorgTrainerApp&);
   LorgTrainerApp& operator=(const LorgTrainerApp&);

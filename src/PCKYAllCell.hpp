@@ -571,7 +571,10 @@ PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& cas
         }
       }
       else
-        edges[i].update_relaxations(case_l.at(i));
+       if(case_l.count(i))
+        {
+          edges[i].update_relaxations(case_l.at(i));
+        }
     }
 }
 

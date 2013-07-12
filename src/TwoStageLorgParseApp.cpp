@@ -403,7 +403,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     }
 
 
-    for(size_t i = 0; i < z_parser.size(); ++i)
+    for(size_t i = 0; i < f_parser.size(); ++i)
     {
       if(not parsers[i]->get_is_funct()) continue;
 
@@ -481,10 +481,10 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       if(parsers[i]->is_chart_valid(start_symbol))
       {
         nlu += parsers[i]->get_best_score(start_symbol);
-        if (i == 0)
-        {
-          parsers[i]->get_parses(start_symbol, 1, always_output_forms, output_annotations, best_trees);
-        }
+        // if (i == 0)
+        // {
+        //   parsers[i]->get_parses(start_symbol, 1, always_output_forms, output_annotations, best_trees);
+        // }
       }
     }
     //        std::cout << std::endl;

@@ -144,13 +144,19 @@ void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::st
         }
 
 
-        file_out << grammar.get_lexicon()->header_string() << '\n';
+        file_out << grammar.get_lexicon()->header_string() ;
 
         // TODO find a proper way to do that
-        if (tb->get_options().func)
-          file_out << "// conf: remove_functions 0\n";
+        if (keep_fun)
+        {
+          file_out << std::string("// conf: remove_functions 0") << std::endl;
+        }
         else
-          file_out << "// conf: remove_functions 1\n";
+        {
+          file_out << std::string("// conf: remove_functions 1") << std::endl;
+        }
+
+        file_out << std::endl;
 
         file_out << grammar << std::flush;
         file_out.close();
@@ -225,8 +231,13 @@ int LorgTrainerApp::run()
     ptbpstrees_to_bttrees(tb->get_trees(), em_grammar, training_trees);
 
     //hack for now -- needs to be rewritten
+
+    keep_fun = not(tb->get_options().func);
     delete tb;
     tb = NULL;
+
+
+
 
     // create the trainer object
     EMTrainer em_trainer(split_size,prob_threshold,verbose);

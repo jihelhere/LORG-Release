@@ -652,8 +652,7 @@ public:
 
 
 template<class Types>
-void ChartCKY<Types>::update_relaxations(bool simplify,
-    const MAP<int,MAP<int, MAP<int,double>>>& lambda)
+void ChartCKY<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda)
 {
   for (const auto& k1 : lambda)
   {
