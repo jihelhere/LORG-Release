@@ -249,7 +249,6 @@ void BURuleInputParser::read_rulefile(const std::string& filename,
 				      ) throw(ParseError)
 {
   std::ifstream in_file(filename.c_str(),std::ios::in);
-
   if (!in_file)
   {
     std::cerr << "can't open file: " + filename  << std::endl;
