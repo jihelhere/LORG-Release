@@ -295,6 +295,26 @@ namespace helpers {
         std::vector<LexicalRuleTraining>& lr = lex->get_lexical_rules();
         std::vector<LexicalRuleTraining>& ar = lex->get_additional_rules();
 
+        // std::cout << "perform_on_lexicon in" << std::endl;
+
+        // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(lr.begin(), lr.end()),
+        //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
+        //                   {
+        //                     std::for_each(range.begin(),range.end(), action);
+        //                   }
+        //                   );
+
+
+        // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(ar.begin(), ar.end()),
+        //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
+        //                   {
+        //                     std::for_each(range.begin(),range.end(), action);
+        //                   }
+        //                   );
+
+        // std::cout << "perform_on_lexicon out" << std::endl;
+
+
         std::for_each(lr.begin(),lr.end(),action);
         std::for_each(ar.begin(),ar.end(),action);
     }

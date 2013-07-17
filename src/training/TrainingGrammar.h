@@ -13,6 +13,8 @@
 #include "lexicon/Lexicon.h"
 #include "Treebank.h"
 
+#include <tbb/parallel_for.h>
+
 typedef std::unordered_map< std::pair<int, int >, double> DeltaMap;
 typedef std::map<int,std::vector<int> > Merge_map;
 typedef std::unordered_map<int,double> unannotated_node_count_map;
@@ -216,16 +218,54 @@ inline std::vector<URuleTraining>& TrainingGrammar::get_unary_rules() {return un
 
 inline std::vector<LexicalRuleTraining>& TrainingGrammar::get_lexical_rules() {return lexicon->get_lexical_rules();}
 
+
 template <class T> inline void TrainingGrammar::perform_action_all_internal_rules(T& action)
 {
-    std::for_each(binary_rules.begin(),binary_rules.end(), action);
-    std::for_each(unary_rules.begin(),unary_rules.end(), action);
+  //std::cout << "perform_action_all_internal_rules in" << std::endl;
+
+
+  tbb::parallel_for(tbb::blocked_range<std::vector<BRuleTraining>::iterator>(binary_rules.begin(), binary_rules.end()),
+                    [&action](const tbb::blocked_range<std::vector<BRuleTraining>::iterator>& range)
+                    {
+                      std::for_each(range.begin(),range.end(), action);
+                    }
+                    );
+
+  tbb::parallel_for(tbb::blocked_range<std::vector<URuleTraining>::iterator>(unary_rules.begin(), unary_rules.end()),
+                    [&action](const tbb::blocked_range<std::vector<URuleTraining>::iterator>& range)
+                    {
+                      std::for_each(range.begin(),range.end(), action);
+                    }
+                    );
+
+  // std::cout << "perform_action_all_internal_rules out" << std::endl;
+
+
+  //  std::for_each(binary_rules.begin(),binary_rules.end(), action);
+  //  std::for_each(unary_rules.begin(),unary_rules.end(), action);
 }
 
 template <class T> inline void TrainingGrammar::perform_action_all_internal_rules(T& action) const
 {
-    std::for_each(binary_rules.begin(),binary_rules.end(), action);
-    std::for_each(unary_rules.begin(),unary_rules.end(), action);
+  // tbb::parallel_for(tbb::blocked_range<std::vector<BRuleTraining>::const_iterator>(binary_rules.begin(), binary_rules.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<BRuleTraining>::const_iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+
+  //                   }
+  //                   );
+
+  // tbb::parallel_for(tbb::blocked_range<std::vector<URuleTraining>::const_iterator>(unary_rules.begin(), unary_rules.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<URuleTraining>::const_iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+
+  //                   }
+  //                   );
+  //
+
+  std::for_each(binary_rules.begin(),binary_rules.end(), action);
+  std::for_each(unary_rules.begin(),unary_rules.end(), action);
 }
 
 
