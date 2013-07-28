@@ -13,7 +13,7 @@ ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(std::vector<AGrammar*>& cgs,
                                             bool accurate_,
                                             unsigned min_beam, int stubborn) :
     ParserCKYAll(cgs, p, prior_threshold, annot_descendants_, accurate_, min_beam, stubborn),
-  chart(NULL)
+    chart(NULL)
 {};
 
 
@@ -40,20 +40,20 @@ void ParserCKYAll_Impl<Types>::parse(int start_symbol) const
   do {
 
     //clear only when first try was a failure
-    if(ntries != stubbornness) {
+    if(ntries != stubbornness)
+    {
       chart->prepare_retry();
     }
 
     // last resort
-    if(ntries == 0)
-      beam_threshold = 0;
+    if(ntries == 0) beam_threshold = 0;
 
     //    std::clog << "ParserCKY::parse ntries = " << ntries << " threshold : " << beam_threshold << std::endl;
 
 
     //init
     {
-      //               BLOCKTIMING("parse_init");
+      // BLOCKTIMING("parse_init");
       bool beam_short = chart->get_size() >= min_length_beam;
       chart->opencells_apply(
       [&](Cell& cell){
@@ -172,9 +172,15 @@ template <class Types>
 void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) const
 {
 //   BLOCKTIMING("ParserCKYAll_Impl<Types>::process_cell");
-  const unsigned & begin = cell.get_begin();
-  const unsigned & end   = cell.get_end();
-  const bool & isroot = cell.get_top();
+  // const unsigned & begin = cell.get_begin();
+  // const unsigned & end   = cell.get_end();
+  // const bool & isroot = cell.get_top();
+  unsigned begin = cell.get_begin();
+  unsigned end   = cell.get_end();
+  bool isroot = cell.get_top();
+
+
+
 
   //std::cout << "processing (" << begin << "," << end << ")" << std::endl;
 
@@ -183,17 +189,18 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
   //application of binary rules
   {
     // BLOCKTIMING("process_cell binary");
-    for (unsigned m = begin; m < end; ++m) {
+    for (unsigned m = begin; m < end; ++m)
+    {
       // m is the mid-point
       Cell& left_cell = chart->access(begin,m);
-      //  std::cout << "here1" << std::endl;
-      if(not left_cell.is_closed()) {
+
+      if(not left_cell.is_closed())
+      {
         Cell& right_cell = chart->access(m+1,end);
-        //std::cout << "here2" << std::endl;
+
         if(not right_cell.is_closed())
-          //std::cout << "here3" << std::endl;
           get_candidates(left_cell,right_cell,cell);
-          //std::cout << "here4" << std::endl;
+
       }
     }
   }
@@ -224,11 +231,6 @@ template <class Types>
 inline
 void ParserCKYAll_Impl<Types>::add_unary_init(Cell& cell, bool isroot) const
 {
-  //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs]
-  // static std::vector<short>::const_iterator unary_rhs_itr_begin = unary_rhs_from_pos.begin();
-  // static std::vector<short>::const_iterator unary_rhs_itr_end = unary_rhs_from_pos.end();
-
-
   for(const auto& unary_rhs : unary_rhs_from_pos)
   {
     if (cell.exists_edge(unary_rhs))
@@ -237,29 +239,12 @@ void ParserCKYAll_Impl<Types>::add_unary_init(Cell& cell, bool isroot) const
       process_unary(cell,unary_rhs, isroot);
     }
   }
-
-//   for(std::vector<short>::const_iterator unary_rhs_itr(unary_rhs_itr_begin); unary_rhs_itr != unary_rhs_itr_end; ++unary_rhs_itr) {
-
-//     if (cell.exists_edge(*unary_rhs_itr)) {
-// //       BLOCKTIMING("ParserCKYAll_Impl<Types>::add_unary_init");
-//       process_unary(cell,*unary_rhs_itr, isroot);
-//     }
-//   }
 }
 
 template <class Types>
 inline
 void ParserCKYAll_Impl<Types>::add_unary_internal(Cell& cell, bool isroot) const
 {
-  //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs being a lhs of a binary rule]
-  // std::vector<short>::const_iterator unary_rhs_itr_end = unary_rhs_from_binary.end();
-  // for(std::vector<short>::const_iterator unary_rhs_itr = unary_rhs_from_binary.begin();unary_rhs_itr!=unary_rhs_itr_end;++unary_rhs_itr) {
-
-  //   if (cell.exists_edge(*unary_rhs_itr)) {
-  //     //BLOCKTIMING("ParserCKYAll_Impl<Types>::add_unary_internal");
-  //     process_unary(cell,*unary_rhs_itr,isroot);
-  //   }
-  // }
   for(const auto& unary_rhs : unary_rhs_from_binary)
   {
     if (cell.exists_edge(unary_rhs))
@@ -279,7 +264,7 @@ struct processunary
   processunary(Cell& c, double L) : cell(c), L_inside(L) {};
   void operator()(const URuleC2f* r) const
   {
-    cell.process_candidate(static_cast<const typename Cell::UnaryRule *>(r),L_inside);
+    cell.process_candidate(static_cast<const typename Cell::UnaryRule *>(r), L_inside);
   }
 };
 
@@ -309,7 +294,6 @@ template <class Types>
 void ParserCKYAll_Impl<Types>::compute_inside_probabilities()
 {
   this->chart->opencells_apply_bottom_up( & Cell::compute_inside_probabilities );
-  //this->chart->opencells_apply_bottom_up_nothread( & Cell::compute_inside_probabilities );
 }
 
 
@@ -475,12 +459,9 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
 
 
-    // FIX: This test messes with product grammar parsing
-    // TODO: Do this test only with the first grammar
-    //if(i != 0) {// inside_probs already computed when bulding the chart
+
     //   std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
-    //}
     // std::cout << std::log(get_sentence_probability()) << std::endl;
     // std::cout << get_sentence_probability() << std::endl;
 

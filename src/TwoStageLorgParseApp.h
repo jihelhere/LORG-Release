@@ -20,7 +20,6 @@ private:
 
   int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&);
 
-
   std::vector<ParserCKYAll *> parsers;
   std::vector<Tagger> taggers;
   bool output_annotations;
