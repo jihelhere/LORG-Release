@@ -632,9 +632,23 @@ void EMTrainer::resize_annotations_in_treebank(std::vector<BinaryTrainingTree> &
 {
     const AnnotatedLabelsInfo& a_infos = grammar.get_annotations_info();
 
-    for(std::vector<BinaryTrainingTree>::iterator iter(trees.begin()); iter != trees.end(); ++iter) {
-        iter->resize_annotations(a_infos);
-    }
+
+    tbb::parallel_for(tbb::blocked_range<std::vector<BinaryTrainingTree>::iterator>(trees.begin(), trees.end()),
+                      [&]
+                      (const tbb::blocked_range<std::vector<BinaryTrainingTree>::iterator>& range)
+                      {
+                        std::for_each(range.begin(),range.end(),
+                                      [&](BinaryTrainingTree& t)
+                                      {
+                                        t.resize_annotations(a_infos);
+                                      }
+                                      );
+                      }
+                      );
+
+    // for(std::vector<BinaryTrainingTree>::iterator iter(trees.begin()); iter != trees.end(); ++iter) {
+    //     iter->resize_annotations(a_infos);
+    // }
 }
 
 
