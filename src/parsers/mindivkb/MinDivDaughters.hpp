@@ -10,7 +10,7 @@
 /***********************************************************/
 inline void MinDivBinaryDaughter::outside_and_marginal(AnnotationInfo & annotations)
 {
-  auto & leftannot = left_daughter().get_annotations();    
+  auto & leftannot = left_daughter().get_annotations();
   auto & rightannot= right_daughter().get_annotations();
   q = mp = get_rule()->update_outside_annotations_return_marginal(annotations.outside_probabilities.array,
                                                               leftannot.inside_probabilities.array,
@@ -24,7 +24,7 @@ inline void MinDivBinaryDaughter::outside_and_marginal(AnnotationInfo & annotati
 inline double MinDivBinaryDaughter::tree_log_proba(unsigned left_idx, unsigned right_idx) const
 {
   return std::min(0.0,
-                  log(q) 
+                  log(q)
                   + left_daughter().get_prob_model().get(left_idx).probability
                   + right_daughter().get_prob_model().get(right_idx).probability);
 }
@@ -41,7 +41,7 @@ inline void MinDivUnaryDaughter::outside_and_marginal(AnnotationInfo & annotatio
   / MinDivProbabilityKB::get_normalisation_factor();
 }
 inline double MinDivUnaryDaughter::tree_log_proba(unsigned left_idx) const {
-  #warning dirty hack, false result
+  //#warning dirty hack, false result
   // the chart should not aggregate heads of unary rules with heads of binary and lexical rules
   // see edges/MaxRuleTreeLogProbaComputer.h:195
   if (left_daughter().get_prob_model().n_deriv() > left_idx
@@ -55,17 +55,17 @@ inline double MinDivUnaryDaughter::tree_log_proba(unsigned left_idx) const {
 //     std::cout << "e_" << & left_daughter()->get_edge(get_rule()->get_rhs0()).get_prob_model() << std::endl;
 //     std::cout << "f_" <<  &left_daughter()->get_edge(get_rule()->get_rhs0()).get_prob_model().get(left_idx) << std::endl;
 //     std::cout << "g_" <<  left_daughter()->get_edge(get_rule()->get_rhs0()).get_prob_model().get(left_idx).probability << std::endl;
-    
-    return 
-    std::min(0.0, 
-             log(q) 
+
+    return
+    std::min(0.0,
+             log(q)
              + left_daughter().get_prob_model().get(left_idx).probability);
   }
   return -std::numeric_limits < double >::infinity ();
   }
 
 
-  
+
 /***********************************************************/
 /*              Lexical daughters                          */
 /***********************************************************/
