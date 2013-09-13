@@ -5,6 +5,12 @@
 #include "LorgParseApp.h"
 #include "ParseSolution.h"
 
+
+extern "C"
+{
+#include "wapiti/src/model.h"
+}
+
 class ParserCKYAll;
 
 class TwoStageLorgParseApp : public LorgParseApp
@@ -20,8 +26,15 @@ private:
 
   int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&);
 
+  std::vector<std::string> crf_tag(FILE* f);
+
+
   std::vector<ParserCKYAll *> parsers;
   std::vector<Tagger> taggers;
+
+
+  std::vector<mdl_t*> crf_models;
+
   bool output_annotations;
   unsigned kbest;
 

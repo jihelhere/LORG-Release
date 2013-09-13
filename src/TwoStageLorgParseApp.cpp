@@ -16,6 +16,11 @@
 #include <thread>
 
 
+extern "C" {
+#include "wapiti/src/decoder.h"
+#include "wapiti/src/tools.h"
+}
+
 
 TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 {
@@ -28,6 +33,39 @@ TwoStageLorgParseApp::~TwoStageLorgParseApp()
   for(auto& p : this->parsers)
     if(p) delete p;
 }
+
+
+std::vector<std::string> TwoStageLorgParseApp::crf_tag(FILE* f)
+{
+  raw_t *raw = rdr_readraw(crf_models[0]->reader, f);
+  seq_t *seq = rdr_raw2seq(crf_models[0]->reader, raw, false);
+  const uint32_t T = seq->len;
+
+  dual_t* d = dual_init(T, crf_models[0]->nlbl);
+
+
+  uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
+  double   *psc = (double*)xmalloc(sizeof(double  ) * T);
+  double   *scs = (double*)xmalloc(sizeof(double  ));
+  tag_viterbi(crf_models[0], seq, (uint32_t*)out, scs, (double*)psc,d);
+
+  std::vector<std::string> result(T);
+
+  for (size_t i = 0; i < T; ++i)
+  {
+    result[i] = qrk_id2str(crf_models[0]->reader->lbl, out[i]);
+  }
+
+
+   free(scs);
+   free(psc);
+   free(out);
+   rdr_freeseq(seq);
+   rdr_freeraw(raw);
+
+   return result;
+}
+
 
 int TwoStageLorgParseApp::run()
 {
@@ -44,16 +82,22 @@ int TwoStageLorgParseApp::run()
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
   tick_count parse_start = tick_count::now();
 
+
+  FILE * fcrf = fopen("../lipn/dev.properties.txt", "r");
+
+
   //read input and fill raw_sentence, sentence and brackets
   while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
-    // //Extra verbose
-    // if(verbose) {
-    //   std::clog << "Tokens: ";
-    //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
-    //     std::clog << "<" << i->get_form() << ">";
-    //   std::clog << "\n";
-    // }
+
+
+    //Extra verbose
+    if(verbose) {
+      std::clog << "Tokens: ";
+      for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+        std::clog << "<" << i->get_form() << ">";
+      std::clog << "\n";
+    }
 
     std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
 
@@ -74,6 +118,7 @@ int TwoStageLorgParseApp::run()
       //std::cerr << "extract" << std::endl;
       if(parsers[i]->is_chart_valid(start_symbol))
       {
+        std::cerr << "extract" << std::endl;
         parsers[i]->extract_solution();
       }
 
@@ -98,6 +143,19 @@ int TwoStageLorgParseApp::run()
       // {
       //   thread.join();
       // }
+
+
+  std::vector<std::vector<std::string>> crf_results(crf_models.size());
+  for (size_t i = 0; i < crf_models.size(); ++i)
+  {
+    crf_results[i] = crf_tag(fcrf);
+    for(const auto& s : crf_results[i])
+    {
+      std::cout << s << " " ;
+    }
+    std::cout << std::endl;
+  }
+
 
 
       int k = 0;
@@ -212,6 +270,13 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   extract_features = configuration.get_value<bool>("extract-features");
 
   output_format = parse_solution::format_from_string(configuration.get_value<std::string>("output-format"));
+
+
+  crf_models.resize(1);
+  crf_models[0] = mdl_new(rdr_new(false));
+  FILE *file = fopen("../lipn/model.wap", "r");
+  mdl_load(crf_models[0], file);
+
 
   return true;
 }

@@ -17,7 +17,7 @@ AC_PROG_CXX
 AC_LANG_CPLUSPLUS
 
 
-AX_CXX_COMPILE_STDCXX_11([noext])
+AX_CXX_COMPILE_STDCXX_11([ext])
 AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \
 -Wno-unused-parameter],\
 [CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \

@@ -138,8 +138,8 @@ void BRuleTraining::split(unsigned n, unsigned randomness)
 		(1.0 + random_percent *
 		 (left_random[annot_b] + right_random[annot_c]));
 
-	      assert(new_probabilities[new_i][new_j][range_k+annot_c] <= 1.0);
-	      assert(new_probabilities[new_i][new_j][range_k+annot_c] >= 0.0);
+	      assert(new_probabilities[new_i][new_j][range_k+annot_c] <= 1.0 + std::numeric_limits<double>::epsilon());
+	      assert(new_probabilities[new_i][new_j][range_k+annot_c] >= 0.0 - std::numeric_limits<double>::epsilon());
 	      assert(!std::isnan(new_probabilities[new_i][new_j][range_k+annot_c]));
 
 
@@ -371,8 +371,8 @@ void BRuleTraining::update_probability(const AnnotatedNodeCountMap& nc_map)
 	counts[i][j][k] /= node_count ;
 
 	assert(!std::isnan(counts[i][j][k]));
-	assert(counts[i][j][k] <= 1);
-	assert(counts[i][j][k] >= 0);
+	assert(counts[i][j][k] <= 1.0 + std::numeric_limits<double>::epsilon());
+	assert(counts[i][j][k] >= 0.0 - std::numeric_limits<double>::epsilon());
       }
     }
   }

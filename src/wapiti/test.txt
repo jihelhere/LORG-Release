@@ -1,0 +1,8 @@
+b	u:form=Max	u:cat=NPP
+b	u:form=vend	u:cat=V
+b	u:form=des	u:cat=P	u:cat=D
+b	u:form=avions	u:cat=NC	u:cat=V
+b	u:form=.	u:cat=PUNCT
+
+b	u:form=Max	u:cat=NPP
+b	u:form=dort	u:cat=V

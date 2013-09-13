@@ -102,14 +102,14 @@ void Tagger::tag(Word& word, const WordSignature& ws) const
   else {
     //read tags from grammar
     //find all lexical rules with this word as its rhs
-    //    std::cout << word.id << " : "  << word.form << std::endl;
+    std::cout << word.id << " : "  << word.form << std::endl;
     //    std::cout << word_2_rule_.size() << std::endl;
     if(word.id != -1)
       word.rules= (*word_2_rule_)[word.id];
     else
       word.rules= unknown_tags;
 
-    //    std::cout << "nb tags :" << word.rules.size() << std::endl;
+    std::cout << "nb tags :" << word.rules.size() << std::endl;
   }
 
   if(word.rules.empty()) {

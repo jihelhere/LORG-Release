@@ -120,10 +120,16 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	rules/BRule.h rules/BRule.cpp rules/BRuleC2f.h\
 	rules/URule.h rules/URule.cpp rules/URuleC2f.h\
 	rules/LexicalRule.h rules/LexicalRule.cpp rules/LexicalRuleC2f.h \
-	TwoStageLorgParseApp.h
+	TwoStageLorgParseApp.h \
+	wapiti/src/dual.c wapiti/src/decoder.c wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c wapiti/src/lbfgs.c
+
+#wapiti/wapiti.c
+
+
 
 twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
 twostage_lorgparser_CXXFLAGS= -O6 -pipe
+twostage_lorgparser_CFLAGS= -O6 -pipe -std=c99
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
