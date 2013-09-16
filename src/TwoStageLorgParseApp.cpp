@@ -51,8 +51,13 @@ int TwoStageLorgParseApp::run()
     // if(verbose) {
     //   std::clog << "Tokens: ";
     //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+    //   {
     //     std::clog << "<" << i->get_form() << ">";
+    //     std::clog << "(" << i->get_start() << ", " << i->get_end() << ")";
+    //   }
     //   std::clog << "\n";
+
+    //   std::clog << "brackets " << brackets.size() << std::endl;
     // }
 
     std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
@@ -71,9 +76,10 @@ int TwoStageLorgParseApp::run()
       parsers[i]->parse(start_symbol);
       //std::cerr << "beam" << std::endl;
       parsers[i]->beam_c2f(start_symbol);
-      //std::cerr << "extract" << std::endl;
+
       if(parsers[i]->is_chart_valid(start_symbol))
       {
+        //std::cerr << "extract" << std::endl;
         parsers[i]->extract_solution();
       }
 
@@ -107,7 +113,8 @@ int TwoStageLorgParseApp::run()
       if (parsers.size() > 1)
         k = find_consensus(best_trees);
 
-      std::cerr << "k: " << k << std::endl;
+      if(verbose)
+        std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
         //for (size_t i = 0; i < parsers.size(); ++i)
