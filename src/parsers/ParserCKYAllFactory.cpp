@@ -24,8 +24,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <thread>
-
 typedef boost::archive::text_oarchive oarchive;
 typedef boost::archive::text_iarchive iarchive;
 
@@ -386,76 +384,39 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
           if(config.exists("alternate-grammar" + str_idx))
           {
-            my_alts.resize(filenames.size());
-            my_all_annot_descendants.resize(filenames.size());
-
-            //            std::vector<std::thread> threads;
-
             for(size_t i = 0; i < filenames.size(); ++i)
             {
-              //              threads.push_back(
-              //                  std::thread(
-              //                      [&](int i)
-                      {
-                        if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
-                        my_alts[i] = create_grammars(filenames[i], verbose);
-                        annot_descendants_type annot_descendants = create_annot_descendants(my_alts[i].back()->get_history_trees());
-                        my_all_annot_descendants[i] = annot_descendants;
-                      }
-                      //                      ,i));
+              if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
+              my_alts.push_back(create_grammars(filenames[i], verbose));
+              annot_descendants_type annot_descendants = create_annot_descendants(my_alts.back().back()->get_history_trees());
+              my_all_annot_descendants.push_back(annot_descendants);
             }
-
-            // for(size_t i = 0; i < filenames.size(); ++i)
-            // {
-            //   threads[i].join();
-            // }
-
-
           }
           if(config.exists("archive-alternategrammars" + str_idx)) {
-
-            my_alts.resize(filenames.size());
-            my_all_annot_descendants.resize(filenames.size());
-            std::vector<std::thread> threads;
-
             for(size_t i = 0; i < filenames.size(); ++i)
             {
-              // threads.push_back(
-              //     std::thread(
-              //         [&](int i)
-                      {
-                        if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
+              if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
 
-                        std::vector<ParserCKYAll::AGrammar*> grammars;
-                        std::ifstream ifs(filenames[i]);
-                        iarchive ia(ifs);
-                        ia >> grammars;
+              std::vector<ParserCKYAll::AGrammar*> grammars;
+              std::ifstream ifs(filenames[i]);
+              iarchive ia(ifs);
+              ia >> grammars;
 
-                        if (parser_idx != 0)
-                        {
-                          SymbolTable nt2;
-                          nt2.load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
+              if (parser_idx != 0)
+              {
+                SymbolTable nt2;
+                nt2.load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
 
-                          SymbolTable word2;
-                          word2.load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
+                SymbolTable word2;
+                word2.load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
 
-                          align_grammar(grammars, word2, nt2);
-                        }
+                align_grammar(grammars, word2, nt2);
+              }
 
-                        my_alts[i] =  grammars;
-                        annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
-                        my_all_annot_descendants[i] = annot_descendants;
-                      }
-                      //,i));
+              my_alts.push_back(grammars);
+              annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
+              my_all_annot_descendants.push_back(annot_descendants);
             }
-
-            // for(size_t i = 0; i < filenames.size(); ++i)
-            // {
-            //   threads[i].join();
-            // }
-
-
-
           }
 
           return my_alts;
