@@ -518,45 +518,46 @@ std::ostream& operator<<(std::ostream& out, const PCKYAllCell<Types>& cell)
 
 template<class Types>
 void
-PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& case_l)
+PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& case_l,
+                                       const std::unordered_map<int,int>& simple_map)
 {
-  static
-  std::function<int(unsigned)> simplified_nt =
-      [](unsigned id )
-      {
-        //std::cout << id << std::endl;
-        std::string name = SymbolTable::instance_nt().get_label_string(id);
+  // static
+  // std::function<int(unsigned)> simplified_nt =
+  //     [](unsigned id )
+  //     {
+  //       //std::cout << id << std::endl;
+  //       std::string name = SymbolTable::instance_nt().get_label_string(id);
 
-        //        std::cout << name << std::endl;
-        if(name[0] == '[')
-          return -1;
+  //       //        std::cout << name << std::endl;
+  //       if(name[0] == '[')
+  //         return -1;
 
 
-        static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
-        static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-        boost::cmatch matched;
-        bool is_artificial = false;
+  //       static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
+  //       static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+  //       boost::cmatch matched;
+  //       bool is_artificial = false;
 
-        if(boost::regex_match(name.c_str(), matched, exp_artifical))
-        {
-          name = std::string(matched[1].first, matched[1].second);
-          is_artificial = true;
-        }
+  //       if(boost::regex_match(name.c_str(), matched, exp_artifical))
+  //       {
+  //         name = std::string(matched[1].first, matched[1].second);
+  //         is_artificial = true;
+  //       }
 
-        if(boost::regex_match(name.c_str(),matched,exp_funct))
-        {
-          name = std::string(matched[1].first, matched[1].second);
-        }
+  //       if(boost::regex_match(name.c_str(),matched,exp_funct))
+  //       {
+  //         name = std::string(matched[1].first, matched[1].second);
+  //       }
 
-        if(is_artificial)
-        {
-          name = "[(" + name + ")>]";
-        }
+  //       if(is_artificial)
+  //       {
+  //         name = "[(" + name + ")>]";
+  //       }
 
-        //std::cout << name << std::endl;
+  //       //std::cout << name << std::endl;
 
-        return int(SymbolTable::instance_nt().get_label_id(name));
-      };
+  //       return int(SymbolTable::instance_nt().get_label_id(name));
+  //     };
 
   // TODO write a version of apply_edges with index (i)
   for(unsigned i = 0; i < max_size; ++i)
@@ -564,12 +565,14 @@ PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& cas
     {
       if(simplify)
       {
-        int i_s = simplified_nt(i);
+        int i_s = SymbolTable::instance_nt().get_label_string(i)[0] == '[' ? -1 : simple_map.at(i_s);
+
         if(case_l.count(i_s))
         {
           edges[i].update_relaxations(case_l.at(i_s));
         }
       }
+      // TODO check
       else
        if(case_l.count(i))
         {
