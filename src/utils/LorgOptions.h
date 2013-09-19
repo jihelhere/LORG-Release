@@ -120,7 +120,6 @@ public:
       ("comment-char,x", po::value<char>()->default_value('#'), "lines starting with this character will not be parsed and treated as comments")
       ("max-length", po::value<unsigned>()->default_value(1000), "sets the maximum length for input sentences")
       ("always-output-forms", po::value<bool>()->default_value(true), "always output the original form of words. If false output signatures of unknowns instead")
-      ("output-annotations", po::value<bool>()->default_value(false), "output trees with nodes decorated by annotations")
       ("extract-features,e", po::value<bool>()->default_value(false), "output features from trees (experimental)")
       ("output-format,O", po::value<std::string>()->default_value("unix"), "output format : unix [default] or json")
     ;

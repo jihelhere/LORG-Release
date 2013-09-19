@@ -122,7 +122,7 @@ int TwoStageLorgParseApp::run()
         if(parsers[i]->is_chart_valid(start_symbol))
         {
           //                             BLOCKTIMING("get_parses");
-          parsers[i]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+          parsers[i]->get_parses(start_symbol, kbest, best_trees);
           //std::cout << "getting " << i << std::endl;
         }
         parse_solution * p_typed =
@@ -163,6 +163,7 @@ int TwoStageLorgParseApp::run()
   *out << std::flush;
 
   if(verbose) std::clog << "overall time: " << (tick_count::now() - parse_start).seconds() << "s" << std::endl;
+
   return 0; //everything's fine
 }
 
@@ -174,12 +175,9 @@ LorgOptions TwoStageLorgParseApp::get_options() const
 }
 
 
-
 bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 {
   if(LorgParseApp::read_config(configuration) == false) return false;
-
-  output_annotations = configuration.get_value<bool>("output-annotations");
 
   if(verbose) { std::clog << "creating the parser... ";}
 

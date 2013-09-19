@@ -536,14 +536,14 @@ public:
   }
 
   template<class Types>
-  PtbPsTree* ChartCKY<Types>::get_best_tree(int start_symbol, unsigned k, bool output_forms, bool output_annotations) const
+  PtbPsTree* ChartCKY<Types>::get_best_tree(int start_symbol, unsigned k) const
   {
     PtbPsTree* tree = NULL;
 
     const Cell & root_cell = this->get_root();
 
     if (!root_cell.is_closed() && root_cell.exists_edge(start_symbol)) {
-      tree = root_cell.get_edge(start_symbol).to_ptbpstree(start_symbol, k, output_annotations, output_forms);
+      tree = root_cell.get_edge(start_symbol).to_ptbpstree(start_symbol, k);
     }
 
     return tree;

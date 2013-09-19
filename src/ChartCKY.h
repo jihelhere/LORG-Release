@@ -76,7 +76,7 @@ public:
   inline const Cell& get_root() const;
   Cell& get_root();
 
-  PtbPsTree* get_best_tree(int start_symbol, unsigned k, bool always_output_forms, bool output_annotations) const;
+  PtbPsTree* get_best_tree(int start_symbol, unsigned k) const;
 
   SET<const Edge*> get_rules_best_solution(int start_symbol) const;
 
