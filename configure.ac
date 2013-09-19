@@ -18,10 +18,8 @@ AC_LANG_CPLUSPLUS
 
 
 AX_CXX_COMPILE_STDCXX_11([noext])
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \
--Wno-unused-parameter],\
-[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable \
--Wno-unused-parameter"])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs],\
+[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-local-typedefs"])
 
 AC_CONFIG_HEADERS([config.h])
 

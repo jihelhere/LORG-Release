@@ -31,60 +31,88 @@ class hash<pair<U,V> > {
 // };
 
 
-template<unsigned int N>
-struct my_hash
-{
 
-  template< typename... Args>
-  inline size_t operator()(const std::tuple<Args...>& t) const
-  {
-    size_t seed = my_hash<N-1>()(t);
+// from somewhere on StackOverflow
 
-    auto n = std::get<N-1>(t);
-    seed ^=  std::hash<decltype(n)>()(n) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-    return seed;
-  }
-};
+    template<typename... TTypes>
+    class hash<std::tuple<TTypes...>>
+    {
+    private:
+        typedef std::tuple<TTypes...> Tuple;
 
-template<>
-struct my_hash<1>
-{
+        template<int N>
+            size_t operator()(Tuple /*value*/) const { return 0; }
 
-  template<typename... Args>
-  inline size_t operator()(const std::tuple<Args...>& t) const
-  {
-    auto n = std::get<0>(t);
-    return std::hash<decltype(n)>()(n) + 0x9e3779b9;
-    //return 0;
-  }
-};
+        template<int N, typename THead, typename... TTail>
+        size_t operator()(Tuple value) const
+        {
+            constexpr int Index = N - sizeof...(TTail) - 1;
+            return hash<THead>()(std::get<Index>(value)) ^ operator()<N, TTail...>(value);
+        }
+
+    public:
+        size_t operator()(Tuple value) const
+        {
+            return operator()<sizeof...(TTypes), TTypes...>(value);
+        }
+    };
 
 
-template <typename... Args>
-class hash< tuple<Args...> >
-{
- public:
+
+// template<unsigned int N>
+// struct my_hash
+// {
+
+//   template< typename... Args>
+//   inline size_t operator()(const std::tuple<Args...>& t) const
+//   {
+//     size_t seed = my_hash<N-1>()(t);
+
+//     auto n = std::get<N-1>(t);
+//     seed ^=  std::hash<decltype(n)>()(n) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+//     return seed;
+//   }
+// };
+
+// template<>
+// struct my_hash<1>
+// {
+
+//   template<typename... Args>
+//   inline size_t operator()(const std::tuple<Args...>& t) const
+//   {
+//     auto n = std::get<0>(t);
+//     return std::hash<decltype(n)>()(n) + 0x9e3779b9;
+//     //return 0;
+//   }
+// };
 
 
-  inline size_t operator()(const tuple<Args...>& t) const
-  {
-
-    // temporary fix
-    //return boost::hash_value(t);
-
-    // following code doesn't compile!!
-    size_t seed = 0;
-
-    seed = my_hash<sizeof...(Args)>()(t);
+// template <typename... Args>
+// class hash< tuple<Args...> >
+// {
+//  public:
 
 
-    // for(size_t i = 0; i < std::tuple_size<decltype(t)>(t); ++i)
-    // {
-    //   seed ^= std::hash<decltype(std::get<i>(t))>()(std::get<i>(t)) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-    // }
+//   inline size_t operator()(const tuple<Args...>& t) const
+//   {
 
-    return seed;
-  }
-};
+//     // temporary fix
+//     //return boost::hash_value(t);
+
+//     // following code doesn't compile!!
+//     size_t seed = 0;
+
+//     seed = my_hash<sizeof...(Args)>()(t);
+
+
+//     // for(size_t i = 0; i < std::tuple_size<decltype(t)>(t); ++i)
+//     // {
+//     //   seed ^= std::hash<decltype(std::get<i>(t))>()(std::get<i>(t)) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+//     // }
+
+//     return seed;
+//   }
+// };
 
 };

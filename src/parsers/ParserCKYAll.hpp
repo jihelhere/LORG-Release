@@ -587,7 +587,7 @@ ParserCKYAll_Impl<Types>::get_vectorized_representation(int start_symbol)
 
 template <class Types>
 void
-ParserCKYAll_Impl<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda)
+ParserCKYAll_Impl<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda, const std::unordered_map<int,int>& simple_map)
 {
-  chart->update_relaxations(simplify, lambda);
+  chart->update_relaxations(simplify, lambda, simple_map);
 }

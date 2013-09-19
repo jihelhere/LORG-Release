@@ -652,14 +652,14 @@ public:
 
 
 template<class Types>
-void ChartCKY<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda)
+void ChartCKY<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda, const std::unordered_map<int,int>& simple_map)
 {
   for (const auto& k1 : lambda)
   {
     for (const auto& k2: k1.second)
     {
       auto& cell = access(k1.first, k2.first);
-      cell.update_relaxations(simplify, k2.second);
+      cell.update_relaxations(simplify, k2.second, simple_map);
     }
   }
 }
