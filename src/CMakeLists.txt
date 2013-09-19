@@ -55,6 +55,8 @@ set(twostage_lorgparser_SOURCES
          parsers/maxrule/ParserCKYAllMaxRuleMultiple.cpp
          parsers/mindivkb/ParserCKYAllMinDivKB.cpp
          parsers/mindivkb/MinDivDaughters.cpp
+         parsers/variational/ParserCKYAllVariational.cpp
+         parsers/variational/VariationalProbabilityKB.cpp
          grammars/compact_binary_rules_annotated.cpp
          grammars/AnnotatedLabelsInfo.cpp
          grammars/GrammarAnnotated.cpp
@@ -74,7 +76,7 @@ include_directories(${common_include_dir})
 add_executable(simple_lorgparser ${simple_lorgparser_SOURCES})
 add_executable(twostage_lorgparser ${twostage_lorgparser_SOURCES})
 
-target_link_libraries(simple_lorgparser ${common_libs} ${Boost_REGEX_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+target_link_libraries(simple_lorgparser ${common_libs} ${Boost_LIBRARIES})
 target_link_libraries(twostage_lorgparser ${common_libs} ${Boost_LIBRARIES})
 
 
