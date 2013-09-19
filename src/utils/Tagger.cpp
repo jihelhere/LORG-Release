@@ -4,30 +4,14 @@
 #include <algorithm>
 
 
-Tagger::Tagger(const std::vector< std::vector<const MetaProduction*> >* word_2_rule,
-	       bool replace_number,const std::string& num_replace_regex) :
-    word_2_rule_(word_2_rule),
-    replace_number_(replace_number),
-    num_replace_regex_(num_replace_regex)
+Tagger::Tagger(const std::vector< std::vector<const MetaProduction*> >* word_2_rule) :
+    word_2_rule_(word_2_rule)
 {}
 
 
 void Tagger::set_word_rules(const std::vector< std::vector<const MetaProduction*> >* word_2_rule)
 {
   word_2_rule_ = word_2_rule;
-}
-
-
-// replace any number by a uniform sign
-void Tagger::replace_number(Word& word) const
-{
-  static int number_id =  SymbolTable::instance_word().insert(LorgConstants::token_number);
-
-  if(word.form[0] > 47 && word.form[0] < 58) { // to perform replacement faster
-    boost::cmatch matched;
-    if(boost::regex_match(word.form.c_str(), matched, num_replace_regex_))
-      word.id = number_id;
-  }
 }
 
 
@@ -121,11 +105,6 @@ void Tagger::tag(Word& word, const WordSignature& ws) const
 
 void Tagger::tag( std::vector< Word >& sentence, const WordSignature& ws ) const
 {
-  if(replace_number_)
-    std::for_each(sentence.begin(), sentence.end(),
-                  [&](Word& w) {this->replace_number(w);}
-                  );
-
   std::for_each(sentence.begin(), sentence.end(),
                 [&](Word& w){this->tag(w,ws);}
                 );

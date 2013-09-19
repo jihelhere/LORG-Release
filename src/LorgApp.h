@@ -1,7 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef LORGAPP_H
-#define LORGAPP_H
-
+#pragma once
 #include "utils/ConfigTable.h"
 
 #ifdef USE_THREADS
@@ -17,9 +15,6 @@ public:
   virtual int run() = 0;
 
   virtual ~LorgApp();
-
-private:
-  ConfigTable *  parse_config(int argc, char **argv);
 
 protected:
   virtual bool read_config(ConfigTable& configuration);
@@ -37,6 +32,3 @@ protected:
   #endif
 
 };
-
-
-#endif //LORGAPP_H

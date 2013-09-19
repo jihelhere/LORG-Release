@@ -123,7 +123,7 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	TwoStageLorgParseApp.h
 
 twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
-twostage_lorgparser_CXXFLAGS= -O6 -pipe
+twostage_lorgparser_CXXFLAGS= -O6 -pipe -fomit-frame-pointer
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
