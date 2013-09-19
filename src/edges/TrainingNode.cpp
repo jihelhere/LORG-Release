@@ -59,12 +59,12 @@ void UnaryTrainingNode::resize_annotations(const AnnotatedLabelsInfo& lookup)
 
 void TrainingNode::reset_inside_probabilities(double value)
 {
-  annotations.reset_inside_probabilities(value);
+  annotations.reset_inside_probabilities(value, false);
 }
 
 void LexicalTrainingNode::reset_inside_probabilities(double value)
 {
-  annotations.reset_inside_probabilities(value);
+  annotations.reset_inside_probabilities(value, false);
 }
 
 void BinaryTrainingNode::reset_inside_probabilities(double value)
@@ -87,12 +87,12 @@ void UnaryTrainingNode::reset_inside_probabilities(double value)
 
 void TrainingNode::reset_outside_probabilities(double value)
 {
-  annotations.reset_outside_probabilities(value);
+  annotations.reset_outside_probabilities(value, false);
 }
 
 void LexicalTrainingNode::reset_outside_probabilities(double value)
 {
-  annotations.reset_outside_probabilities(value);
+  annotations.reset_outside_probabilities(value, false);
 }
 
 void BinaryTrainingNode::reset_outside_probabilities(double value)
@@ -114,12 +114,12 @@ void UnaryTrainingNode::reset_outside_probabilities(double value)
 
 void TrainingNode::reset_probabilities(double value)
 {
-  annotations.reset_probabilities(value);
+  annotations.reset_probabilities(value, false);
 }
 
 void LexicalTrainingNode::reset_probabilities(double value)
 {
-  annotations.reset_probabilities(value);
+  annotations.reset_probabilities(value, false);
  }
 
 void BinaryTrainingNode::reset_probabilities(double value)
@@ -267,7 +267,7 @@ void BinaryTrainingNode::compute_inside_probability()
   left->compute_inside_probability();
   right->compute_inside_probability();
 
-  annotations.reset_inside_probabilities();
+  annotations.reset_inside_probabilities(0,false);
 
   if(rule) {
     rule->update_inside_annotations(annotations.inside_probabilities.array,
@@ -286,7 +286,7 @@ void UnaryTrainingNode::compute_inside_probability()
 {
   left->compute_inside_probability();
 
-  annotations.reset_inside_probabilities();
+  annotations.reset_inside_probabilities(0, false);
 
   if(rule) {
     rule->update_inside_annotations(annotations.inside_probabilities.array,
@@ -308,8 +308,8 @@ void LexicalTrainingNode::compute_outside_probability()
 
 void BinaryTrainingNode::compute_outside_probability()
 {
-  left->get_annotations().reset_outside_probabilities();
-  right->get_annotations().reset_outside_probabilities();
+  left->get_annotations().reset_outside_probabilities(0, false);
+  right->get_annotations().reset_outside_probabilities(0, false);
 
   rule->update_outside_annotations(annotations.outside_probabilities.array,
 				   left->get_annotations().inside_probabilities.array,
@@ -339,7 +339,7 @@ void BinaryTrainingNode::compute_outside_probability()
 
 void UnaryTrainingNode::compute_outside_probability()
 {
-  left->get_annotations().reset_outside_probabilities();
+  left->get_annotations().reset_outside_probabilities(0, false);
 
   rule->update_outside_annotations(annotations.outside_probabilities.array,
 				   left->get_annotations().outside_probabilities.array);

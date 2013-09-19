@@ -11,6 +11,9 @@
 
 #include <cassert>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 class URule : public AnnotatedRule
 {
 public:
@@ -40,12 +43,12 @@ public:
   URule(short l, short rhs0, const std::vector< std::vector<double> > & probs);
 
 
-  bool is_lexical() const {return false;}
-
   /**
      \brief returns attribute rhs0
   */
   short get_rhs0() const;
+
+  void set_rhs0(short r) {rhs0 = r;};
 
   /**
      \brief read access to annotated probabilities
@@ -71,9 +74,19 @@ public:
   std::vector< std::vector<double> >& get_probability();
 
   /**
+     \brief -> always false
+   */
+  inline bool is_lexical() const {return false;}
+  /**
      \brief -> always true
    */
-  bool is_unary() const;
+  inline bool is_unary() const {return true;}
+  /**
+     \brief -> always false
+   */
+  inline bool is_binary() const {return false;}
+
+
 
   /**
      \brief smooth probabilities *over all* lhs annotations
@@ -94,11 +107,14 @@ public:
 
 
   void update_inside_annotations(std::vector<double>& up,
-				 const std::vector<double>& left) const;
+                                 const std::vector<double>& left) const;
 
   void update_outside_annotations(const std::vector<double>& up,
-				  std::vector<double>& left) const;
+                                  std::vector<double>& left) const;
 
+  double update_outside_annotations_return_marginal(const std::vector<double>& up,
+                                                    const std::vector<double>& in_left,
+                                                    std::vector<double>& out_left) const;
   /**
      \brief removes useless zeros from probability vector
   */
@@ -128,6 +144,21 @@ protected:
   std::vector< std::vector<double> > probabilities ; ///< probabilities for a CFG rule  with annotation
 
 private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<AnnotatedRule>(*this);
+      ar & rhs0;
+      ar & probabilities;
+    }
+
+
+
 };
 
 inline
@@ -149,13 +180,6 @@ void URule::set_probability(unsigned short a, unsigned short b, const double& va
   if(b>=probabilities[a].size()) {probabilities[a].resize(b+1,0);}
   probabilities[a][b]=value;
 }
-
-inline
-bool URule::is_unary() const
-{
-  return true;
-}
-
 
 inline
 const std::vector< std::vector<double> >& URule::get_probability() const

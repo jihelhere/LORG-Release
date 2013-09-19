@@ -26,14 +26,68 @@ namespace {
             s = LorgConstants::token_number;
     }
 
-    void remove_function_from_nt_string( std::string& orig )
-    {
-        static const boost::regex exp ("^([A-Za-z]+\\$?)[=-].*");
-        boost::cmatch matched;
 
-        if(boost::regex_match(orig.c_str(),matched,exp))
-            orig = std::string(matched[1].first, matched[1].second);
-    }
+void remove_function_from_nt_string( std::string& orig )
+  {
+    static const boost::regex exp ("^([A-Za-z]+\\$?)[=-].*");
+    boost::cmatch matched;
+
+    if(boost::regex_match(orig.c_str(),matched,exp))
+      orig = std::string(matched[1].first, matched[1].second);
+  }
+
+
+  void remove_trailing_numbers_from_nt_string( std::string& orig )
+  {
+    static const boost::regex exp ("^([A-Za-z=-]+\\$?)[=-][0-9]*");
+    boost::cmatch matched;
+
+    if(boost::regex_match(orig.c_str(),matched,exp))
+      orig = std::string(matched[1].first, matched[1].second);
+  }
+
+
+    // void remove_function_from_nt_string( std::string& orig )
+    // {
+    //     static const boost::regex exp ("^([A-Za-z]+\\$?)([=-])(.*)");
+    //     boost::cmatch matched;
+
+    //     if(boost::regex_match(orig.c_str(),matched,exp))
+    //     {
+    //       orig = std::string(matched[1].first, matched[1].second);
+
+    //       // -LRB- => need to capture final dash
+    //       if( std::string(matched[3].first,matched[3].second) == "")
+    //       {
+    //         orig += std::string(matched[2].first, matched[2].second);
+    //       }
+
+    //     }
+    // }
+
+
+    // void remove_trailing_numbers_from_nt_string( std::string& orig )
+    // {
+    //     static const boost::regex exp ("^([A-Za-z=-]+\\$?)([=-])([0-9-]*)");
+    //     boost::cmatch matched;
+
+    //     if(boost::regex_match(orig.c_str(),matched,exp))
+    //     {
+    //         orig = std::string(matched[1].first, matched[1].second);
+
+    //       // -LRB- => need to capture final dash
+    //       if( std::string(matched[3].first,matched[3].second) == "")
+    //       {
+    //         orig += std::string(matched[2].first, matched[2].second);
+    //       }
+
+    //     }
+    // }
+
+
+
+
+
 }
 
 PtbPsTree::PtbPsTree() : PsTree<Content>() {}
@@ -93,6 +147,15 @@ void PtbPsTree::remove_function()
         if(!i->leaf()) //words don't have functions
             remove_function_from_nt_string(*i);
 }
+
+
+void PtbPsTree::remove_trailing_numbers()
+{
+      for(PtbPsTree::depth_first_iterator i = dfbegin(); i != dfend(); ++i)
+        if(!i->leaf()) // don't touch words
+            remove_trailing_numbers_from_nt_string(*i);
+}
+
 
 void PtbPsTree::remove_numbers(const boost::regex& num_regex)
 {

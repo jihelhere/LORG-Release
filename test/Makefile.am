@@ -5,7 +5,17 @@ endif
 
 check_PROGRAMS              = twostage_lorgparser_test
 noinst_PROGRAMS             = $(check_PROGRAMS)
-AM_CPPFLAGS= -I../src -I../src/utils -I../src/classifier -I../src/lexicon -I../src/parsers -I../src/edges -I../src/grammars
+AM_CPPFLAGS= -I${top_srcdir}/src -I${top_srcdir}/src/utils -I${top_srcdir}/src/classifier -I${top_srcdir}/src/lexicon -I${top_srcdir}/src/parsers -I${top_srcdir}/src/edges -I${top_srcdir}/src/grammars
+
+
+#    ../src/edges/MaxRuleLogInsideComputer.h
+#    ../src/edges/MaxRuleProbabilityKB.h
+#    ../src/edges/MaxRuleProbabilityMultiple.h
+#    ../src/edges/ViterbiProbability.h
+#    ../src/parsers/ParserCKYAllMaxVar.h
+#    ../src/parsers/ParserCKYAllMaxVarKB.h
+#    ../src/parsers/ParserCKYAllMaxVarMultiple.h
+#    ../src/parsers/ParserCKYAllViterbi.h
 
 common_sources = ../src/Bracketing.h \
     ../src/ChartCKY.h \
@@ -16,15 +26,10 @@ common_sources = ../src/Bracketing.h \
     ../src/edges/AnnotationInfo.h \
     ../src/edges/BinaryTrainingTree.h \
     ../src/edges/Edge.h \
-    ../src/edges/maxrule_functions.h \
-    ../src/edges/MaxRuleProbability.h \
-    ../src/edges/MaxRuleProbabilityKB.h \
-    ../src/edges/MaxRuleProbabilityMultiple.h \
     ../src/edges/PackedEdge.h \
     ../src/edges/PackedEdgeDaughters.h \
     ../src/edges/PackedEdgeProbability.h \
     ../src/edges/TrainingNode.h \
-    ../src/edges/ViterbiProbability.h \
     ../src/grammars/AnnotatedLabelsInfo.h \
     ../src/grammars/compact_binary_rules.h \
     ../src/grammars/Grammar.h \
@@ -45,10 +50,6 @@ common_sources = ../src/Bracketing.h \
     ../src/parsers/ParserCKY.h \
     ../src/parsers/ParserCKYAll.h \
     ../src/parsers/ParserCKYAllFactory.h \
-    ../src/parsers/ParserCKYAllMaxVar.h \
-    ../src/parsers/ParserCKYAllMaxVarKB.h \
-    ../src/parsers/ParserCKYAllMaxVarMultiple.h \
-    ../src/parsers/ParserCKYAllViterbi.h \
     ../src/parsers/ParserCKYBest.h \
     ../src/ParseSolution.h \
     ../src/PCKYAllCell.h \
@@ -149,6 +150,6 @@ twostage_lorgparser_test_SOURCES += ParserEdgeTest.cpp \
 									main.cpp
 
 twostage_lorgparser_test_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(AM_CPPFLAGS)
-twostage_lorgparser_test_CXXFLAGS= -O6 -Wall -Wextra -pipe --std=c++0x
+twostage_lorgparser_test_CXXFLAGS= -O6 -pipe
 
-twostage_lorgparser_test_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(TBB_LDFLAGS) $(TBB_LIBS)
+twostage_lorgparser_test_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)

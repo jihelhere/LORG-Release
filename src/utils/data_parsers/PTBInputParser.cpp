@@ -18,9 +18,11 @@
 #include <boost/config/warning_disable.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/spirit/include/support_multi_pass.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 
 #include <boost/spirit/include/classic_position_iterator.hpp>
+
+
 namespace classic = boost::spirit::classic;
 
 namespace fusion = boost::fusion;
@@ -32,7 +34,7 @@ namespace qi = boost::spirit::qi;
 namespace mychar = boost::spirit::standard;
 
 template <typename Iterator>
-struct ptbpstree_parser : qi::grammar<Iterator, std::vector<PtbPsTree>(), mychar::space_type>
+struct ptbpstree_parser : qi::grammar<Iterator, std::vector<std::pair<unsigned,PtbPsTree>>(), mychar::space_type>
 {
   ptbpstree_parser() : ptbpstree_parser::base_type(ptbtrees)
   {
@@ -40,7 +42,9 @@ struct ptbpstree_parser : qi::grammar<Iterator, std::vector<PtbPsTree>(), mychar
 
     ptbtrees %= +ptbtree;
 
-    ptbtree %= '(' >> tree >> ')';
+    ptbtree = ( '(' >> tree >> ')' ) [_val =  phoenix::construct<std::pair<unsigned, PtbPsTree>>(1,_1)]
+              | ( '(' >> qi::uint_ >> tree >> ')' )[_val =  phoenix::construct<std::pair<unsigned, PtbPsTree>>(_1,_2)]
+               ;
 
     // tree --> ( nonterm [ term | tree+ ] )
     // if the parser finds a nonterm or term node, it will add a daughter to the current node
@@ -78,8 +82,8 @@ struct ptbpstree_parser : qi::grammar<Iterator, std::vector<PtbPsTree>(), mychar
     // 		   );
   }
 
-  boost::spirit::qi::rule<Iterator, std::vector<PtbPsTree>(), mychar::space_type> ptbtrees;
-  boost::spirit::qi::rule<Iterator, PtbPsTree(), mychar::space_type> ptbtree;
+  boost::spirit::qi::rule<Iterator, std::vector<std::pair<unsigned, PtbPsTree>>(), mychar::space_type> ptbtrees;
+  boost::spirit::qi::rule<Iterator, std::pair<unsigned, PtbPsTree>(), mychar::space_type> ptbtree;
   boost::spirit::qi::rule<Iterator, PtbPsTree(), boost::spirit::locals< std::string, std::vector<PtbPsTree> >, mychar::space_type> tree;
   boost::spirit::qi::rule<Iterator, std::string(), mychar::space_type> id;
 };
@@ -97,6 +101,8 @@ namespace {
   struct add_top_node_funct
   {
     void operator()(PtbPsTree& tree) const {add_top_node(tree);}
+    template<typename T>
+    void operator()(std::pair<T,PtbPsTree>& p) const {add_top_node(p.second);}
   };
 
   PtbPsTree copy_add_top_node(const PtbPsTree& oldtree)
@@ -128,9 +134,9 @@ std::vector<PtbPsTree> PTBInputParser::from_string( const std::string& str ) thr
   iterator_type end  = str.end();
 
   parser p;
-  std::vector<PtbPsTree> trees;
+  std::vector<std::pair<unsigned,PtbPsTree>> int_trees;
 
-  bool r = phrase_parse(iter, end, p, mychar::space, trees);
+  bool r = phrase_parse(iter, end, p, mychar::space, int_trees);
 
   if(!r) {
     throw(ParseError());
@@ -138,7 +144,15 @@ std::vector<PtbPsTree> PTBInputParser::from_string( const std::string& str ) thr
   }
 
   add_top_node_funct atn;
-  std::for_each(trees.begin(),trees.end(),atn);
+  std::for_each(int_trees.begin(),int_trees.end(),atn);
+
+  std::vector<PtbPsTree> trees(int_trees.size()); // convert multiplicities
+
+  for(const auto& pair : int_trees)
+  {
+    trees.insert(trees.end(), pair.first, pair.second);
+  }
+
 
   return trees;
 }
@@ -163,28 +177,11 @@ void PTBInputParser::from_file(const char* filename,
 
   iterator_type iter = str.begin();
   iterator_type end  = str.end();
-  //  typedef ptbpstree_parser<iterator_type> parser;
-
-  // // iterate over stream input
-  // in.unsetf(std::ios::skipws); // No white space skipping!
-  // typedef std::istreambuf_iterator<char> base_iterator_type;
-
-  // base_iterator_type in_begin(in);
-
-  // // convert input iterator to forward iterator, usable by spirit parser
-  // typedef boost::spirit::multi_pass<base_iterator_type> forward_iterator_type;
-  // forward_iterator_type fwd_begin =
-  //     boost::spirit::make_default_multi_pass(in_begin);
-  // forward_iterator_type fwd_end;
-  //typedef ptbpstree_parser<forward_iterator_type> parser;
-
-
-
 
 
   //read the trees in the file
-   std::vector<PtbPsTree> local_trees;
-   //   std::vector<double> local_doubles;
+  std::vector<std::pair<unsigned,PtbPsTree>> local_trees;
+
 
    // wrap forward iterator with position iterator, to record the position
    typedef classic::position_iterator2<iterator_type> pos_iterator_type;
@@ -221,15 +218,25 @@ void PTBInputParser::from_file(const char* filename,
 
 
    std::cout << std::endl << local_trees.size() << " trees have been read"<< std::endl;
-
    if(position_begin != position_end) throw(ParseError(filename));
+
+
+   unsigned long l = 0;
+   for(const auto& pair : local_trees)
+   {
+     l += pair.first;
+   }
+   std::cout  << l << " trees counting multiplicities"<< std::endl;
 
 
   //add a top node to all these trees
   std::for_each(local_trees.begin(),local_trees.end(), add_top_node_funct());
 
   //copy the trees in the vector to be returned
-  trees.insert(trees.end(),local_trees.begin(),local_trees.end());
+  for(const auto& pair : local_trees)
+  {
+    trees.insert(trees.end(), pair.first, pair.second);
+  }
 
   in.close();
 

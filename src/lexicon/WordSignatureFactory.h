@@ -8,16 +8,8 @@
 
 namespace WordSignatureFactory {
 
-  enum unknown_word_map {Generic,
-			 BerkeleyEnglish, BaselineFrench, Arabic,
-			 EnglishIG, FrenchIG, ArabicIG,
-  ItalianIG};
-
-  unknown_word_map string_2_lex_unknown_map(const std::string& s);
-
   WordSignature *  create_wordsignature(unknown_word_map unknown_map, bool verbose);
   WordSignature *  create_wordsignature(ConfigTable& config);
-
 
 }
 

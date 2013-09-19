@@ -8,6 +8,10 @@
 
 #include "utils/LorgConstants.h"
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+
 typedef std::vector< std::vector< std::vector<double> > > vector_3d;
 
 /**
@@ -49,7 +53,6 @@ public:
   BRule(short l, short rhs0, short rhs1, const vector_3d& probs);
 
 
-  bool is_lexical() const {return false;}
 
   /**
      \brief returns attribute rhs0
@@ -60,6 +63,10 @@ public:
      \brief returns attribute rhs1
   */
   short get_rhs1() const;
+
+void set_rhs0(short r) {rhs0 = r;}
+void set_rhs1(short r) {rhs1 = r;}
+
 
 
   /**
@@ -90,7 +97,15 @@ public:
   /**
      \brief -> always false
    */
-  bool is_unary() const;
+  inline bool is_lexical() const {return false;}
+  /**
+     \brief -> always false
+   */
+  inline bool is_unary() const {return false;}
+  /**
+     \brief -> always true
+   */
+  inline bool is_binary() const {return true;}
 
 
   /**
@@ -113,19 +128,23 @@ public:
 
 
   void update_inside_annotations(std::vector<double>& up,
-					const std::vector<double>& left,
-					const std::vector<double>& right) const;
+                                 const std::vector<double>& left,
+                                 const std::vector<double>& right) const;
 
   void update_inside_annotations(std::vector<double>& up,
                                  const double& left_right_precomputation) const;
 
 
   void update_outside_annotations(const std::vector<double>& up_out,
-				  const std::vector<double>& left_in,
-				  const std::vector<double>& right_in,
-				  std::vector<double>& left_out,
-				  std::vector<double>& right_out) const;
-
+                                  const std::vector<double>& left_in,
+                                  const std::vector<double>& right_in,
+                                  std::vector<double>& left_out,
+                                  std::vector<double>& right_out) const;
+  double update_outside_annotations_return_marginal(const std::vector< double >& up_out,
+                                                  const std::vector< double >& left_in,
+                                                  const std::vector< double >& right_in,
+                                                  std::vector< double >& left_out,
+                                                  std::vector< double >& right_out) const;
   /**
      \brief removes useless zeros from probability vector
   */
@@ -158,6 +177,22 @@ protected:
   short rhs1;
   vector_3d probabilities ; ///< probabilities for a CFG rule  with annotations
 private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & boost::serialization::base_object<AnnotatedRule>(*this);
+      ar & rhs0;
+      ar & rhs1;
+      ar & probabilities;
+    }
+
+
+
 };
 
 inline
@@ -183,12 +218,6 @@ inline
 void BRule::set_probability(unsigned short a, unsigned short b, unsigned short c, const double& value)
 {
   probabilities[a][b][c]=value;
-}
-
-inline
-bool BRule::is_unary() const
-{
-  return false;
 }
 
 inline

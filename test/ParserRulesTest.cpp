@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(ProductionTest){
 
     //Unary production
     rhs.pop_back();
-    BOOST_CHECK_EQUAL(rhs.size(), 1);
+    BOOST_CHECK_EQUAL(rhs.size(), 1U);
 
     Production uprod(0, rhs, false);
     BOOST_CHECK_EQUAL(uprod.get_lhs(), 0);
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(CompactUnaryRuleTest){
     after = u.get_probability();
 
     BOOST_CHECK_NE(before[0].size(), after[0].size());
-    BOOST_CHECK_EQUAL(after[0].size(), 0); //The vector has been compacted
+    BOOST_CHECK_EQUAL(after[0].size(), 0U); //The vector has been compacted
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(BinaryRuleCompactTest){
     after = b.get_probability();
 
     BOOST_CHECK_NE(before[0][0].size(), after[0][0].size());
-    BOOST_CHECK_EQUAL(after[0][0].size(), 0); //The vector has been compacted
+    BOOST_CHECK_EQUAL(after[0][0].size(), 0U); //The vector has been compacted
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -224,12 +224,12 @@ BOOST_AUTO_TEST_CASE(RuleParserLexicalTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_lexical(), true);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_lexical(), true);
 
-        LexicalRule* lexr = static_cast<LexicalRule*>(r);
+        LexicalRule* lexr = static_cast<LexicalRule*>(vr[0]);
         unsigned int lhs  = SymbolTable::instance_nt().get_label_id("IN");
         unsigned int word = SymbolTable::instance_word().get_label_id("of");
 
@@ -246,12 +246,12 @@ BOOST_AUTO_TEST_CASE(RuleParserUnaryTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_unary(), true);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_unary(), true);
 
-        URule* ur = static_cast<URule*>(r);
+        URule* ur = static_cast<URule*>(vr[0]);
         unsigned int lhs = SymbolTable::instance_nt().get_label_id("NX");
         unsigned int rhs = SymbolTable::instance_nt().get_label_id("CD");
 
@@ -268,12 +268,12 @@ BOOST_AUTO_TEST_CASE(RuleParserBinaryTest){
 
     bool res;
     do {
-        AnnotatedRule * r;
-        res = phrase_parse(iter, end, p, mychar::space, r);
+      std::vector<AnnotatedRule *> vr;
+        res = phrase_parse(iter, end, p, mychar::space, vr);
         BOOST_REQUIRE_EQUAL(res, true);
-        BOOST_REQUIRE_EQUAL(r->is_lexical() && r->is_unary(), false);
+        BOOST_REQUIRE_EQUAL(vr[0]->is_lexical() || vr[0]->is_unary(), false);
 
-        BRule* br = static_cast<BRule*>(r);
+        BRule* br = static_cast<BRule*>(vr[0]);
         unsigned int lhs  = SymbolTable::instance_nt().get_label_id("ADJP");
         unsigned int rhs0 = SymbolTable::instance_nt().get_label_id("IN");
         unsigned int rhs1 = SymbolTable::instance_nt().get_label_id("S");

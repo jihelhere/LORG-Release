@@ -9,7 +9,6 @@
 #include <tbb/tick_count.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/parallel_for.h>
-#include <tbb/task_scheduler_init.h>
 #include <tbb/blocked_range.h>
 
 using namespace tbb;
@@ -255,7 +254,6 @@ void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGram
     if(verbose)
       std::clog << "Before in/out" << std::endl;
 
-    task_scheduler_init init(threads);
     // TODO make  a separate function
     {
         multithread::inout_thread io;
@@ -268,10 +266,14 @@ void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGram
       std::clog << "Before update counts" << std::endl;
 
     {
+      if(verbose)
+        std::clog << "unaries ";
         typedef std::vector< std::pair<URuleTraining*, std::vector<urule_occurrence> > > VectorPairsURules;
         multithread::update_thread_tbb<URuleTraining, urule_occurrence> uut;
         parallel_for(blocked_range<VectorPairsURules::iterator>(vu.begin(), vu.end()), uut);
 
+      if(verbose)
+        std::clog << "and binaries" << std::endl;
         typedef std::vector< std::pair<BRuleTraining*, std::vector<brule_occurrence> > > VectorPairsBRules;
         //std::random_shuffle(vb.begin(),vb.end());
         multithread::update_thread_tbb<BRuleTraining, brule_occurrence> but;
@@ -284,7 +286,7 @@ void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGram
     if(verbose)
       std::clog << "Before lexical" << std::endl;
 
-    em_grammar.update_lexical_counts(trees, last_iteration, vl, threads);
+    em_grammar.update_lexical_counts(trees, last_iteration, vl);
 
     if (verbose)
       {
@@ -630,9 +632,23 @@ void EMTrainer::resize_annotations_in_treebank(std::vector<BinaryTrainingTree> &
 {
     const AnnotatedLabelsInfo& a_infos = grammar.get_annotations_info();
 
-    for(std::vector<BinaryTrainingTree>::iterator iter(trees.begin()); iter != trees.end(); ++iter) {
-        iter->resize_annotations(a_infos);
-    }
+
+    tbb::parallel_for(tbb::blocked_range<std::vector<BinaryTrainingTree>::iterator>(trees.begin(), trees.end()),
+                      [&]
+                      (const tbb::blocked_range<std::vector<BinaryTrainingTree>::iterator>& range)
+                      {
+                        std::for_each(range.begin(),range.end(),
+                                      [&](BinaryTrainingTree& t)
+                                      {
+                                        t.resize_annotations(a_infos);
+                                      }
+                                      );
+                      }
+                      );
+
+    // for(std::vector<BinaryTrainingTree>::iterator iter(trees.begin()); iter != trees.end(); ++iter) {
+    //     iter->resize_annotations(a_infos);
+    // }
 }
 
 
@@ -729,9 +745,9 @@ double EMTrainer::calculate_likelihood(std::vector<BinaryTrainingTree>& trees) c
 
 void EMTrainer::one_em_cycle_lexicon_only(TrainingGrammar& em_grammar,std::vector<BinaryTrainingTree>& trees, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& vl){
 
-    em_grammar.update_lexical_counts(trees,true, vl, threads);
-    em_grammar.maximise_lexical_rules();
-    em_grammar.remove_unlikely_annotations_all_rules(threshold);
+  em_grammar.update_lexical_counts(trees,true, vl);
+  em_grammar.maximise_lexical_rules();
+  em_grammar.remove_unlikely_annotations_all_rules(threshold);
 }
 
 

@@ -1,4 +1,5 @@
 #include "AnnotationInfo.h"
+#include "utils/LorgConstants.h"
 
 
 scaled_array::scaled_array() : array(), scale(0) {}
@@ -57,9 +58,20 @@ double scaled_array::get_scaled_logvalue(unsigned i) const
   return std::log(array[i]) + LOGSCALE * scale;
 }
 
-void scaled_array::reset(double value)
+void scaled_array::reset(double value, bool keepnullproba)
 {
-  std::fill(array.begin(), array.end(), value);
+  if (keepnullproba)
+  {
+    for(auto& e : array)
+    {
+      if(e != LorgConstants::NullProba)
+        e = value;
+    }
+  }
+  else
+  {
+    std::fill(array.begin(), array.end(), value);
+  }
   scale = 0;
 }
 
@@ -67,6 +79,7 @@ void scaled_array::resize(unsigned new_size)
 {
   array = std::vector<double>(new_size,0.0);
   scale = 0;
+  //   std::cout << "scaled_array::resize("<<new_size<<") array at " << array.data() << std::endl; std::cout.flush();
 }
 
 //inline
@@ -137,20 +150,20 @@ int AnnotationInfo::get_outside_scale() const
   return outside_probabilities.scale;
 }
 
-void AnnotationInfo::reset_inside_probabilities(double value)
+void AnnotationInfo::reset_inside_probabilities(double value, bool keepnullproba)
 {
-  inside_probabilities.reset(value);
+  inside_probabilities.reset(value, keepnullproba);
 }
 
-void AnnotationInfo::reset_outside_probabilities(double value)
+void AnnotationInfo::reset_outside_probabilities(double value, bool keepnullproba)
 {
-  outside_probabilities.reset(value);
+  outside_probabilities.reset(value, keepnullproba);
 }
 
-void AnnotationInfo::reset_probabilities( double value)
+void AnnotationInfo::reset_probabilities( double value, bool keepnullproba)
 {
-  reset_inside_probabilities(value);
-  reset_outside_probabilities(value);
+  reset_inside_probabilities(value, keepnullproba);
+  reset_outside_probabilities(value, keepnullproba);
 }
 
 unsigned AnnotationInfo::get_size() const

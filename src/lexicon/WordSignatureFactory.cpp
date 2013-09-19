@@ -11,28 +11,6 @@
 #include "ItalianIGMapping.h"
 
 
-WordSignatureFactory::unknown_word_map
-WordSignatureFactory::string_2_lex_unknown_map(const std::string& s)
-{
-  if(s == "BerkeleyEnglish")
-    return BerkeleyEnglish;
-  if(s == "BaselineFrench")
-    return BaselineFrench;
-  if(s == "EnglishIG")
-    return EnglishIG;
-  if(s == "FrenchIG")
-    return FrenchIG;
-  if(s == "Arabic")
-    return Arabic;
-  if(s == "ArabicIG")
-    return ArabicIG;
-
-  if(s == "ItalianIG")
-    return ItalianIG;
-
-  //if(s == "generic")
-  return Generic;
-}
 
 WordSignature *  WordSignatureFactory::create_wordsignature(unknown_word_map unknown_map, bool verbose)
 {
@@ -89,7 +67,7 @@ WordSignature * WordSignatureFactory::create_wordsignature(ConfigTable& conf)
 {
   bool verbose = conf.exists("verbose");
 
-  unknown_word_map unknown_word_mapping = string_2_lex_unknown_map(conf.get_value<std::string>("unknown-word-mapping"));
+  unknown_word_map unknown_word_mapping = WordSignature::string_2_lex_unknown_map(conf.get_value<std::string>("unknown-word-mapping"));
 
   return create_wordsignature(unknown_word_mapping, verbose);
 }

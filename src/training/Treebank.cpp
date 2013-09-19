@@ -35,31 +35,34 @@ void Treebank<T>::add_tree(T& tree)
 {
   if(options.max_size == 0 ||  tree.number_of_leaves() < options.max_size) {
     if(!options.labels_to_remove.empty()) {
-      tree.clean(options.labels_to_remove);    
+      tree.clean(options.labels_to_remove);
     }
 
     if( options.func)
       tree.remove_function();
-    
+
+    // TODO make it configurable
+    tree.remove_trailing_numbers();
+
     if(options.num)
       tree.remove_numbers(options.num_regex);
-    
+
     if(options.pannotate > 0)
       tree.parent_annotate(options.pannotate,options.pannotate_extra);
-    
-    
+
+
     if(options.remove_same_unary)
       tree.remove_useless_unary_chains();
-    
+
     //  std::cout << tree << std::endl;
-    
+
     if(options.dir != NONE)
       tree.binarise(options.dir,options.mark);
-    
-    
+
+
     //  std::cout << tree << std::endl;
-    
-    
+
+
     trees.push_back(tree);
   }
 }
@@ -102,7 +105,7 @@ void Treebank<T>::clear()
 
 template <>
 void Treebank<PtbPsTree>::add_tree_from_files(const std::vector<std::string>& filenames)
-{  
+{
   for(unsigned int i = 0; i< filenames.size();++i) {
     if (verbose) std::clog << "Reading " << filenames[i] << "\r";
     std::vector<PtbPsTree> trees;

@@ -1,11 +1,14 @@
 // -*- mode: c++ -*-
-#ifndef GRAMMAR_H_
-#define GRAMMAR_H_
+#pragma once
 
 #include <vector>
 #include <string>
 #include <algorithm>
 
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 
 template <typename Bin, typename Un, typename Lex>
@@ -38,8 +41,26 @@ public:
 
   Grammar(const std::string& filename);
 
+  template <typename B, typename U, typename L>
+  friend
+  std::ostream& operator<<(std::ostream& out, const Grammar<B,U,L> & gram);
 
 protected:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/)
+    {
+      ar & binary_rules;
+      ar & unary_rules;
+      ar & lexical_rules;
+    }
+
+
+
 };
 
 #include <algorithm>
@@ -82,6 +103,3 @@ void Grammar<Bin, Un, Lex>::set_rules(std::vector<Bin>& binary_rules_,
   unary_rules_.swap(unary_rules);
   lexical_rules_.swap(lexical_rules);
 }
-
-
-#endif /*GRAMMAR_H_*/

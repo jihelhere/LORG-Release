@@ -6,10 +6,27 @@ set (Lorg_VERSION_MAJOR 1)
 set (Lorg_VERSION_MINOR 0)
 
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+#add_definitions(-DNDEBUG)
+
+# profiling
+option(PROFILING "Enable gprof gmon.out generation" off)
+if (PROFILING)
+        add_definitions(-pg)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+endif (PROFILING)
+
 # Boost nécessaire
-find_package(Boost 1.46 COMPONENTS regex program_options system filesystem thread unit_test_framework REQUIRED)
+find_package(Boost 1.46 COMPONENTS regex program_options system filesystem thread unit_test_framework serialization REQUIRED)
 link_directories ( ${Boost_LIBRARY_DIRS} )
 include_directories ( ${Boost_INCLUDE_DIRS} )
+
+message( STATUS "${Boost_INCLUDE_DIRS}" )
+
 # librt nécessaire sous Linux pour Boost
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(RTLIB rt)

@@ -12,8 +12,8 @@ namespace phx = boost::phoenix;
 
 AnnotatedLabelsInfo::AnnotatedLabelsInfo() : num_annotations_map() {}
 
-AnnotatedLabelsInfo::AnnotatedLabelsInfo(const std::vector< BRule >& brules, 
-					 const std::vector< URule >& urules, 
+AnnotatedLabelsInfo::AnnotatedLabelsInfo(const std::vector< BRule >& brules,
+					 const std::vector< URule >& urules,
 					 const std::vector< LexicalRule >& lrules)
   : num_annotations_map()
 {
@@ -40,7 +40,7 @@ struct annot_impl
   {
     typedef std::pair<int,unsigned> type;
   };
-  
+
   template <typename MyRule>
   std::pair<int,unsigned> operator()(const MyRule& rule) const
   {
@@ -51,8 +51,8 @@ struct annot_impl
 // making a functor from the structure to be used with for_each
 phx::function<annot_impl> annot;
 
-void AnnotatedLabelsInfo::initialise_from_rules(const std::vector< BRule >& brules, 
-						const std::vector< URule >& urules, 
+void AnnotatedLabelsInfo::initialise_from_rules(const std::vector< BRule >& brules,
+						const std::vector< URule >& urules,
 						const std::vector< LexicalRule >& lrules)
 {
   std::map<short ,unsigned short> map;
@@ -69,13 +69,13 @@ void AnnotatedLabelsInfo::initialise_from_rules(const std::vector< BRule >& brul
 		phx::insert(phx::ref(map), annot(phx::arg_names::_1))
 		);
 
-  set_num_annotations_map(map);  
+  set_num_annotations_map(map);
 }
 
 std::ostream& operator<<(std::ostream& out, const AnnotatedLabelsInfo& ali)
 {
   for(unsigned i = 0; i < ali.get_number_of_unannotated_labels(); ++i)
-    out << "ainfos " << SymbolTable::instance_nt().translate(i) 
+    out << "ainfos " << SymbolTable::instance_nt().translate(i)
 	<< " " << ali.get_number_of_annotations(i) << std::endl;
   return out;
 }

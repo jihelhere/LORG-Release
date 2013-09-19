@@ -13,6 +13,8 @@
 #include "lexicon/Lexicon.h"
 #include "Treebank.h"
 
+#include <tbb/parallel_for.h>
+
 typedef std::unordered_map< std::pair<int, int >, double> DeltaMap;
 typedef std::map<int,std::vector<int> > Merge_map;
 typedef std::unordered_map<int,double> unannotated_node_count_map;
@@ -45,8 +47,7 @@ class TrainingGrammar: public Grammar<BRuleTraining,URuleTraining,LexicalRuleTra
         TrainingGrammar(Treebank<PtbPsTree> & tb, Lexicon * lex);
         TrainingGrammar() : lexicon(NULL) {};
         ~TrainingGrammar() {delete lexicon;}
-        void update_lexical_counts(std::vector<BinaryTrainingTree> & trees, bool last_iteration, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences,
-                int nbthreads);
+        void update_lexical_counts(std::vector<BinaryTrainingTree> & trees, bool last_iteration, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences);
         void maximise_lexical_rules();
 
         void split_all_rules(unsigned n, unsigned randomness = 1 );
@@ -140,6 +141,7 @@ class TrainingGrammar: public Grammar<BRuleTraining,URuleTraining,LexicalRuleTra
         const std::vector< Tree<unsigned> >& get_annot_histories() const {return annot_histories;}
 
         Lexicon* get_lexicon() {return lexicon;}
+        const Lexicon* get_lexicon() const {return lexicon;}
 
         template <class T>
             void perform_action_all_internal_rules(T& action);
@@ -166,21 +168,20 @@ inline const std::vector<LexicalRuleTraining>& TrainingGrammar::get_lexical_rule
 }
 
 inline void TrainingGrammar::update_lexical_counts(std::vector<BinaryTrainingTree> & trees, bool last_iteration,
-        std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences,
-        int nbthreads)
+        std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences)
 {
     assert(lexicon != NULL);
-    lexicon->update_annotated_counts_from_trees(trees, last_iteration, lex_occurrences, nbthreads);
+    lexicon->update_annotated_counts_from_trees(trees, last_iteration, lex_occurrences);
 }
 
-    inline
+inline
 void TrainingGrammar::reset_lexical_counts()
 {
     assert(lexicon != NULL);
     lexicon->reset_counts();
 }
 
-    inline
+inline
 void TrainingGrammar::resize_lexical_datastructs()
 {
     assert(lexicon != NULL);
@@ -188,21 +189,21 @@ void TrainingGrammar::resize_lexical_datastructs()
 }
 
 
-    inline
+inline
 void TrainingGrammar::maximise_lexical_rules()
 {
     assert(lexicon != NULL);
     lexicon->maximisation();
 }
 
-    inline
+inline
 void TrainingGrammar::lexical_smoothing()
 {
     assert(lexicon != NULL);
     lexicon->lexical_smoothing();
 }
 
-    inline
+inline
 void TrainingGrammar::create_additional_rules()
 {
     assert(lexicon != NULL);
@@ -217,16 +218,54 @@ inline std::vector<URuleTraining>& TrainingGrammar::get_unary_rules() {return un
 
 inline std::vector<LexicalRuleTraining>& TrainingGrammar::get_lexical_rules() {return lexicon->get_lexical_rules();}
 
+
 template <class T> inline void TrainingGrammar::perform_action_all_internal_rules(T& action)
 {
-    std::for_each(binary_rules.begin(),binary_rules.end(), action);
-    std::for_each(unary_rules.begin(),unary_rules.end(), action);
+  //std::cout << "perform_action_all_internal_rules in" << std::endl;
+
+
+  tbb::parallel_for(tbb::blocked_range<std::vector<BRuleTraining>::iterator>(binary_rules.begin(), binary_rules.end()),
+                    [&action](const tbb::blocked_range<std::vector<BRuleTraining>::iterator>& range)
+                    {
+                      std::for_each(range.begin(),range.end(), action);
+                    }
+                    );
+
+  tbb::parallel_for(tbb::blocked_range<std::vector<URuleTraining>::iterator>(unary_rules.begin(), unary_rules.end()),
+                    [&action](const tbb::blocked_range<std::vector<URuleTraining>::iterator>& range)
+                    {
+                      std::for_each(range.begin(),range.end(), action);
+                    }
+                    );
+
+  // std::cout << "perform_action_all_internal_rules out" << std::endl;
+
+
+  //  std::for_each(binary_rules.begin(),binary_rules.end(), action);
+  //  std::for_each(unary_rules.begin(),unary_rules.end(), action);
 }
 
 template <class T> inline void TrainingGrammar::perform_action_all_internal_rules(T& action) const
 {
-    std::for_each(binary_rules.begin(),binary_rules.end(), action);
-    std::for_each(unary_rules.begin(),unary_rules.end(), action);
+  // tbb::parallel_for(tbb::blocked_range<std::vector<BRuleTraining>::const_iterator>(binary_rules.begin(), binary_rules.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<BRuleTraining>::const_iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+
+  //                   }
+  //                   );
+
+  // tbb::parallel_for(tbb::blocked_range<std::vector<URuleTraining>::const_iterator>(unary_rules.begin(), unary_rules.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<URuleTraining>::const_iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+
+  //                   }
+  //                   );
+  //
+
+  std::for_each(binary_rules.begin(),binary_rules.end(), action);
+  std::for_each(unary_rules.begin(),unary_rules.end(), action);
 }
 
 

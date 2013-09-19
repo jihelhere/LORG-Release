@@ -1,16 +1,12 @@
 #include "BasicLexicon.h"
+#include "LexiconFactory.h"
+//#include "WordSignatureFactory.h"
+
 
 #ifdef USE_THREADS
-
-#include <tbb/tick_count.h>
-using tbb::tick_count;
 #include <tbb/parallel_reduce.h>
 #include <tbb/parallel_for.h>
-#include <tbb/task_scheduler_init.h>
 #include <tbb/blocked_range.h>
-
-#else
-#include "utils/tick_count.h"
 #endif
 
 
@@ -209,9 +205,8 @@ struct basic_lexicon_update_thread_tbb
 
 #ifdef USE_THREADS
 void BasicLexicon::update_annotated_counts_from_trees(const std::vector<BinaryTrainingTree> & /*trees ignored*/,
-						      bool /*ignored*/,
-                                                      std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences,
-                                                      unsigned /*nbthreads*/
+                                                      bool /*ignored*/,
+                                                      std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences
                                                       )
 {
 
@@ -383,3 +378,21 @@ void BasicLexicon::copy(Lexicon*& dest) const
 //dummies
 void BasicLexicon::lexical_smoothing() {}
 void BasicLexicon::create_additional_rules() {}
+
+
+std::string BasicLexicon::header_string() const
+{
+  std::stringstream ss;
+
+  ss <<  "// conf: "
+     << "lex_type "
+     << LexiconFactory::lex_type_2_string(LexiconFactory::Basic) << '\n'
+     <<  "// conf: "
+     << "lex_unknown_map "
+     << WordSignature::lex_unknown_map_2_string(unknown_word_map.get_type()) << '\n'
+     << "// conf: "
+     << "unknown_threshold " << unknown_word_cutoff
+     << '\n';
+
+  return ss.str();
+}

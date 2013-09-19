@@ -12,12 +12,12 @@
 
 namespace BURuleInputParser {
 void read_rulefile(const std::string& filename,
-		     std::vector<LexicalRule>& lexicals,
-		     std::vector<URule>& unaries,
-                     std::vector<BRule>& binaries,
-                     std::map<short, unsigned short>&  num_annotations_map,
-                     std::vector< Tree<unsigned> >& history_trees
-		     ) throw(ParseError);
+                   std::vector<LexicalRule>& lexicals,
+                   std::vector<URule>& unaries,
+                   std::vector<BRule>& binaries,
+                   std::map<short, Tree<unsigned> >& history_tree_map,
+                   std::map<std::string, std::string>& conf
+                   ) throw(ParseError);
 
   void read_rulestring(const std::string& str, AnnotatedRule** rule_ptr) throw(ParseError); // should be casted ?
 

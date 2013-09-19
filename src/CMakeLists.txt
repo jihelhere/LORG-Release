@@ -1,6 +1,6 @@
 add_subdirectory(training)
 
-set(common_sources 
+set(common_sources
          rules/Production.cpp
          rules/Rule.cpp
          grammars/compact_binary_rules.cpp
@@ -22,11 +22,12 @@ set(common_sources
          lexicon/ArabicUMapping.cpp
          lexicon/ArabicIGMapping.cpp
          Word.cpp
-         parsers/ParserCKY.h
          LorgApp.cpp
          LorgParseApp.cpp
          feature_extract/Extract.cpp
-         feature_extract/Feature.cpp)
+         feature_extract/Feature.cpp
+         ParseSolution.cpp
+   )
 
 set(simple_lorgparser_SOURCES
          ${common_sources}
@@ -41,15 +42,31 @@ set(simple_lorgparser_SOURCES
 set(twostage_lorgparser_SOURCES
          ${common_sources}
          twostage_lorgparser.cpp
+         TwoStageLorgParseApp.cpp
+         parsers/viterbi/ViterbiProbability.cpp
+         parsers/maxrule//MaxRuleProbability1B.cpp
+         parsers/maxrule/MaxRuleProbabilityKB.cpp
+         parsers/maxrule/MaxRuleProbabilityMultiple.cpp
+         parsers/ParserCKYAll.cpp
+         parsers/ParserCKYAllFactory.cpp
+         parsers/viterbi/ParserCKYAllViterbi.cpp
+         parsers/maxrule/ParserCKYAllMaxRule1B.cpp
+         parsers/maxrule/ParserCKYAllMaxRuleKB.cpp
+         parsers/maxrule/ParserCKYAllMaxRuleMultiple.cpp
+         parsers/mindivkb/ParserCKYAllMinDivKB.cpp
+         parsers/mindivkb/MinDivDaughters.cpp
+         parsers/variational/ParserCKYAllVariational.cpp
+         parsers/variational/VariationalProbabilityKB.cpp
          grammars/compact_binary_rules_annotated.cpp
          grammars/AnnotatedLabelsInfo.cpp
+         grammars/GrammarAnnotated.cpp
          utils/data_parsers/BURuleInputParser.cpp
          utils/data_parsers/AnnotHistoriesParser.cpp
          edges/AnnotationInfo.cpp
          rules/BRule.cpp rules/URule.cpp rules/LexicalRule.cpp)
 
 set(common_include_dir ${CMAKE_CURRENT_SOURCE_DIR} ${TBB_INCLUDE_DIRS})
-set(common_libs  ${TBB_LIBRARIES} ${RTLIB} ${TCMALLOC_LIB})
+set(common_libs  ${TBB_LIBS} ${RTLIB} ${TCMALLOC_LIB})
 
 #message(warning "In src : Include directories are : ${common_include_dir}")
 # message(warning "In src : Common libs are : ${common_libs}")

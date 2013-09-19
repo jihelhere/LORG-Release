@@ -11,6 +11,17 @@ LexiconFactory::lex_type LexiconFactory::string_2_lex_type(const std::string& s)
   return Basic;
 }
 
+std::string LexiconFactory::lex_type_2_string(const lex_type& l)
+{
+  if (l == Bsophisticated)
+  {
+    return "berkeley_sophisticated";
+  }
+
+  return "basic";
+}
+
+
 Lexicon * LexiconFactory::create_lexicon(lex_type type, WordSignature& ws, unsigned cutoff, bool verbose)
 {
   if (type == Bsophisticated){

@@ -4,7 +4,7 @@ if WANT_LTR
 LIBS+= -lrt
 endif
 
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I.
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I. -I${top_srcdir}/src
 #AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 bin_PROGRAMS = simple_lorgparser twostage_lorgparser feature_extractor
@@ -15,6 +15,7 @@ common_sources = rules/Types4Rules.h rules/MetaProduction.h \
 	rules/Rule.cpp rules/Rule.h \
 	grammars/compact_binary_rules.h grammars/compact_binary_rules.cpp \
 	grammars/Grammar.h grammars/Grammar.cpp \
+	utils/threads.h \
 	utils/SymbolTable.cpp utils/SymbolTable.h \
 	utils/Tagger.h utils/Tagger.cpp \
 	utils/TokeniserFactory.h utils/TokeniserFactory.cpp\
@@ -45,15 +46,16 @@ common_sources = rules/Types4Rules.h rules/MetaProduction.h \
 	lexicon/ArabicIGMapping.h lexicon/ArabicIGMapping.cpp \
         classifier/NaiveBayesClassifier.h classifier/ProbModel.h \
         classifier/Classifier.h classifier/FreqDist.h \
-	ChartCKY.h \
+	ChartCKY.h ChartCKY.hpp \
 	Word.cpp Word.h \
 	ParseSolution.h \
+	ParseSolution.cpp \
 	parsers/ParserCKY.h\
 	LorgApp.h LorgApp.cpp \
 	LorgParseApp.h LorgParseApp.cpp \
 	feature_extract/Extract.h feature_extract/Extract.cpp \
 	feature_extract/Feature.h feature_extract/Feature.cpp \
-	TagGuesser.h
+	TagGuesser.h utils/unordered_map_serialization.hpp
 
 simple_lorgparser_SOURCES = ${common_sources}
 simple_lorgparser_SOURCES += simple_lorgparser.cpp \
@@ -61,12 +63,12 @@ simple_lorgparser_SOURCES += simple_lorgparser.cpp \
 	utils/data_parsers/RuleInputParser.cpp utils/data_parsers/RuleInputParser.h \
 	edges/Edge.cpp edges/Edge.h \
 	parsers/ParserCKYBest.cpp parsers/ParserCKYBest.h \
-	PCKYBestCell.cpp PCKYBestCell.h \
+	SimpleChartCKY.h SimpleChartCKY.hpp PCKYBestCell.cpp PCKYBestCell.h \
 	SimpleLorgParseApp.h SimpleLorgParseApp.cpp
 
 
-simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. --std=c++0x -DNDEBUG
-simple_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
+simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+simple_lorgparser_CXXFLAGS= -O6 -pipe
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
@@ -77,29 +79,41 @@ simple_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
 
 
 if WANT_TCMALLOC
-simple_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) -ltcmalloc
+simple_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) -ltcmalloc
 else
-simple_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(TBB_LDFLAGS) $(TBB_LIBS)
+simple_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS)
 endif
 #simple_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler
 
 twostage_lorgparser_SOURCES = $(common_sources)
 twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
+	TwoStageLorgParseApp.cpp \
 	grammars/compact_binary_rules_annotated.cpp \
 	grammars/AnnotatedLabelsInfo.h grammars/AnnotatedLabelsInfo.cpp \
-	grammars/GrammarAnnotated.h utils/RuleVect2Map.h\
+	grammars/GrammarAnnotated.h grammars/GrammarAnnotated.hpp grammars/GrammarAnnotated.cpp utils/RuleVect2Map.h\
 	utils/data_parsers/BURuleInputParser.cpp utils/data_parsers/BURuleInputParser.h \
 	utils/data_parsers/AnnotHistoriesParser.h utils/data_parsers/AnnotHistoriesParser.cpp \
-	edges/PackedEdge.h edges/PackedEdgeDaughters.h edges/PackedEdgeProbability.h \
-	edges/ViterbiProbability.h edges/maxrule_functions.h \
-	edges/MaxRuleProbability.h edges/MaxRuleProbabilityKB.h \
-	edges/BestProbability.h \
-	edges/MaxRuleProbabilityMultiple.h \
-	PCKYAllCell.h parsers/ParserCKYAll.h \
-	parsers/ParserCKYAllViterbi.h parsers/ParserCKYAllMaxVar.h \
-	parsers/ParserCKYAllMaxVarKB.h parsers/ParserCKYAllMaxVarMultiple.h \
-	parsers/ParserCKYAllMaxVar1B.h \
+	edges/PackedEdge.h edges/PackedEdge.hpp edges/PackedEdgeDaughters.h edges/PackedEdgeProbability.h \
+	edges/BestProbability.h emptystruct.h \
+	parsers/maxrule/MaxRuleProbability1B.h parsers/maxrule/MaxRuleProbability1B.cpp \
+	parsers/maxrule/MaxRuleProbabilityKB.h parsers/maxrule/MaxRuleProbabilityKB.cpp \
+	parsers/maxrule/MaxRuleProbabilityMultiple.h parsers/maxrule/MaxRuleProbabilityMultiple.cpp \
+	parsers/maxrule/ParserCKYAllMaxRule1B.h parsers/maxrule/ParserCKYAllMaxRule1B.cpp \
+	parsers/maxrule/ParserCKYAllMaxRuleKB.h	parsers/maxrule/ParserCKYAllMaxRuleKB.cpp \
+	parsers/maxrule/ParserCKYAllMaxRuleMultiple.h parsers/maxrule/ParserCKYAllMaxRuleMultiple.cpp \
+	parsers/maxrule/MaxRuleTreeLogProbaComputer.h parsers/maxrule/ParserCKYAllMaxRule.h \
+	parsers/variational/VariationalTypes.h \
+	parsers/variational/ParserCKYAllVariational.cpp parsers/variational/ParserCKYAllVariational.h \
+	parsers/variational/VariationalProbabilityKB.cpp parsers/variational/VariationalProbabilityKB.h \
+	PCKYAllCell.h PCKYAllCell.hpp parsers/ParserCKYAll.h parsers/ParserCKYAll.hpp \
+	parsers/viterbi/ParserCKYAllViterbi.h parsers/viterbi/ParserCKYAllViterbi.cpp \
+	parsers/viterbi/ViterbiProbability.h parsers/viterbi/ViterbiProbability.cpp \
+	parsers/mindivkb/ParserCKYAllMinDivKB.h parsers/mindivkb/ParserCKYAllMinDivKB.cpp \
+	parsers/mindivkb/MinDivDaughters.h parsers/mindivkb/MinDivDaughters.cpp parsers/mindivkb/MinDivDaughters.hpp \
+	parsers/mindivkb/MinDivTypes.h \
 	parsers/ParserCKYAllFactory.h \
+	parsers/ParserCKYAll.cpp \
+	parsers/ParserCKYAllFactory.cpp \
 	utils/lorg_functional.h utils/tick_count.h utils/hash_impl.h \
 	rules/AnnotatedRule.h edges/AnnotationInfo.h edges/AnnotationInfo.cpp\
 	rules/C2f.h \
@@ -108,21 +122,21 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	rules/LexicalRule.h rules/LexicalRule.cpp rules/LexicalRuleC2f.h \
 	TwoStageLorgParseApp.h
 
-twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. --std=c++0x -DNDEBUG
-twostage_lorgparser_CXXFLAGS= -O6 -Wall -Wextra -pipe
+twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+twostage_lorgparser_CXXFLAGS= -O6 -pipe
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
 #flags for debugging
-#twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I.
-#twostage_lorgparser_CXXFLAGS= -O1 -g -pg -Wall -Wextra -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls
+#twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I. $(TBB_CPPFLAGS) --std=c++0x
+#twostage_lorgparser_CXXFLAGS= -O1 -g -Wall -Wextra -pg -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls
 
 if WANT_TBB
 twostage_lorgparser_CPPFLAGS+=-DUSE_THREADS
 endif
 
-twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS)
+twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)
 
 #twostage_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler
 
@@ -136,7 +150,7 @@ twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM
 # # gram2clmodel_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) -lprofiler -ltcmalloc
 
 
-feature_extractor_CXXFLAGS= -O3 -Wall -Wextra -pipe -std=c++11
+feature_extractor_CXXFLAGS= -O3 -pipe
 feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	feature_extract/ExtractApp.cpp \
 	LorgApp.h LorgApp.cpp \
@@ -156,7 +170,4 @@ feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	rules/Types4Rules.h rules/MetaProduction.h \
 	rules/Production.cpp rules/Production.h
 
-#\	rules/Rule.cpp rules/Rule.h
-
-
-feature_extractor_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB)
+feature_extractor_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB)

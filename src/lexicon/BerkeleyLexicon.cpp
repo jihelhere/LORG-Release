@@ -1,4 +1,5 @@
 #include "BerkeleyLexicon.h"
+#include "LexiconFactory.h"
 
 #include "utils/RandomGenerator.h"
 
@@ -635,9 +636,8 @@ void BerkeleyLexicon::traverse_leaf_nodes(const BinaryTrainingTree& tree, bool s
 }
 
 void BerkeleyLexicon::update_annotated_counts_from_trees(const std::vector<BinaryTrainingTree> & trees,
-							 bool last_iteration,
-                                                           std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& /*lex_occurrences*/,
-                                                         unsigned /*nbthreads*/)
+                                                         bool last_iteration,
+                                                           std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& /*lex_occurrences*/)
 {
 
   unsigned treebank_size = trees.size();
@@ -835,4 +835,12 @@ void BerkeleyLexicon::copy(Lexicon*& dest) const
   std::transform(lexical_rules.begin(),lexical_rules.end(), other->lexical_rules.begin(),copy_helper());
   // other->additional_rules.resize(additional_rules.size());
   // std::transform(additional_rules.begin(),additional_rules.end(), other->additional_rules.begin(),copy_helper());
+}
+
+std::string BerkeleyLexicon::header_string() const
+{
+  return
+      "// lexicon_header: " +
+      LexiconFactory::lex_type_2_string(LexiconFactory::Basic) + '\t' +
+      WordSignature::lex_unknown_map_2_string(unknown_word_map.get_type());
 }

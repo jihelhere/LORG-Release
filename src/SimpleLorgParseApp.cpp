@@ -6,6 +6,12 @@
 
 #include "utils/data_parsers/RuleInputParser.h"
 
+#include "SimpleChartCKY.hpp"
+
+#include "lexicon/WordSignatureFactory.h"
+
+
+
 template<>
 Grammar<Rule, Rule, Rule>::Grammar(const std::string& filename)
 {
@@ -60,7 +66,7 @@ int SimpleLorgParseApp::run()
     if(s.size() <= max_length) {
 
       // tag
-      tagger->tag(s);
+      tagger->tag(s, *(parser->get_word_signature()));
 
       // create and initialise chart
       ParserCKYBest::Chart chart(s,parser->get_nonterm_count(),brackets);
@@ -79,10 +85,10 @@ int SimpleLorgParseApp::run()
                                       ++count,
                                       s.size(),
                                       solutions,
-			        (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
-               verbose, comments, false);
+                                      (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
+                                      verbose, comments, false);
 
- *out << unix_parse_solution(p)	 << '\n';
+    *out << unix_parse_solution(p)	 << '\n';
 
     delete best_tree;
     s.clear();
@@ -132,7 +138,10 @@ bool SimpleLorgParseApp::read_config(ConfigTable& configuration)
 
   parser = new ParserCKYBest(grammar);
 
+  tagger = std::auto_ptr<Tagger>(new Tagger(NULL, replace_numbers, number_regex));
   tagger->set_word_rules(&(parser->get_words_to_rules()));
+
+  parser->set_word_signature(WordSignatureFactory::create_wordsignature(configuration));
 
   return true;
 }

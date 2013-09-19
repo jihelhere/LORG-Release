@@ -56,7 +56,7 @@ std::ostream& operator<<(std::ostream& out, const BRule& rule)
   for(unsigned i = 0 ; i < rule.probabilities.size(); ++i)
     for(unsigned j = 0; j < rule.probabilities[i].size(); ++j)
       for(unsigned k = 0; k < rule.probabilities[i][j].size(); ++k)
-	if(rule.probabilities[i][j][k] != 0)
+        if(rule.probabilities[i][j][k] != 0)
 	  out << " (" <<i << ',' << j << ',' << k << ','
 	      << rule.probabilities[i][j][k] << ')';
 
@@ -64,8 +64,8 @@ std::ostream& operator<<(std::ostream& out, const BRule& rule)
 }
 
 void BRule::update_inside_annotations(std::vector<double>& up,
-				      const std::vector<double>& left,
-				      const std::vector<double>& right) const
+                                      const std::vector<double>& left,
+                                      const std::vector<double>& right) const
 {
   for(size_t i = 0 ; i < probabilities.size();++i) {
     if(up[i] == LorgConstants::NullProba) continue;
@@ -73,8 +73,8 @@ void BRule::update_inside_annotations(std::vector<double>& up,
       if(left[j] == LorgConstants::NullProba || left[j] == 0.0) continue;
       double inner = 0.0;
       for(size_t k = 0 ; k < probabilities[i][j].size();++k) {
-	if(right[k] == LorgConstants::NullProba || right[k] == 0.0) continue;
-	inner += right[k] * probabilities[i][j][k];
+        if(right[k] == LorgConstants::NullProba || right[k] == 0.0) continue;
+        inner += right[k] * probabilities[i][j][k];
       }
       //std::cout << *this << " " << up[i] << " " << i<< std::endl;
       up[i] += left[j] * inner;
@@ -82,6 +82,10 @@ void BRule::update_inside_annotations(std::vector<double>& up,
     assert(up[i] >= 0.0);
     assert(up[i] <= 1.0);
   }
+
+  // for(size_t i = 0; i < up.size(); ++i)
+  //   std::cout << i << " b : " << up[i] << " ";
+  // std::cout <<std::endl;
 }
 
 
@@ -98,14 +102,21 @@ void BRule::update_inside_annotations(std::vector<double>& up,
 
 
 
-
+#include "utils/threads.h"
 
 void BRule::update_outside_annotations(const std::vector<double>& up_out,
-				       const std::vector<double>& left_in,
-				       const std::vector<double>& right_in,
-				       std::vector<double>& left_out,
-				       std::vector<double>& right_out) const
+                                       const std::vector<double>& left_in,
+                                       const std::vector<double>& right_in,
+                                       std::vector<double>& left_out,
+                                       std::vector<double>& right_out) const
 {
+  #ifdef USE_THREADS
+  std::vector<atomic<double>> & lo = *reinterpret_cast<std::vector<atomic<double>> *>(&left_out);
+  std::vector<atomic<double>> & ro = *reinterpret_cast<std::vector<atomic<double>> *>(&right_out);
+  #else
+  std::vector<double> & lo = left_out ;
+  std::vector<double> & ro = right_out ;
+  #endif
   for(unsigned short i = 0; i < probabilities.size(); ++i) {
     if(up_out[i] == LorgConstants::NullProba || up_out[i] == 0.0) continue;
     const std::vector<std::vector<double> >& dim_i = probabilities[i];
@@ -115,21 +126,66 @@ void BRule::update_outside_annotations(const std::vector<double>& up_out,
       double factor4right = 0.0;
       if(left_in[j] != LorgConstants::NullProba) factor4right = up_out[i] * left_in[j];
       for(unsigned short k = 0; k < dim_j.size(); ++k) {
-	const double& t = dim_j[k];
-	// if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
-	// if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
+        const double& t = dim_j[k];
+        // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
+        // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
 
-	// I and O are always Null at the same time
-	if(right_in[k] != LorgConstants::NullProba) {
-	  temp4left += right_in[k] * t;
-	  right_out[k] += factor4right * t;
-	}
-
-
+        // I and O are always Null at the same time
+        if(right_in[k] != LorgConstants::NullProba) {
+          temp4left += right_in[k] * t;
+          ro[k] += factor4right * t;
+        }
       }
-      if(left_out[j] != LorgConstants::NullProba) left_out[j] += up_out[i] * temp4left;
+      if(lo[j] != LorgConstants::NullProba) lo[j] += up_out[i] * temp4left;
     }
   }
+}
+
+#include "utils/threads.h" // defines += operation on tbb::atomic<double>
+
+
+double
+BRule::update_outside_annotations_return_marginal(const std::vector< double >& up_out,
+                                                        const std::vector< double >& left_in,
+                                                        const std::vector< double >& right_in,
+                                                        std::vector< double >& left_out,
+                                                        std::vector< double >& right_out) const
+{
+  double marginal = 0.;
+  #ifdef USE_THREADS
+  std::vector<tbb::atomic<double>> & lo = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&left_out);
+  std::vector<tbb::atomic<double>> & ro = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&right_out);
+  #else
+  std::vector<double> & lo = left_out ;
+  std::vector<double> & ro = right_out ;
+  #endif
+  for(unsigned short i = 0; i < probabilities.size(); ++i) {
+    if(up_out[i] == LorgConstants::NullProba || up_out[i] == 0.0) continue;
+    const std::vector<std::vector<double> >& dim_i = probabilities[i];
+    for(unsigned short j = 0; j < dim_i.size(); ++j) {
+      const std::vector<double>& dim_j = dim_i[j];
+      double temp4left = 0.0;
+      double factor4right = 0.0;
+      if(left_in[j] != LorgConstants::NullProba) factor4right = up_out[i] * left_in[j];
+      for(unsigned short k = 0; k < dim_j.size(); ++k) {
+        const double& t = dim_j[k];
+        // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
+        // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
+
+        // I and O are always Null at the same time
+        if(right_in[k] != LorgConstants::NullProba) {
+          temp4left += right_in[k] * t;
+          ro[k] += factor4right * t;
+        }
+      }
+      if(lo[j] != LorgConstants::NullProba) {
+        double delta_left = up_out[i] * temp4left;
+        lo[j] += delta_left;
+        marginal += delta_left * left_in[j];
+      }
+    }
+  }
+  return marginal ;
 }
 
 void BRule::remove_unlikely_annotations(const double& threshold)
@@ -161,11 +217,11 @@ void BRule::compact()
           break;
         }
       }
-      if(allzeros) {
-        //probabilities[i][j] = std::vector<double>();
-        //std::cout << "brule::compact inner level" << std::endl;
-        std::vector<double>().swap(probabilities[i][j]);
+      if(allzeros)
+      {
+        probabilities[i][j].clear();
       }
+      std::vector<double>(probabilities[i][j].begin(), probabilities[i][j].end()).swap(probabilities[i][j]);
     }
 
   //get rid of lines of empty vectors
@@ -177,11 +233,11 @@ void BRule::compact()
         break;
       }
     }
-    if(allempty) {
-      //probabilities[i] = std::vector< std::vector<double> >();
-      std::vector< std::vector<double> >().swap(probabilities[i]);
-      //      std::cout << "brule::compact outer level" << std::endl;
+    if(allempty)
+    {
+      probabilities[i].clear();
     }
+    std::vector< std::vector<double> >(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
   }
 }
 

@@ -4,7 +4,7 @@
 
 
 #include "grammars/Grammar.h"
-#include "ChartCKY.h"
+#include "SimpleChartCKY.h"
 #include "edges/Edge.h"
 #include "PCKYBestCell.h"
 
@@ -14,11 +14,21 @@
   \class ParserCKYBest
   \brief represents a parsing device for probabilistic cfgs using the cky algorithm
 */
-class ParserCKYBest : public ParserCKY< Grammar<Rule,Rule,Rule> >
+
+struct SimpleBestTypes {
+  typedef Word ChartWord ;
+  typedef PCKYBestCell Cell ;
+  typedef ChartCKY< SimpleBestTypes > Chart ;
+  typedef ::Edge Edge;
+};
+
+class WordSignature;
+
+class ParserCKYBest : public ParserCKY< Grammar<Rule,Rule,Rule> >, public SimpleBestTypes
 {
 public:
-  typedef PCKYBestCell Cell;
-  typedef ChartCKY<Cell, Word> Chart;
+//   typedef PCKYBestCell Cell;
+//   typedef ChartCKY<SimpleBestTypes> Chart;
   typedef Grammar<Rule,Rule,Rule> SimpleGrammar;
   typedef ParserCKY<SimpleGrammar> Parser;
 
@@ -37,8 +47,13 @@ public:
   */
   void parse(Chart& chart) const;
 
+  void set_word_signature(WordSignature* ws) {word_signature = ws;};
+  const WordSignature* get_word_signature() const {return word_signature;}
+
 
 private:
+  const WordSignature* word_signature;
+
 
   /** \brief Add unary rules at this position in the chart
       (only consider non-terminals created from binary rules)

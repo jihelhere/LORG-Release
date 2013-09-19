@@ -1,11 +1,11 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.68)
+AC_PREREQ(2.63)
 AC_INIT([lorg_tools], [git], [jleroux@computing.dcu.ie])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 LT_INIT
 
@@ -16,8 +16,12 @@ AC_PROG_CXX
 
 AC_LANG_CPLUSPLUS
 
-AC_CONFIG_HEADERS([config.h])
 
+AX_CXX_COMPILE_STDCXX_11([noext])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs],\
+[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-local-typedefs"])
+
+AC_CONFIG_HEADERS([config.h])
 
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LDFLAGS)
@@ -33,14 +37,9 @@ AC_CHECK_HEADER([string],,AC_MSG_ERROR(STL classes missing ?))
 AC_CHECK_HEADER([list],,AC_MSG_ERROR(STL classes missing ?))
 AC_CHECK_HEADER([vector],,AC_MSG_ERROR(STL classes missing ?))
 
-##AC_CHECK_HEADER([google/malloc_extension.h],[use_tcmalloc=yes],AC_MSG_WARN(google malloc missing ?))
-
 AC_CHECK_FUNCS([memset],,,AC_MSG_ERROR(memset is missing))
 AC_CHECK_FUNCS([strdup],,,AC_MSG_ERROR(strdup is missing))
 
-
-##AM_CONDITIONAL([WANT_TEST],[test "$build_test" = yes])
-##AM_CONDITIONAL([WANT_TCMALLOC],[test "$use_tcmalloc" = yes])
 
 #Fix a bug in Linux with tbb tick_count (need -ltr)
 case "$host_os" in
@@ -71,6 +70,7 @@ AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
+AX_BOOST_SERIALIZATION
 
 AX_TBB([use_tbb=yes], AC_MSG_WARN([cannot find the Intel TBB library consider to give --with-tbb to link it. Will compile without thread (parser only)]))
 

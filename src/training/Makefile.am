@@ -8,7 +8,7 @@ endif
 
 
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I$(top_srcdir)/src
-tb2gram_CXXFLAGS = -O6 -Wall -Wextra -pipe -ffast-math -DNDEBUG -std=c++11
+tb2gram_CXXFLAGS = -O6 -pipe -ffast-math -DNDEBUG
 #tb2gram_CXXFLAGS = -O3 -Wall -pipe #-fdiagnostics-show-option
 
 #flags for debugging
@@ -60,7 +60,7 @@ tb2gram_SOURCES = tb2gram.cpp \
 	TrainingGrammar.h TrainingGrammar.cpp
 
 
-tb2gram_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) -lm
+tb2gram_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) -lm
 
 
 

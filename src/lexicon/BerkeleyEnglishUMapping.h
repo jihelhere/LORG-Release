@@ -7,6 +7,9 @@
 class BerkeleyEnglishUMapping : public WordSignature
 {
 public:
+  BerkeleyEnglishUMapping() : WordSignature(BerkeleyEnglish) {};
+
+
   std::string get_unknown_mapping(const std::string& word, unsigned position) const;
 };
 

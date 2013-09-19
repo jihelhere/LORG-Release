@@ -1,6 +1,5 @@
 // -*- mode: c++ -*-
-#ifndef WORD_H_
-#define WORD_H_
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -12,7 +11,7 @@ class MetaProduction;
 /**
   \class Word
   \brief represents a word in a sentence
-  \author Wolfgang Seeker
+  \author Wolfgang Seeker & others
 */
 class Word
 {
@@ -23,13 +22,17 @@ public:
   friend std::ostream& operator<<(std::ostream& out, const Word& word);
 
 public:
+// Word& operator=(const Word&);
+// Word& operator=(Word&&);
+// Word(Word&&);
 
   /**
      \brief Constructor
      \param str the given word form
+     \param start_idx start posisition in the input sentence (may be a lattice)
+     \param end_idx end position in the input lattice (-1 if sentence)
      \param pos the assigned pos tags
   */
-  //  Word(const std::string& str, int string_position, const std::vector<std::string>& pos  = std::vector<std::string>());
   Word(const std::string& str, int start_idx, int end_idx = -1, const std::vector<std::string>& pos  = std::vector<std::string>());
 
   bool is_tagged() const;
@@ -45,13 +48,11 @@ public:
   int get_start() const;
   int get_end() const;
 
+  void initialize_id(const WordSignature& wordsignature);
 
 public:
-  static void init_lexicon_type(WordSignature* ws){wordsignature = ws;};
 
 protected:
-  static WordSignature* wordsignature; ///< use this ws to get the unknown word class/signature
-
   std::string form;                         ///< the actual word form
 
   int start;
@@ -104,5 +105,3 @@ int Word::get_end() const
 {
   return end;
 }
-
-#endif // WORD_H_
