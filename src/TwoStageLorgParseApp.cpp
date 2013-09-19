@@ -113,8 +113,8 @@ int TwoStageLorgParseApp::run()
       if (parsers.size() > 1)
         k = find_consensus(best_trees);
 
-      if(verbose)
-        std::cerr << "k: " << k << std::endl;
+      // if(verbose)
+      //   std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
         //for (size_t i = 0; i < parsers.size(); ++i)
