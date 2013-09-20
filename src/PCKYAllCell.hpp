@@ -565,7 +565,7 @@ PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& cas
     {
       if(simplify)
       {
-        int i_s = SymbolTable::instance_nt().get_label_string(i)[0] == '[' ? -1 : simple_map.at(i_s);
+        int i_s = SymbolTable::instance_nt().get_label_string(i)[0] == '[' ? -1 : simple_map.at(i);
 
         if(case_l.count(i_s))
         {
@@ -574,7 +574,7 @@ PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& cas
       }
       // TODO check
       else
-       if(case_l.count(i))
+       if(SymbolTable::instance_nt().get_label_string(i)[0] != '[' and case_l.count(i))
         {
           edges[i].update_relaxations(case_l.at(i));
         }
