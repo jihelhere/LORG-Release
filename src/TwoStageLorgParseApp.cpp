@@ -89,6 +89,8 @@ int TwoStageLorgParseApp::run()
 
     tick_count sent_start = tick_count::now();
 
+    std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
+
     if(sentence.size() <=  max_length && sentence.size() > 0) {
 
       for(size_t i = 0; i < parsers.size(); ++i)
@@ -107,8 +109,6 @@ int TwoStageLorgParseApp::run()
 
 
       int k = 0;
-
-      std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
 
       if (parsers.size() > 1)
         k = find_consensus(best_trees);
@@ -155,6 +155,19 @@ int TwoStageLorgParseApp::run()
 
 
     }
+    else
+    {
+        parse_solution * p_typed =
+            parse_solution::factory.create_object(output_format,
+                                                  parse_solution(raw_sentence, ++count,
+                                                                 sentence.size(), best_trees,
+                                                                 (verbose) ? (tick_count::now() - sent_start).seconds() : 0,
+                                                                 verbose, comments, extract_features)
+                                                  );
+        p_typed->print(*out);
+        delete p_typed;
+    }
+
     sentence.clear();
     brackets.clear();
     comments.clear();
