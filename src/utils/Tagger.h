@@ -9,7 +9,7 @@
 
 class Tagger
 {
-public:
+ public:
   Tagger(const std::vector< std::vector<const MetaProduction*> >* word_2_rule = NULL);
 
   void tag( std::vector< Word >& sentence, const WordSignature& ws) const;
@@ -18,6 +18,10 @@ public:
 
   void set_word_rules(const std::vector< std::vector<const MetaProduction*> >* word_2_rule);
 
-private:
+ private:
+  enum FilterTagging {None, Bikel, Sancl};
+
+ private:
   const std::vector< std::vector<const MetaProduction*> >* word_2_rule_;
+  FilterTagging filter_tagging;
 };
