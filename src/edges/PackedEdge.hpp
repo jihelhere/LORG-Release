@@ -1,6 +1,8 @@
 #ifndef _PACKEDEDGE_HPP_
 #define _PACKEDEDGE_HPP_
 
+#include "utils/ConfigTable.h"
+
 #include "PackedEdge.h"
 
 template<class Types>
@@ -287,9 +289,7 @@ unsigned decode_path(PtbPsTree& tree,
                      PtbPsTree::depth_first_iterator& pos,
                      const PathMatrix& paths,
                      const asymb& start,
-                     const asymb& end,
-                     bool append_annot
-)
+                     const asymb& end)
 {
   bool final = false;
   asymb candidate = start;
@@ -314,7 +314,7 @@ unsigned decode_path(PtbPsTree& tree,
 
         std::ostringstream node_content;
         node_content << SymbolTable::instance_nt().translate(it2->second.first);
-        if(append_annot) node_content << "_" << it2->second.second;
+        //        if(append_annot) node_content << "_" << it2->second.second;
 
         pos=tree.add_last_daughter(pos,node_content.str());
         candidate = it2->second;
@@ -358,14 +358,12 @@ void PackedEdge<Types>::to_set(SET<const PackedEdge<Types>*>& results ) const
 
 
 template <class Types>
-PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool append_annot, bool output_forms) const
+PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv) const
 {
   PtbPsTree * tree = NULL;
 
   std::ostringstream node_content;
   node_content << SymbolTable::instance_nt().translate(lhs) ;
-  // we assume that root is TOP hence one annotation: 0
-  if(append_annot) node_content << '_' << 0;
 
   //  std::cout << SymbolTable::instance_nt()->translate(get_lhs()) << std::endl;
   //  std::cout << "size daughters: " << best_dtrs_vector.size() << std::endl;
@@ -418,9 +416,9 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
 
       const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(best.get(ith_deriv).dtrs);
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index(), append_annot, output_forms);
+      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index());
       int rhs1 = daughters->get_rule()->get_rhs1();
-      daughters->right_daughter().to_ptbpstree(*tree, pos, rhs1, best.get(ith_deriv).get_right_index(), append_annot, output_forms);
+      daughters->right_daughter().to_ptbpstree(*tree, pos, rhs1, best.get(ith_deriv).get_right_index());
     }
     else {
 
@@ -437,10 +435,9 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
       decode_path(*tree,pos,
                   PackedEdge<Types>::get_unary_chains(),
                   std::make_pair(lhs,0),
-                  std::make_pair(daughters->get_rule()->get_rhs0(), best.get(ith_deriv).get_left_index()),
-                  append_annot);
+                  std::make_pair(daughters->get_rule()->get_rhs0(), best.get(ith_deriv).get_left_index()));
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index(), append_annot, output_forms);
+      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index());
     }
 
     return tree;
@@ -448,8 +445,7 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv, bool ap
 
 template <class Types>
 void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
-                                   PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index,
-                                   bool append_annot, bool output_forms) const
+                                   PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index) const
 {
   std::ostringstream node_content;
 
@@ -487,12 +483,14 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
 
 
     node_content << SymbolTable::instance_nt().translate(lhs);
-    if(append_annot) node_content << "_" << index;
     pos = tree.add_last_daughter(pos, node_content.str());
 
     const Word& w = *(daughters->get_word());
+
+    static bool output_forms = ConfigTable::access().exists("always-output-forms");
+
     std::string s = output_forms ? w.get_form() :
-      (w.get_id() != -1 ? SymbolTable::instance_word().get_label_string(w.get_id()) : LorgConstants::token_unknown);
+                    (w.get_id() != -1 ? SymbolTable::instance_word().get_label_string(w.get_id()) : LorgConstants::token_unknown);
 
     pos = tree.add_last_daughter(pos, s);
 
@@ -505,7 +503,6 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
     // std::cout << SymbolTable::instance_nt().translate(lhs) << std::endl;
 
     node_content << SymbolTable::instance_nt().translate(lhs);
-    if(append_annot) node_content << "_" << index;
 
     pos = tree.add_last_daughter(pos, node_content.str());
 
@@ -529,11 +526,9 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
       const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(best.get(index).dtrs);
 
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0,
-                                              best.get(index).get_left_index(), append_annot, output_forms);
+      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, best.get(index).get_left_index());
       int rhs1 = daughters->get_rule()->get_rhs1();
-      daughters->right_daughter().to_ptbpstree(tree, pos, rhs1,
-                                               best.get(index).get_right_index(), append_annot, output_forms);
+      daughters->right_daughter().to_ptbpstree(tree, pos, rhs1, best.get(index).get_right_index());
     } // if(best.get(index).dtrs->is_binary())
     else { //unary branching
 
@@ -556,16 +551,14 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
       added_height += decode_path(tree,pos,
                                   PackedEdge<Types>::get_unary_chains(),
                                   fro,
-                                  to,
-                                  append_annot);
+                                  to);
 
       // std::cout << index << "\t" << best_left_indices.size() << std::endl;
       // std::cout << best_left_indices[index] << std::endl;
 
       int rhs0 = daughters->get_rule()->get_rhs0();
       //      std::cout << *daughters->get_rule() << std::endl;
-      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0,
-                                              best.get(index).get_left_index(), append_annot, output_forms);
+      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, best.get(index).get_left_index());
     }
 
   }

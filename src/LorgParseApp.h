@@ -21,15 +21,9 @@ protected:
   LorgOptions get_options() const;
 
 protected:
-  std::auto_ptr<Tokeniser> tokeniser;
+  std::unique_ptr<Tokeniser> tokeniser;
 
   unsigned max_length;
-
-  std::string number_regex;
-  bool replace_numbers;
-
-
-  bool always_output_forms;
 };
 
 #endif /* _LORGPARSEAPP_H_ */

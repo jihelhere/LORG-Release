@@ -73,7 +73,7 @@ public:
 
   Cell& get_root() const;
 
-  PtbPsTree* get_best_tree(int start_symbol, unsigned k, bool always_output_forms, bool output_annotations) const;
+  PtbPsTree* get_best_tree(int start_symbol, unsigned k) const;
 
   double get_score(int start_symbol, unsigned k) const;
 

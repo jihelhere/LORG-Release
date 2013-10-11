@@ -45,7 +45,7 @@ include_directories(${common_include_dir})
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-O6 -Wall -Wextra -pipe -ffast-math -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -fno-inline -Wall -pg")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -pg -ffast-math")
     #set(CMAKE_CXX_FLAGS_DEBUG -Wall -Wextra  -O2  -g  -pg -DBENCHMARK)
     #set(CMAKE_CXX_FLAGS_DEBUG -O1  -g  -Wall -Wextra -pg)
 endif()

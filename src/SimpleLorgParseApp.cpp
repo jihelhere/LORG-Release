@@ -75,7 +75,7 @@ int SimpleLorgParseApp::run()
       parser->parse(chart);
 
       // get results
-      best_tree = chart.get_best_tree(start_symbol, 0, always_output_forms, false);
+      best_tree = chart.get_best_tree(start_symbol, 0);
     }
 
     //FIXME get real prob
@@ -138,7 +138,7 @@ bool SimpleLorgParseApp::read_config(ConfigTable& configuration)
 
   parser = new ParserCKYBest(grammar);
 
-  tagger = std::auto_ptr<Tagger>(new Tagger(NULL, replace_numbers, number_regex));
+  tagger = std::auto_ptr<Tagger>(new Tagger(nullptr));
   tagger->set_word_rules(&(parser->get_words_to_rules()));
 
   parser->set_word_signature(WordSignatureFactory::create_wordsignature(configuration));

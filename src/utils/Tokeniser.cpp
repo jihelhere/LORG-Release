@@ -6,20 +6,16 @@
 std::string Tokeniser::tokmode_to_string(TokMode mode)
 {
   switch(mode) {
-  case Raw :
-    return "raw";
-    break; // ?
-  case Tok :
-    return "tok";
-    break; // ?
-  case Tag :
-    return "tag";
-    break;
-  case Lat :
-    return "lat";
-    break;
-  default:
-    throw std::out_of_range("You forgot a case in the tokmode conversion method !");
+    case Raw :
+      return "raw";
+    case Tok :
+      return "tok";
+    case Tag :
+      return "tag";
+    case Lat :
+      return "lat";
+    default:
+      throw std::out_of_range("You forgot a case in the tokmode conversion method !");
   }
 }
 
@@ -116,8 +112,8 @@ struct read_helper_tokentag
 
   read_helper_tokentag(std::vector<Word>& r,
 		    boost::tokenizer<boost::char_separator<char> >::const_iterator& t,
-		    const boost::tokenizer<boost::char_separator<char> >::const_iterator& e)
-    : result(r), token(t), end(e) {};
+                       const boost::tokenizer<boost::char_separator<char> >::const_iterator& e)
+      : result(r), token(t), end(e) {};
 
   void operator()(const std::string& form, unsigned pos)
   {

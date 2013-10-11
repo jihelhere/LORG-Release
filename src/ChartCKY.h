@@ -76,7 +76,7 @@ public:
   inline const Cell& get_root() const;
   Cell& get_root();
 
-  PtbPsTree* get_best_tree(int start_symbol, unsigned k, bool always_output_forms, bool output_annotations) const;
+  PtbPsTree* get_best_tree(int start_symbol, unsigned k) const;
 
   SET<const Edge*> get_rules_best_solution(int start_symbol) const;
 
@@ -109,6 +109,7 @@ public:
   std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << std::endl; }); return out; }
 
 
-  void update_relaxations(bool, const MAP<int,MAP<int, MAP<int,double>>>&);
+  void update_relaxations(bool, const MAP<int,MAP<int, MAP<int,double>>>&,
+                          const std::unordered_map<int,int>&);
 
 };

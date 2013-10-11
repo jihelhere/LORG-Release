@@ -27,7 +27,7 @@ Edge::Edge(const Edge& e) :
 {}
 
 
-PtbPsTree* Edge::to_ptbpstree(int /*not read*/, unsigned /*not read*/, bool /*not read*/, bool /*not read*/) const
+PtbPsTree* Edge::to_ptbpstree(int /*not read*/, unsigned /*not read*/) const
 {
   PtbPsTree * tree = new PtbPsTree(SymbolTable::instance_nt().translate(get_lhs()));
   PtbPsTree::depth_first_iterator pos = tree->dfbegin();

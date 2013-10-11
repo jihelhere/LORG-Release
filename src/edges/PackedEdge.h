@@ -191,7 +191,7 @@ public:
 
   void clean_invalidated_binaries();
 
-  PtbPsTree * to_ptbpstree(int lhs, unsigned ith_deriv, bool append_annot, bool output_forms) const;
+  PtbPsTree * to_ptbpstree(int lhs, unsigned ith_deriv) const;
 
   void to_set(SET<const PackedEdge*>& set) const;
 
@@ -225,8 +225,7 @@ private:
   const Cell* cell;
 
 
-  void to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index,
-                    bool append_annot, bool outpu_forms) const;
+  void to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index) const;
 
 
 public:

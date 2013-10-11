@@ -90,14 +90,18 @@ int TwoStageLorgParseApp::run()
   while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
 
+    // //Extra verbose
+    // if(verbose) {
+    //   std::clog << "Tokens: ";
+    //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+    //   {
+    //     std::clog << "<" << i->get_form() << ">";
+    //     std::clog << "(" << i->get_start() << ", " << i->get_end() << ")";
+    //   }
+    //   std::clog << "\n";
 
-    //Extra verbose
-    if(verbose) {
-      std::clog << "Tokens: ";
-      for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
-        std::clog << "<" << i->get_form() << ">";
-      std::clog << "\n";
-    }
+    //   std::clog << "brackets " << brackets.size() << std::endl;
+    // }
 
     std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
 
@@ -115,10 +119,10 @@ int TwoStageLorgParseApp::run()
       parsers[i]->parse(start_symbol);
       //std::cerr << "beam" << std::endl;
       parsers[i]->beam_c2f(start_symbol);
-      //std::cerr << "extract" << std::endl;
+      //std::cerr << "after beam" << std::endl;
       if(parsers[i]->is_chart_valid(start_symbol))
       {
-        std::cerr << "extract" << std::endl;
+        //std::cerr << "extract" << std::endl;
         parsers[i]->extract_solution();
       }
 
@@ -127,6 +131,8 @@ int TwoStageLorgParseApp::run()
     std::vector<std::thread> threads;
 
     tick_count sent_start = tick_count::now();
+
+    std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
 
     if(sentence.size() <=  max_length && sentence.size() > 0) {
 
@@ -160,12 +166,11 @@ int TwoStageLorgParseApp::run()
 
       int k = 0;
 
-      std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
-
       if (parsers.size() > 1)
         k = find_consensus(best_trees);
 
-      std::cerr << "k: " << k << std::endl;
+      // if(verbose)
+      //   std::cerr << "k: " << k << std::endl;
 
       for (size_t i = 0; i < 1; ++i)
         //for (size_t i = 0; i < parsers.size(); ++i)
@@ -173,7 +178,7 @@ int TwoStageLorgParseApp::run()
         if(parsers[i]->is_chart_valid(start_symbol))
         {
           //                             BLOCKTIMING("get_parses");
-          parsers[i]->get_parses(start_symbol, kbest, always_output_forms, output_annotations, best_trees);
+          parsers[i]->get_parses(start_symbol, kbest, best_trees);
           //std::cout << "getting " << i << std::endl;
         }
         parse_solution * p_typed =
@@ -206,6 +211,19 @@ int TwoStageLorgParseApp::run()
 
 
     }
+    else
+    {
+        parse_solution * p_typed =
+            parse_solution::factory.create_object(output_format,
+                                                  parse_solution(raw_sentence, ++count,
+                                                                 sentence.size(), best_trees,
+                                                                 (verbose) ? (tick_count::now() - sent_start).seconds() : 0,
+                                                                 verbose, comments, extract_features)
+                                                  );
+        p_typed->print(*out);
+        delete p_typed;
+    }
+
     sentence.clear();
     brackets.clear();
     comments.clear();
@@ -214,6 +232,7 @@ int TwoStageLorgParseApp::run()
   *out << std::flush;
 
   if(verbose) std::clog << "overall time: " << (tick_count::now() - parse_start).seconds() << "s" << std::endl;
+
   return 0; //everything's fine
 }
 
@@ -225,12 +244,9 @@ LorgOptions TwoStageLorgParseApp::get_options() const
 }
 
 
-
 bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 {
   if(LorgParseApp::read_config(configuration) == false) return false;
-
-  output_annotations = configuration.get_value<bool>("output-annotations");
 
   if(verbose) { std::clog << "creating the parser... ";}
 
@@ -312,10 +328,8 @@ unsigned simplified_nt( unsigned id )
 }
 
 
-
-int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& best_trees)
+int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& /*best_trees*/)
 {
-
   struct anchored_symbol
   {
     int symbol;
@@ -336,8 +350,8 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
   };
 
 
-  int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
-
+  static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
+  static std::unordered_map<int,int> simplification_map = SymbolTable::instance_nt().build_simplification_map();
 
   double lu = 0;
   bool valid = true;
@@ -356,11 +370,11 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
   double c = 1;
   double t = 0;
 
-  size_t fun_parser_size = 0;
-  for(auto& p : parsers)
-  {
-    if(p->get_is_funct()) ++ fun_parser_size;
-  }
+  // size_t fun_parser_size = 0;
+  // for(auto& p : parsers)
+  // {
+  //   if(p->get_is_funct()) ++fun_parser_size;
+  // }
 
   for (k = 0; k < 1000; ++k)
   {
@@ -375,10 +389,10 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     std::vector<MAP<int,MAP<int,MAP<int,double>>>> z_lambdas(parsers.size());
 
 
-    // fun
-    std::vector<std::set< anchored_symbol >> f_parser(this->parsers.size());
-    std::map<anchored_symbol, int> f_average;
-    std::vector<MAP<int,MAP<int,MAP<int,double>>>> f_lambdas(parsers.size());
+    // // fun
+    // std::vector<std::set< anchored_symbol >> f_parser(this->parsers.size());
+    // std::map<anchored_symbol, int> f_average;
+    // std::vector<MAP<int,MAP<int,MAP<int,double>>>> f_lambdas(parsers.size());
 
 
     for (size_t i = 0; i < parsers.size(); ++i)
@@ -390,7 +404,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         const AnnotatedRule* r = std::get<0>(e);
 
         int l;
-        l  = simplified_nt(r->get_lhs());
+        l  = simplification_map.at(r->get_lhs());
 
         if(SymbolTable::instance_nt().get_label_string(l)[0] != '[')
           // not an 'artificial node'
@@ -402,16 +416,16 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
           }
         }
 
-        if (parsers[i]->get_is_funct() && (SymbolTable::instance_nt().get_label_string(l)[0] != '['))
-        {
-          int f = r->get_lhs();
+        // if (parsers[i]->get_is_funct() && (SymbolTable::instance_nt().get_label_string(l)[0] != '['))
+        // {
+        //   int f = r->get_lhs();
 
-          anchored_symbol ff(f, std::get<1>(e), std::get<2>(e));
-          if(f_parser[i].insert(ff).second)
-          {
-            f_average[ff] += 1;
-          }
-        }
+        //   anchored_symbol ff(f, std::get<1>(e), std::get<2>(e));
+        //   if(f_parser[i].insert(ff).second)
+        //   {
+        //     f_average[ff] += 1;
+        //   }
+        // }
       }
     }
 
@@ -427,15 +441,15 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         break;
       }
     }
-    for (auto& p : f_average)
-    {
-      if (p.second != int(fun_parser_size))
-      {
-        //std::cout << p.second << std::endl;
-        same = false;
-        break;
-      }
-    }
+    // for (auto& p : f_average)
+    // {
+    //   if (p.second != int(fun_parser_size))
+    //   {
+    //     //std::cout << p.second << std::endl;
+    //     same = false;
+    //     break;
+    //   }
+    // }
 
     if(same)
     {
@@ -468,32 +482,32 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     }
 
 
-    for(size_t i = 0; i < f_parser.size(); ++i)
-    {
-      if(not parsers[i]->get_is_funct()) continue;
+    // for(size_t i = 0; i < f_parser.size(); ++i)
+    // {
+    //   if(not parsers[i]->get_is_funct()) continue;
 
-      f_lambdas[i].clear();
+    //   f_lambdas[i].clear();
 
-      // add update for things in ith solution
-      for(const auto& v: f_parser[i])
-      {
-        f_lambdas[i][v.begin][v.end][v.symbol]
-            = delta_k * (1.0 - double(f_average[v]) / fun_parser_size);
-      }
+    //   // add update for things in ith solution
+    //   for(const auto& v: f_parser[i])
+    //   {
+    //     f_lambdas[i][v.begin][v.end][v.symbol]
+    //         = delta_k * (1.0 - double(f_average[v]) / fun_parser_size);
+    //   }
 
-      // add update for things missing in ith solution
-      for(const auto& v: f_average)
-      {
-        if(not f_lambdas[i].count(v.first.begin)
-           or not f_lambdas[i][v.first.begin].count(v.first.end)
-           or not f_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
-           )
-        {
-          f_lambdas[i][v.first.begin][v.first.end][v.first.symbol]
-              = delta_k * (- double(f_average[v.first]) / fun_parser_size);
-        }
-      }
-    }
+    //   // add update for things missing in ith solution
+    //   for(const auto& v: f_average)
+    //   {
+    //     if(not f_lambdas[i].count(v.first.begin)
+    //        or not f_lambdas[i][v.first.begin].count(v.first.end)
+    //        or not f_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
+    //        )
+    //     {
+    //       f_lambdas[i][v.first.begin][v.first.end][v.first.symbol]
+    //           = delta_k * (- double(f_average[v.first]) / fun_parser_size);
+    //     }
+    //   }
+    // }
 
 
 
@@ -506,9 +520,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
                       {
                         if(this->parsers[j]->is_chart_valid(start_symbol))
                         {
-                          this->parsers[j]->update_relaxations(true,  z_lambdas[j]);
-                          if(parsers[j]->get_is_funct())
-                            this->parsers[j]->update_relaxations(false, f_lambdas[j]);
+                          this->parsers[j]->update_relaxations(true,  z_lambdas[j], simplification_map);
+                          // if(parsers[j]->get_is_funct())
+                          //   this->parsers[j]->update_relaxations(false, f_lambdas[j], simplification_map);
                         }
 
                         },i));

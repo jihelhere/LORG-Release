@@ -526,7 +526,6 @@ void ParserCKYAll_Impl<Types>::change_rules_resize(unsigned step,
 
 template <class Types>
 void ParserCKYAll_Impl<Types>::get_parses(int start_symbol, unsigned kbest,
-                                          bool always_output_forms, bool output_annotations,
                                           std::vector<std::pair<PtbPsTree *,double> >& best_trees)
 {
   for(unsigned i = 0; i < kbest; ++i) {
@@ -534,7 +533,7 @@ void ParserCKYAll_Impl<Types>::get_parses(int start_symbol, unsigned kbest,
     if(!chart->has_solution(start_symbol, i)) {
       break;
     }
-    PtbPsTree * t = chart->get_best_tree(start_symbol, i, always_output_forms, output_annotations);
+    PtbPsTree * t = chart->get_best_tree(start_symbol, i);
     best_trees.push_back(std::make_pair(t, chart->get_score(start_symbol, i)));
   }
 
@@ -587,7 +586,7 @@ ParserCKYAll_Impl<Types>::get_vectorized_representation(int start_symbol)
 
 template <class Types>
 void
-ParserCKYAll_Impl<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda)
+ParserCKYAll_Impl<Types>::update_relaxations(bool simplify, const MAP<int,MAP<int, MAP<int,double>>>& lambda, const std::unordered_map<int,int>& simple_map)
 {
-  chart->update_relaxations(simplify, lambda);
+  chart->update_relaxations(simplify, lambda, simple_map);
 }
