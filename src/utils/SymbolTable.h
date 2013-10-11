@@ -10,6 +10,8 @@
 
 #include <sstream>
 
+#include <unordered_map>
+#include <boost/regex.hpp>
 
 
 #include <boost/serialization/map.hpp>
@@ -168,6 +170,8 @@ public:
 
 
   void load(std::string filename);
+
+  std::unordered_map<int,int> build_simplification_map();
 
 };
 

@@ -46,7 +46,7 @@ struct abbrevs_ : qi::symbols<char, std::string>
       ("La." , "La.")
       ("No." , "No.")
       ("Mont." , "Mont.")
-      
+
       //  	|"A.C."|"A.D."|"Adm."|"A.E."|"A.F."|"A.G."|"A.H."|"a.k.a."|"A.L."|"Ala."|"a.m."|"A.P."|"Ariz."|"Ark."|"A.S."|"Aug."|"B.F."
 //  	|"B.J."|"Bros."|"B.V."|"Cie."|"C.J."|"Co."|"CO."|"Col."|"Colo."|"Conn."|"Corp."|"CORP."|"Cos."|"C.R."|"C.W."|"D.C."|"Dr."
 //  	|"D.T."|"E.E."|"E.F."|"E.R."|"etc."|"E.W."|"EXBT."|"F.E."|"felon."|"Fla."|"ft."|"F.W."|"Ga."|"G.D."|"Gen."
@@ -60,7 +60,7 @@ struct abbrevs_ : qi::symbols<char, std::string>
 //  	|"A."|"B."|"C."|"D."|"E."|"F."|"G."|"H."|"I."|"J."|"K."|"L."|"M."|"N."|"O."|"P."|"Q."|"R."|"S."|"T."|"U."|"V."|"W."|"X."|"Y."|"Z."
       ;
   }
-  
+
 } abbrevs;
 
 
@@ -82,7 +82,7 @@ struct auxs_ : qi::symbols<char, std::string >
       ("weren't" , "were")
       ("won't" , "wo")
       ("wouldn't" , "would")
-      ("mustn't" , "must") 
+      ("mustn't" , "must")
       ("needn't" , "need")
       ("couldn't" , "could")
       ("shouldn't" , "should")
@@ -97,7 +97,7 @@ struct auxs_ : qi::symbols<char, std::string >
       ("Weren't" , "Were")
       ("Wouldn't" , "Would")
       ("Won't" , "Wo")
-      ("Mustn't" , "Must") 
+      ("Mustn't" , "Must")
       ("Needn't" , "Need")
       ("Couldn't" , "Could")
       ("Shouldn't" , "Should")
@@ -126,13 +126,13 @@ struct special_chars_ : qi::symbols<char, std::string>
       ("]" , "-RSB-" )
       ("{" , "-LCB-")
       ("}" , "-RCB-")
-      ("\\" , "\\") 
+      ("\\" , "\\")
       ("#" , "#")
       ("~" , "~")
       ("*" , "\\*")
-      ( "+" , "+")  
-      ("-" , "-") 
-      (">" , ">") 
+      ( "+" , "+")
+      ("-" , "-")
+      (">" , ">")
       ("<", "<")
       ("=", "=")
       ("'" , "'" )
@@ -150,9 +150,9 @@ struct puncts_ : qi::symbols<char, std::string>
       ("!", "!")
       ("?" , "?")
       (":", ":")
-      (";", ";") 
-      ("." , ".") 
-      ("," , ",") 
+      (";", ";")
+      ("." , ".")
+      ("," , ",")
       ;
   }
 }puncts;
@@ -163,16 +163,16 @@ struct num_puncts_ : qi::symbols<char, std::string>
   num_puncts_() {
     add
       (":", ":")
-      ("." , ".") 
-      ("," , ",") 
+      ("." , ".")
+      ("," , ",")
       ;
   }
 }num_puncts;
 
-struct contractions_ : qi::symbols<char, std::string> 
+struct contractions_ : qi::symbols<char, std::string>
 { contractions_() {
     add
-      ("'d" , "'d") 
+      ("'d" , "'d")
       ("'ll" , "'ll")
       ("'ve" , "'ve")
       ("'s" , "'s")
@@ -180,7 +180,7 @@ struct contractions_ : qi::symbols<char, std::string>
       ("'m" , "'m")
       ;
   }
-}contractions; 
+}contractions;
 
 
 template <typename Iterator>
@@ -193,10 +193,10 @@ struct word_parser : boost::spirit::qi::grammar<Iterator, std::vector<std::strin
 
 
   word_parser() : word_parser::base_type(sentence)
-  {    
+  {
     using namespace qi::labels;
 
-    sentence = 
+    sentence =
       +(
  	(neg_auxs       [phoenix::push_back(_val, qi::labels::_1)]  >> qi::eps [phoenix::push_back(_val, "n't")])
 	| qi::space     [phoenix::push_back(_val, " " )]
@@ -209,33 +209,33 @@ struct word_parser : boost::spirit::qi::grammar<Iterator, std::vector<std::strin
 	| puncts        [phoenix::push_back(_val, qi::labels::_1 )]
 	| rest          [phoenix::push_back(_val, qi::labels::_1 )]
 	);
-    
-    
+
+
     rest%=qi::lexeme[+ qi::char_];
-    
+
     compound
-      =  ( word | number ) [_val += qi::labels::_1]  
-      >> *( 
+      =  ( word | number ) [_val += qi::labels::_1]
+      >> *(
 	   (qi::char_("-") [_val += "-"] | qi::char_("/") [_val += "\\/"])
-	   >> ( word | number ) [_val += qi::labels::_1]  
+	   >> ( word | number ) [_val += qi::labels::_1]
 	    )
       ;
 
     word %= qi::lexeme[+ qi::alpha ];
-    
-    number = 
-      -(qi::char_('-') [_val += "-"] | qi::char_('+') [_val += "+"]) 
-      >> 
-      ( +qi::digit [_val += qi::labels::_1] 
-	>> *( 
+
+    number =
+      -(qi::char_('-') [_val += "-"] | qi::char_('+') [_val += "+"])
+      >>
+      ( +qi::digit [_val += qi::labels::_1]
+	>> *(
 	     num_puncts [_val += qi::labels::_1]
-	     >> 
-	     +qi::digit [_val += qi::labels::_1]  
-	      ) 
+	     >>
+	     +qi::digit [_val += qi::labels::_1]
+	      )
 	)
       ;
-    
-    
+
+
     qi::on_error<qi::fail>
       (
        sentence
@@ -248,7 +248,7 @@ struct word_parser : boost::spirit::qi::grammar<Iterator, std::vector<std::strin
        << std::endl
        );
   }
-  
+
   boost::spirit::qi::rule<Iterator, std::string()> rest;
   boost::spirit::qi::rule<Iterator, std::string()> number;
   boost::spirit::qi::rule<Iterator, std::string()> word;
@@ -265,10 +265,10 @@ public:
     : TokeniserSpec(),
       m_left_quote(true)
   {}
-  
+
   ~EnglishSpec()
   {}
-  
+
   virtual bool process( const std::string& sentence );
   virtual std::vector< Word > sentence() const;
   virtual void clear();
@@ -289,15 +289,15 @@ bool EnglishSpec::process( const std::string& sentence )
 
   std::string::const_iterator iter = sentence.begin();
   std::string::const_iterator end = sentence.end();
-  
+
   typedef std::string::const_iterator iterator_type;
   typedef word_parser<iterator_type> parser;
-  
+
   parser p;
   std::vector<std::string> vect;
 
   bool r = parse(iter, end, p, vect);
-  
+
 
 //   for(std::vector<std::string>::const_iterator iter = vect.begin();
 //       iter != vect.end(); ++iter)
@@ -305,11 +305,11 @@ bool EnglishSpec::process( const std::string& sentence )
 //   std::cout << std::endl;
 
   //TODO note that the position should be the position of the word in the sentence - haven't tested if this is correct here.
-  int position =0;
+  int position = 0;
   for(std::vector<std::string>::const_iterator iter = vect.begin();iter != vect.end(); ++iter){
     if (*iter != " ") {
       if (*iter == "''") {
-    	  if(m_left_quote) 
+    	  if(m_left_quote)
     		  m_sentence.push_back(Word("``",position));
     	  else
     		  m_sentence.push_back(Word("''",position));
@@ -317,14 +317,16 @@ bool EnglishSpec::process( const std::string& sentence )
       }
       else
     	  m_sentence.push_back(Word(*iter,position));
+
+      position++;
     }
-    position++;
+
   }
-      
-  
+
+
   if(!r)
     std::clog << "not read: " << std::string(iter,end) << std::endl;
-  
+
   return r;
 }
 

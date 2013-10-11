@@ -83,13 +83,13 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
 
   virtual bool is_chart_valid(int start_symbol) = 0;
 
-  virtual void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
+  virtual void get_parses(int start_symbol, unsigned kbest,
                           std::vector<std::pair<PtbPsTree *,double> >& best_trees) = 0;
 
   virtual SET< std::tuple<const AnnotatedRule*,int,int> >
   get_vectorized_representation(int start_symbol) = 0;
 
-  virtual void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&) = 0;
+  virtual void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&, const std::unordered_map<int,int>&) = 0;
 
   virtual void clean() = 0;
 
@@ -327,12 +327,13 @@ protected:
   bool is_chart_valid(int start_symbol) {return chart->is_valid(start_symbol);}
 
 
-  void get_parses(int start_symbol, unsigned kbest, bool always_output_forms, bool output_annotations,
+  void get_parses(int start_symbol, unsigned kbest,
                   std::vector<std::pair<PtbPsTree *,double> >& best_trees);
 
   SET< std::tuple<const AnnotatedRule*,int,int> > get_vectorized_representation(int start_symbol);
 
-  void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&);
+  void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&,
+                          const std::unordered_map<int,int>&);
 
 
  protected: // attributes

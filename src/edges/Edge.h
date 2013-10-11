@@ -123,7 +123,7 @@ public:
   /**
      \brief explore an edge to build a ptbpstree
   */
-  PtbPsTree * to_ptbpstree(int /*start symbol, not read*/, unsigned /*not read*/,bool /*not read*/, bool /* not read*/) const;
+  PtbPsTree * to_ptbpstree(int /*start symbol, not read*/, unsigned /*not read*/) const;
 
 
   /**

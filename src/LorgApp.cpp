@@ -16,38 +16,18 @@ LorgApp::~LorgApp()
 bool LorgApp::init(int argc, char **argv)
 {
 
-  ConfigTable configuration(argc,argv,get_options());
+  ConfigTable& configuration =  ConfigTable::create(argc,argv,get_options());
 
   bool res = read_config(configuration);
 
 #ifdef USE_THREADS
   nbthreads = configuration.get_value<unsigned>("nbthreads");
   nbthreads = nbthreads ? nbthreads : tbb::task_scheduler_init::default_num_threads();
-//   if (nbthreads != 0)
-//   {
-//     std::cout << "here lorgapp" << std::endl;
-//     tbb_task_scheduler.initialize(nbthreads);
-//   }
-//   else
-//   {
-//     tbb_task_scheduler.initialize(tbb::task_scheduler_init::automatic);
-//   }
 #endif
 
   return res;
 }
 
-
-ConfigTable *  LorgApp::parse_config(int argc, char **argv)
-{
-  ConfigTable * configuration = new ConfigTable(argc,argv,get_options());
-
-  if (!configuration) {
-    std::cerr << "Unable to read options\n";
-  }
-
-  return configuration;
-}
 
 
 bool LorgApp::read_config(ConfigTable& configuration)

@@ -72,3 +72,45 @@ void SymbolTable::load(std::string filename)
   boost::archive::text_iarchive ia(ifs);
   ia >> *this;
 }
+
+
+
+std::unordered_map<int,int> SymbolTable::build_simplification_map()
+{
+  std::unordered_map<int,int> result;
+
+  typedef symtab::left_map map_type;
+  map_type & m = table.left;
+
+  static const boost::regex exp_artificial ("^\\[\\((.*)\\)>\\]$");
+  static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
+
+
+  for (const auto& pair : m)
+  {
+    std::string name = pair.first;
+    bool is_artificial = false;
+    boost::cmatch matched;
+
+    if(boost::regex_match(name.c_str(), matched, exp_artificial))
+    {
+      name = std::string(matched[1].first, matched[1].second);
+      is_artificial = true;
+    }
+
+    if(boost::regex_match(name.c_str(),matched,exp_funct))
+    {
+      name = std::string(matched[1].first, matched[1].second);
+    }
+
+    if(is_artificial)
+    {
+      name = "[(" + name + ")>]";
+    }
+
+    result[pair.second] = this->get_label_id(name);
+  }
+
+  return result;
+
+}

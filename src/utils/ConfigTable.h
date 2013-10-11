@@ -6,6 +6,9 @@
 #include <iostream>
 #include "LorgOptions.h"
 
+#include <memory>
+
+
 namespace po = boost::program_options;
 
 class NotInitialised{};
@@ -14,8 +17,6 @@ class NotSpecified{};
 class ConfigTable
 {
 public:
-  ~ConfigTable();
-  ConfigTable( int argc, char** argv, const LorgOptions& opts );
 
   template<class TYPE>
     const TYPE& get_value( const std::string& option ) const;
@@ -24,8 +25,13 @@ public:
   void parse_config_file(const std::string& config_file );
   void print_help() const;
 
+  static ConfigTable& create(int argc, char** argv, const LorgOptions& opts);
+  static const ConfigTable& access();
+
+  ~ConfigTable();
 private:
   ConfigTable();
+  ConfigTable( int argc, char** argv, const LorgOptions& opts );
 
   // not implemented to prevent copying:
   ConfigTable( const ConfigTable& rhs );
@@ -33,6 +39,9 @@ private:
 
 private:
   LorgOptions options;
+
+  static std::unique_ptr<ConfigTable> singleton;
+
 };
 
 template<class TYPE>

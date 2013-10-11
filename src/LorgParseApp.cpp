@@ -56,53 +56,15 @@ bool LorgParseApp::read_config(ConfigTable& configuration)
   max_length = configuration.get_value<unsigned>("max-length");
 
 
-  always_output_forms = configuration.get_value<bool>("always-output-forms");
+  //always_output_forms = configuration.get_value<bool>("always-output-forms");
 
 
 
-
-
-  // get rm_punctuation
-  bool rm_punctuation = configuration.exists("remove-punctuation");
-  if(rm_punctuation) {
-    if(verbose) std::clog << "Removing punctuation from input.\n";
-  }
-  else {
-    if(verbose) std::clog << "Not removing punctuation from input.\n";
-  }
-
-  // get input mode
-  TokMode input_mode;
-  try {
-    input_mode = Tokeniser::string_to_tokmode(configuration.get_value<std::string>("input-mode"));
-  }
-  catch(std::out_of_range&) { // should be a proper exception here
-    std::clog << "Unknown input mode: " <<  configuration.get_value<std::string>("input-mode") << std::endl;
-    return false;
-  }
-
-  if(verbose)
-    std::clog << "Input mode set to: " << Tokeniser::tokmode_to_string(input_mode);
-
-
-  char comment_char = configuration.get_value<char>("comment-char");
 
 
   //creating tokeniser for english: TODO write tokeniser for other languages ?
-  tokeniser = std::auto_ptr<Tokeniser>(TokeniserFactory::create_tokeniser(TokeniserFactory::English, rm_punctuation, input_mode, "", " ", comment_char));
-
-  // get replace_numbers
-  number_regex = configuration.get_value<std::string>("number-regex");
-  replace_numbers = configuration.exists("replace-numbers");
-  if(verbose) {
-    if(replace_numbers) {
-      std::clog << "Replacing numbers from input with special token." << std::endl;
-      std::clog << "Using number regex: " << number_regex << std::endl;
-    }
-    else {
-      std::clog << "Not replacing numbers from input with special token." << std::endl;
-    }
-  }
+  tokeniser = std::unique_ptr<Tokeniser>(
+      TokeniserFactory::create_tokeniser());
 
   return true;
 }
