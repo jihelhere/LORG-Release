@@ -26,7 +26,7 @@ private:
 
   int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&);
 
-  std::vector<std::string> crf_tag(FILE* f);
+  std::vector<std::string> crf_tag(FILE* f, int idx);
 
 
   std::vector<ParserCKYAll *> parsers;
@@ -34,6 +34,7 @@ private:
 
 
   std::vector<mdl_t*> crf_models;
+  std::vector<FILE*> crf_inputs;
 
   bool output_annotations;
   unsigned kbest;
