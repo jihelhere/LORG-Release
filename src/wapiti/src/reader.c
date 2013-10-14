@@ -193,7 +193,7 @@ void rdr_loadpat(rdr_t *rdr, FILE *file) {
 		}
 		rdr->pats = xrealloc(rdr->pats, sizeof(char *) * rdr->npats);
 		rdr->pats[rdr->npats - 1] = pat;
-		rdr->ntoks = max(rdr->ntoks, pat->ntoks);
+		rdr->ntoks = wapitimax(rdr->ntoks, pat->ntoks);
 	}
 }
 
@@ -497,7 +497,7 @@ dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl) {
 		}
 		// And store the sequence
 		dat->seq[dat->nseq++] = seq;
-		dat->mlen = max(dat->mlen, seq->len);
+		dat->mlen = wapitimax(dat->mlen, seq->len);
 		if (dat->nseq % 1000 == 0)
 			info("%7"PRIu32" sequences loaded\n", dat->nseq);
 	}
@@ -561,4 +561,3 @@ void rdr_save(const rdr_t *rdr, FILE *file) {
 	qrk_save(rdr->lbl, file);
 	qrk_save(rdr->obs, file);
 }
-

@@ -31,37 +31,6 @@ TwoStageLorgParseApp::~TwoStageLorgParseApp()
 }
 
 
-// std::vector<std::string> TwoStageLorgParseApp::crf_tag(FILE* file, int idx)
-// {
-//   raw_t *raw = rdr_readraw(crf_models[0]->reader, file);
-//   seq_t *seq = rdr_raw2seq(crf_models[0]->reader, raw, false);
-//   const uint32_t T = seq->len;
-
-//   dual_t* d = dual_init(T, crf_models[0]->nlbl);
-
-//   uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
-//   double   *psc = (double*)xmalloc(sizeof(double) * T);
-//   double   *scs = (double*)xmalloc(sizeof(double));
-//   tag_viterbi(crf_models[0], seq, (uint32_t*)out, scs, (double*)psc,d);
-
-//   std::vector<std::string> result(T);
-
-//   for (size_t i = 0; i < T; ++i)
-//   {
-//     result[i] = qrk_id2str(crf_models[idx]->reader->lbl, out[i]);
-//   }
-
-
-//    free(scs);
-//    free(psc);
-//    free(out);
-//    rdr_freeseq(seq);
-//    rdr_freeraw(raw);
-
-//    return result;
-// }
-
-
 int TwoStageLorgParseApp::run()
 {
   parse_solution::init_feature_extractor();
@@ -147,8 +116,8 @@ int TwoStageLorgParseApp::run()
       // }
 
 
-  std::vector<std::vector<std::string>> crf_results(crf_models.size());
-  for (size_t i = 0; i < crf_models.size(); ++i)
+  std::vector<std::vector<std::string>> crf_results(crfs.size());
+  for (size_t i = 0; i < crfs.size(); ++i)
   {
     crf_results[i] = crfs[i].crf_tag();
     for(const auto& s : crf_results[i])
@@ -283,25 +252,19 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 
   output_format = parse_solution::format_from_string(configuration.get_value<std::string>("output-format"));
 
-
   std::vector<std::string> crf_model_names = configuration.get_value<std::vector<std::string>>("crf-model");
 
   for (const auto& name : crf_model_names)
   {
-    auto mdl = mdl_new(rdr_new(false));
-    FILE *file = fopen(name.c_str(), "r");
-    mdl_load(mdl, file);
-    crf_models.push_back(mdl);
+    crfs.push_back(wapiti_wrapper(name));
   }
 
 
   std::vector<std::string> crf_input_names = configuration.get_value<std::vector<std::string>>("crf-input");
-  for (const auto& f : crf_input_names)
+  for (auto i = 0U; i < crfs.size(); ++i)
   {
-    crf_inputs.push_back(fopen(f.c_str(), "r"));
+    crfs[i].set_file(crf_input_names[i]);
   }
-
-
 
   return true;
 }

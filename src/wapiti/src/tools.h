@@ -35,8 +35,8 @@
 #define unused(v) ((void)(v))
 #define none ((uint64_t)-1)
 
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#define max(a, b) ((a) < (b) ? (b) : (a))
+#define wapitimin(a, b) ((a) < (b) ? (a) : (b))
+#define wapitimax(a, b) ((a) < (b) ? (b) : (a))
 
 void fatal(const char *msg, ...);
 void pfatal(const char *msg, ...);

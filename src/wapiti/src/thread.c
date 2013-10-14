@@ -108,7 +108,7 @@ bool mth_getjob(job_t *job, uint32_t *cnt, uint32_t *pos) {
 	if (job->send == job->size)
 		return false;
 	pthread_mutex_lock(&job->lock);
-	*cnt = min(job->batch, job->size - job->send);
+	*cnt = wapitimin(job->batch, job->size - job->send);
 	*pos = job->send;
 	job->send += *cnt;
 	pthread_mutex_unlock(&job->lock);
@@ -170,4 +170,3 @@ void mth_spawn(func_t *f, uint32_t W, void *ud[W], uint32_t size, uint32_t batch
 	pthread_attr_destroy(&attr);
 }
 #endif
-

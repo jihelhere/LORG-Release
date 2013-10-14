@@ -67,8 +67,8 @@ typedef struct sgd_idx_s {
  */
 #define applypenalty(f) do {                               \
 	const double z = w[f];                             \
-	if      (z > 0.0) w[f] = max(0.0, z - (u + q[f])); \
-	else if (z < 0.0) w[f] = min(0.0, z + (u - q[f])); \
+	if      (z > 0.0) w[f] = wapitimax(0.0, z - (u + q[f])); \
+	else if (z < 0.0) w[f] = wapitimin(0.0, z + (u - q[f])); \
 	q[f] += w[f] - z;                                  \
 } while (false)
 
@@ -217,4 +217,3 @@ void trn_sgdl1(mdl_t *mdl) {
 	free(q);
 }
 #undef applypenalty
-

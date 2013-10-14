@@ -153,8 +153,8 @@ bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 		if (mdl->wcnt >= mdl->opt->stopwin) {
 			double emin = 200.0, emax = -100.0;
 			for (uint32_t i = 0; i < mdl->opt->stopwin; i++) {
-				emin = min(emin, mdl->werr[i]);
-				emax = max(emax, mdl->werr[i]);
+				emin = wapitimin(emin, mdl->werr[i]);
+				emax = wapitimax(emax, mdl->werr[i]);
 			}
 			if (emax - emin < mdl->opt->stopeps)
 				res = false;
@@ -165,5 +165,3 @@ bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 		return false;
 	return res;
 }
-
-

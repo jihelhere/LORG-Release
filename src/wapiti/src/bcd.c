@@ -254,7 +254,7 @@ static void bcd_update(mdl_t *mdl, bcd_t *bcd, uint64_t o) {
 		// Adjust the hessian
 		double a = 1.0;
 		for (uint32_t y = 0; y < Y; y++)
-			a = max(a, fabs(ugrd[y] / uhes[y]));
+			a = wapitimax(a, fabs(ugrd[y] / uhes[y]));
 		xvm_scale(uhes, uhes, a * kappa, Y);
 		// Update the model
 		double *w = mdl->theta + mdl->uoff[o];
@@ -268,7 +268,7 @@ static void bcd_update(mdl_t *mdl, bcd_t *bcd, uint64_t o) {
 		// Adjust the hessian
 		double a = 1.0;
 		for (uint32_t i = 0; i < Y * Y; i++)
-			a = max(a, fabs(bgrd[i] / bhes[i]));
+			a = wapitimax(a, fabs(bgrd[i] / bhes[i]));
 		xvm_scale(bhes, bhes, a * kappa, Y * Y);
 		// Update the model
 		double *bw = mdl->theta + mdl->boff[o];
@@ -391,4 +391,3 @@ void trn_bcd(mdl_t *mdl) {
 	free(idx_lst);
 	free(idx_cnt);
 }
-
