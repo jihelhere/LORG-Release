@@ -5,11 +5,8 @@
 #include "LorgParseApp.h"
 #include "ParseSolution.h"
 
+#include "utils/WapitiWrapper.h"
 
-extern "C"
-{
-#include "wapiti/src/model.h"
-}
 
 class ParserCKYAll;
 
@@ -33,8 +30,7 @@ private:
   std::vector<Tagger> taggers;
 
 
-  std::vector<mdl_t*> crf_models;
-  std::vector<FILE*> crf_inputs;
+  std::vector<wapiti_wrapper> crfs;
 
   bool output_annotations;
   unsigned kbest;

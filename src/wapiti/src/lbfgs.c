@@ -258,7 +258,7 @@ void trn_lbfgs(mdl_t *mdl) {
 		// gradient instead of the true one.
 		const double xn = xvm_norm(x, F);
 		const double gn = xvm_norm(l1 ? pg : g, F);
-		if (gn / max(xn, 1.0) <= 1e-5)
+		if (gn / wapitimax(xn, 1.0) <= 1e-5)
 			break;
 		if (k + 1 == K)
 			break;
@@ -285,4 +285,3 @@ void trn_lbfgs(mdl_t *mdl) {
 		xvm_free(pg);
 	grd_free(grd);
 }
-

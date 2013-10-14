@@ -255,7 +255,7 @@ pat_t *pat_comp(char *p) {
 				fatal("invalid pattern: %s", p);
 			item->offset = off;
 			item->column = col;
-			ntoks = max(ntoks, col);
+			ntoks = wapitimax(ntoks, col);
 			pos += nch;
 			// And parse the end of the argument list, for 'x' there
 			// is nothing to read but for 't' and 'm' we have to get
@@ -336,9 +336,9 @@ char *pat_exec(const pat_t *pat, const tok_t *tok, uint32_t at) {
 			}
 			uint32_t col = item->column;
 			if (pos < 0)
-				value = bval[min(-pos - 1, 4)];
+				value = bval[wapitimin(-pos - 1, 4)];
 			else if (pos >= (int32_t)T)
-				value = eval[min( pos - (int32_t)T, 4)];
+				value = eval[wapitimin( pos - (int32_t)T, 4)];
 			else if (col >= tok->cnts[pos])
 				fatal("missing tokens, cannot apply pattern");
 			else
@@ -393,5 +393,3 @@ void pat_free(pat_t *pat) {
 	free(pat->src);
 	free(pat);
 }
-
-

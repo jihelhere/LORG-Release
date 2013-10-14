@@ -117,9 +117,9 @@ static void trn_rpropsub(job_t *job, uint32_t id, uint32_t cnt, rprop_t *st) {
 		// Next we adjust the step depending of the new and
 		// previous gradient values.
 		if (sgp * spg > 0.0)
-			stp[f] = min(stp[f] * stpinc, stpmax);
+			stp[f] = wapitimin(stp[f] * stpinc, stpmax);
 		else if (sgp * spg < 0.0)
-			stp[f] = max(stp[f] * stpdec, stpmin);
+			stp[f] = wapitimax(stp[f] * stpdec, stpmin);
 		// Finally update the weight. if there is l1 penalty
 		// and the pseudo gradient projection is used, we have to
 		// project back the update in the choosen orthant.
@@ -189,4 +189,3 @@ void trn_rprop(mdl_t *mdl) {
 	grd_free(grd);
 	free(st);
 }
-

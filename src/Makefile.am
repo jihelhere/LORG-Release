@@ -121,7 +121,9 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	rules/URule.h rules/URule.cpp rules/URuleC2f.h\
 	rules/LexicalRule.h rules/LexicalRule.cpp rules/LexicalRuleC2f.h \
 	TwoStageLorgParseApp.h \
+	utils/WapitiWrapper.cpp utils/WapitiWrapper.h \
 	wapiti/src/dual.c wapiti/src/decoder.c wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c wapiti/src/lbfgs.c
+
 
 #wapiti/wapiti.c
 
