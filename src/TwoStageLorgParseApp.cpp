@@ -15,11 +15,7 @@
 
 #include <thread>
 
-
-extern "C" {
-#include "wapiti/src/decoder.h"
-#include "wapiti/src/tools.h"
-}
+#include "utils/WapitiWrapper.h"
 
 
 TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
@@ -35,36 +31,35 @@ TwoStageLorgParseApp::~TwoStageLorgParseApp()
 }
 
 
-std::vector<std::string> TwoStageLorgParseApp::crf_tag(FILE* f)
-{
-  raw_t *raw = rdr_readraw(crf_models[0]->reader, f);
-  seq_t *seq = rdr_raw2seq(crf_models[0]->reader, raw, false);
-  const uint32_t T = seq->len;
+// std::vector<std::string> TwoStageLorgParseApp::crf_tag(FILE* file, int idx)
+// {
+//   raw_t *raw = rdr_readraw(crf_models[0]->reader, file);
+//   seq_t *seq = rdr_raw2seq(crf_models[0]->reader, raw, false);
+//   const uint32_t T = seq->len;
 
-  dual_t* d = dual_init(T, crf_models[0]->nlbl);
+//   dual_t* d = dual_init(T, crf_models[0]->nlbl);
+
+//   uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
+//   double   *psc = (double*)xmalloc(sizeof(double) * T);
+//   double   *scs = (double*)xmalloc(sizeof(double));
+//   tag_viterbi(crf_models[0], seq, (uint32_t*)out, scs, (double*)psc,d);
+
+//   std::vector<std::string> result(T);
+
+//   for (size_t i = 0; i < T; ++i)
+//   {
+//     result[i] = qrk_id2str(crf_models[idx]->reader->lbl, out[i]);
+//   }
 
 
-  uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
-  double   *psc = (double*)xmalloc(sizeof(double  ) * T);
-  double   *scs = (double*)xmalloc(sizeof(double  ));
-  tag_viterbi(crf_models[0], seq, (uint32_t*)out, scs, (double*)psc,d);
+//    free(scs);
+//    free(psc);
+//    free(out);
+//    rdr_freeseq(seq);
+//    rdr_freeraw(raw);
 
-  std::vector<std::string> result(T);
-
-  for (size_t i = 0; i < T; ++i)
-  {
-    result[i] = qrk_id2str(crf_models[0]->reader->lbl, out[i]);
-  }
-
-
-   free(scs);
-   free(psc);
-   free(out);
-   rdr_freeseq(seq);
-   rdr_freeraw(raw);
-
-   return result;
-}
+//    return result;
+// }
 
 
 int TwoStageLorgParseApp::run()
@@ -83,7 +78,7 @@ int TwoStageLorgParseApp::run()
   tick_count parse_start = tick_count::now();
 
 
-  FILE * fcrf = fopen("../lipn/dev.properties.txt", "r");
+  //FILE * fcrf = fopen("../lipn/dev.properties.txt", "r");
 
 
   //read input and fill raw_sentence, sentence and brackets
@@ -104,6 +99,7 @@ int TwoStageLorgParseApp::run()
     // }
 
     std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
+
 
 
     std::function<void(int)> process_sentence =
@@ -154,7 +150,7 @@ int TwoStageLorgParseApp::run()
   std::vector<std::vector<std::string>> crf_results(crf_models.size());
   for (size_t i = 0; i < crf_models.size(); ++i)
   {
-    crf_results[i] = crf_tag(fcrf);
+    crf_results[i] = crfs[i].crf_tag();
     for(const auto& s : crf_results[i])
     {
       std::cout << s << " " ;
@@ -288,45 +284,29 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   output_format = parse_solution::format_from_string(configuration.get_value<std::string>("output-format"));
 
 
-  crf_models.resize(1);
-  crf_models[0] = mdl_new(rdr_new(false));
-  FILE *file = fopen("../lipn/model.wap", "r");
-  mdl_load(crf_models[0], file);
+  std::vector<std::string> crf_model_names = configuration.get_value<std::vector<std::string>>("crf-model");
+
+  for (const auto& name : crf_model_names)
+  {
+    auto mdl = mdl_new(rdr_new(false));
+    FILE *file = fopen(name.c_str(), "r");
+    mdl_load(mdl, file);
+    crf_models.push_back(mdl);
+  }
+
+
+  std::vector<std::string> crf_input_names = configuration.get_value<std::vector<std::string>>("crf-input");
+  for (const auto& f : crf_input_names)
+  {
+    crf_inputs.push_back(fopen(f.c_str(), "r"));
+  }
+
 
 
   return true;
 }
 
 //////////////////////////// DD /////////////////////////////
-
-unsigned simplified_nt( unsigned id )
-{
-  std::string name = SymbolTable::instance_nt().get_label_string(id);
-
-  static const boost::regex exp_artificial ("^\\[\\((.*)\\)>\\]$");
-  static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-  boost::cmatch matched;
-  bool is_artificial = false;
-
-  if(boost::regex_match(name.c_str(), matched, exp_artificial))
-  {
-    name = std::string(matched[1].first, matched[1].second);
-    is_artificial = true;
-  }
-
-  if(boost::regex_match(name.c_str(),matched,exp_funct))
-  {
-    name = std::string(matched[1].first, matched[1].second);
-  }
-
-  if(is_artificial)
-  {
-    name = "[(" + name + ")>]";
-  }
-
-  return SymbolTable::instance_nt().get_label_id(name);
-}
-
 
 int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& /*best_trees*/)
 {

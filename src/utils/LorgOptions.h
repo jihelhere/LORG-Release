@@ -189,6 +189,9 @@ class LorgOptions
         ("kbest,k",po::value<unsigned>()->default_value(1), "numbers of parses to return for each sentence (only used in kmax)")
         ("stubbornness,s", po::value<int>()->default_value(-1), "number of retries (with lower beam-threshold) if packed forest construction fails. Last try is performed without threshold. Set to negative value to skip this.")
         ("nbthreads", po::value<unsigned>()->default_value(0), "Number of threads for processing the chart")
+
+        ("crf-model", po::value<std::vector<std::string>>(), "wapiti models (BIO)")
+        ("crf-input", po::value<std::vector<std::string>>(), "wapiti input (BIO)")
         ;
     options.add(parser_opts);
   }
