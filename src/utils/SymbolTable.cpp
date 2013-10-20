@@ -73,6 +73,11 @@ void SymbolTable::load(std::string filename)
   ia >> *this;
 }
 
+void SymbolTable::load(SymbolTable& st)
+{
+  *this = st;
+}
+
 
 
 std::unordered_map<int,int> SymbolTable::build_simplification_map()
