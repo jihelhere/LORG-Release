@@ -63,7 +63,7 @@
  *   we don't need to take the exponential of the scores as the Viterbi decoding
  *   works in log-space.
  */
-static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* d) {
+static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 	const double  *x = mdl->theta;
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
@@ -100,11 +100,11 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* d) {
 				const uint64_t o = pos->uobs[n];
 				sum += x[mdl->uoff[o] + y];
 			}
-                        sum += dual_get_penalty(d,t,y);
+                        sum += dual_get_unary_penalty(dual,t,y);
                         //printf("(%d,%d):%f\n",t,y,dual_get_penalty(d,t,y));
 			for (uint32_t yp = 0; yp < Y; yp++)
 				(*psi)[t][yp][y] = sum;
-                        
+
 		}
 	}
 	for (uint32_t t = 1; t < T; t++) {
@@ -112,6 +112,7 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* d) {
 		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
 			for (uint32_t y = 0; y < Y; y++, d++) {
 				double sum = 0.0;
+                                sum += dual_get_binary_penalty(dual,t,yp,y);
 				for (uint32_t n = 0; n < pos->bcnt; n++) {
 					const uint64_t o = pos->bobs[n];
 					sum += x[mdl->boff[o] + d];
@@ -351,10 +352,10 @@ void tag_nbviterbi(mdl_t *mdl, const seq_t *seq, uint32_t N,
  */
 
 void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
-        
+
 	qrk_t *lbls = mdl->reader->lbl;
 	const uint32_t Y = mdl->nlbl;
-        
+
 	uint64_t scnt = 0;
 	uint64_t stat[3][Y];
 	for (uint32_t y = 0; y < Y; y++)
@@ -362,9 +363,9 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
 	// Next read the input file sequence by sequence and label them, we have
 	// to take care of not discarding the raw input as we want to send it
 	// back to the output with the additional predicted labels.
-	
+
         /* WE READ AND TAG ONLY FIRST SENTENCE */
- 
+
         //while (!feof(fin)) {
 		// So, first read an input sequence keeping the raw_t object
 		// available, and label it with Viterbi.
@@ -385,16 +386,16 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
                 //dual_set_in_z(d,3,qrk_str2id(lbls, "NOUN"));
                 //dual_set_in_z(d,4,qrk_str2id(lbls, "."));
 
-                dual_set_penalty(d,0,qrk_str2id(lbls, "PRO"),-1);
-                dual_set_penalty(d,0,qrk_str2id(lbls, "V"),-1);
-                dual_set_penalty(d,0,qrk_str2id(lbls, "DET"),-1);
-                dual_set_penalty(d,2,qrk_str2id(lbls, "ADP"),-10);
+                dual_set_unary_penalty(d,0,qrk_str2id(lbls, "PRO"),-1);
+                dual_set_unary_penalty(d,0,qrk_str2id(lbls, "V"),-1);
+                dual_set_unary_penalty(d,0,qrk_str2id(lbls, "DET"),-1);
+                dual_set_unary_penalty(d,2,qrk_str2id(lbls, "ADP"),-10);
                 //dual_set_in_u(d,3,qrk_str2id(lbls, "NOUN"),-1);
                 //dual_set_in_u(d,4,qrk_str2id(lbls, "."),-1);
 
                 //if (raw == NULL)
 		//	break;
-		
+
                 seq_t *seq = rdr_raw2seq(mdl->reader, raw, false);
 		const uint32_t T = seq->len;
 		uint32_t *out = xmalloc(sizeof(uint32_t) * T);
@@ -408,24 +409,24 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
 				uint32_t lbl = out[t];
 				const char *lblstr = qrk_id2str(lbls, lbl);
 				fprintf(fout, "%s", lblstr);
-				
+
 				fprintf(fout, "\n");
 			}
 			fprintf(fout, "\n");
 		fflush(fout);
-		
+
 		// Cleanup memory used for this sequence
 		free(scs);
 		free(psc);
 		free(out);
 		rdr_freeseq(seq);
 		rdr_freeraw(raw);
-               
+
 		// And report our progress, at regular interval we display how
 		// much sequence are labelled and if possible the current tokens
 		// and sequence error rates.
 		if (++scnt % 1000 == 0) {
-			info("%10"PRIu64" sequences labeled", scnt);		
+			info("%10"PRIu64" sequences labeled", scnt);
 			info("\n");
 		}
 	//}
@@ -513,4 +514,3 @@ void tag_eval(mdl_t *mdl, double *te, double *se) {
 	*te = (double)terr / tcnt * 100.0;
 	*se = (double)serr / scnt * 100.0;
 }
-
