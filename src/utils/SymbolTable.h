@@ -80,7 +80,7 @@ private:
   */
 
   SymbolTable(SymbolTable const& ); //not defined, not copyable
-  SymbolTable& operator= (SymbolTable const& ); //not defined, not assignable
+  SymbolTable& operator=(SymbolTable& st) {if(this != &st) {table =st.table; cpt =st.cpt;} return *this;};
 
 
 
@@ -170,6 +170,7 @@ public:
 
 
   void load(std::string filename);
+  void load(SymbolTable& st);
 
   std::unordered_map<int,int> build_simplification_map();
 

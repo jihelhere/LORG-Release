@@ -157,10 +157,6 @@ class LorgOptions
         ("alternate-grammar4,X", po::value< std::vector<std::string> >(),
          "sets the additional grammars for the third maxn parser (dd)")
 
-
-        ("archive-nt", po::value<std::vector<std::string>>(), "undocumented")
-        ("archive-word", po::value<std::vector<std::string>>(), "undocumented")
-
         ("archive-grammar1", po::value<std::string>(), "undocumented")
         ("archive-alternategrammars1", po::value<std::vector<std::string>>(), "undocumented")
 

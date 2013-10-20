@@ -1,6 +1,4 @@
 // -*- mode: c++ -*-
-#ifndef _PARSERCKYALLFACTORY_CPP_
-#define _PARSERCKYALLFACTORY_CPP_
 
 #include "ParserCKYAllFactory.h"
 
@@ -23,6 +21,9 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+
+#include "utils/tuple_serialization.hpp"
+
 
 typedef boost::archive::text_oarchive oarchive;
 typedef boost::archive::text_iarchive iarchive;
@@ -129,29 +130,12 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
 
   if(verbose)
   {
-    {
-      std::ofstream ofs(filename+"_grammars.arc");
-      oarchive oacg(ofs);
-      // write class instance to archive
-      oacg << grammars;
-      // archive and stream closed when destructors are called
-    }
-
-    {
-      std::ofstream ofs2(filename+"_nt.arc");
-      oarchive oant(ofs2);
-      // write class instance to archive
-      oant << SymbolTable::instance_nt();
-      // archive and stream closed when destructors are called
-    }
-
-    {
-      std::ofstream ofs3(filename+"_lexicon.arc");
-      oarchive oaword(ofs3);
-      // write class instance to archive
-      oaword << SymbolTable::instance_word();
-      // archive and stream closed when destructors are called
-    }
+    std::tuple<decltype(grammars)&,
+               decltype(SymbolTable::instance_nt())&,
+               decltype(SymbolTable::instance_word())&> triple(grammars, SymbolTable::instance_nt(), SymbolTable::instance_word());
+    std::ofstream ofs(filename + ".bin");
+    oarchive oa(ofs);
+    oa << triple;
   }
   //////////
 
@@ -317,39 +301,25 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
           }
           else
           {
-            if(parser_idx == 0)
-            {// grammars for first parser
-
-              if(config.exists("archive-grammar"+str_idx) && config.exists("archive-nt") && config.exists("archive-word"))
-              {
-                if(verbose) std::cerr << "loading SymbolTable for non terminals" << std::endl;
-                SymbolTable::instance_nt().load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
-
-                if(verbose) std::cerr << "loading SymbolTable for words" << std::endl;
-                SymbolTable::instance_word().load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
-
-                if(verbose) std::cerr << "loading grammar archive" << std::endl;
-                std::ifstream ifs(config.get_value<std::string>("archive-grammar" + str_idx));
-                iarchive ia(ifs);
-                ia >> my_grammars;
-              }
-            }
-            else // parser_idx != 0
+            if(config.exists("archive-grammar"+str_idx))
             {
-              SymbolTable nt2;
-              nt2.load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
+                if(verbose) std::cerr << "loading binary file" << std::endl;
+                std::tuple<decltype(my_grammars), SymbolTable, SymbolTable> triple;
+                std::ifstream ifs(config.get_value<std::string>("archive-grammar" + str_idx));
+                iarchive(ifs) >> triple;
+                my_grammars = std::get<0>(triple);
 
-              SymbolTable word2;
-              word2.load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
-
-              std::ifstream ifs(config.get_value<std::string>("archive-grammar" + str_idx));
-              iarchive ia(ifs);
-              ia >> my_grammars;
-
-              align_grammar(my_grammars, word2, nt2);
+                if(parser_idx == 0)
+                {// grammars for first parser
+                  SymbolTable::instance_nt().load(std::get<1>(triple));
+                  SymbolTable::instance_word().load(std::get<2>(triple));
+                }
+                else // parser_idx != 0
+                {
+                  align_grammar(my_grammars, std::get<2>(triple), std::get<1>(triple));
+                }
             }
           }
-
           if(my_grammars.size() == 0)
           {
             std::cerr << "Grammar wasn't set. Exit program." << std::endl;
@@ -398,19 +368,15 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
               if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
 
               std::vector<ParserCKYAll::AGrammar*> grammars;
+
+              std::tuple<decltype(grammars), SymbolTable, SymbolTable> triple;
               std::ifstream ifs(filenames[i]);
-              iarchive ia(ifs);
-              ia >> grammars;
+              iarchive(ifs) >> triple;
+              grammars = std::get<0>(triple);
 
-              if (parser_idx != 0)
+              if(parser_idx != 0)
               {
-                SymbolTable nt2;
-                nt2.load(config.get_value<std::vector<std::string>>("archive-nt")[parser_idx]);
-
-                SymbolTable word2;
-                word2.load(config.get_value<std::vector<std::string>>("archive-word")[parser_idx]);
-
-                align_grammar(grammars, word2, nt2);
+                align_grammar(grammars, std::get<2>(triple), std::get<1>(triple));
               }
 
               my_alts.push_back(grammars);
@@ -755,5 +721,3 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
 
   return result;
 }
-
-#endif /* _PARSERCKYALLFACTORY_CPP_ */
