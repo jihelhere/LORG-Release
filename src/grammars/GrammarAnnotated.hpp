@@ -177,8 +177,9 @@ void GrammarAnnotated<Bin,Un,Lex>::compute_unary_chains(PathMatrix& decoding_pat
         if(rule2.get_rhs0() == rule1.get_lhs())
           continue;
 
-        if(SymbolTable::instance_nt().get_label_string(rule1.get_rhs0())[0] == 't')
-          continue;
+        // What is it?
+        // if(SymbolTable::instance_nt().get_label_string(rule1.get_rhs0())[0] == 't')
+        //   continue;
 
         //        std::clog << "path_length: " << path_length << "\tpRule1: " << &rule1 << "\t" << rule1 << "\tRule2: " << &rule2 << "\t" << rule2 << std::endl;
 
