@@ -16,10 +16,9 @@ struct wapiti_wrapper
   FILE * file;
 
   raw_t *raw;
-  seq_t *seq;
 
   wapiti_wrapper(const std::string& modelfilename)
-      : model(nullptr), file(nullptr), raw(nullptr), seq(nullptr)
+      : model(nullptr), file(nullptr), raw(nullptr)
   {
     this->model = mdl_new(rdr_new(false));
 
@@ -29,5 +28,21 @@ struct wapiti_wrapper
 
   void set_file(const std::string& filename);
   std::vector<std::string> crf_tag();
+  std::vector<std::string> redo_crf_tag();
+
+
+
+
+  ~wapiti_wrapper(){}
+
+  void clean_sentence()
+  {
+    rdr_freeraw(this->raw);
+  }
+
+  void clean()
+  {
+    mdl_free(this->model);
+  }
 
 };
