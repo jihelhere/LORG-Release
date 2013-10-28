@@ -590,3 +590,42 @@ ParserCKYAll_Impl<Types>::update_relaxations(bool simplify, const MAP<int,MAP<in
 {
   chart->update_relaxations(simplify, lambda, simple_map);
 }
+
+template <class Types>
+void
+ParserCKYAll_Impl<Types>::update_relaxations_starts(const MAP<unsigned,double>& lambda)
+{
+  MAP<int,MAP<int, MAP<int,double>>> complete_lambda;
+  std::unordered_map<int,int> empty_simple_map;
+
+  for(const auto& p : lambda)
+  {
+    for (int i = p.first; i < chart->get_size(); ++i)
+    {
+      for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
+        complete_lambda[p.first][i][symbol] = p.second;
+    }
+  }
+
+  chart->update_relaxations(false, complete_lambda, empty_simple_map);
+}
+
+
+template <class Types>
+void
+ParserCKYAll_Impl<Types>::update_relaxations_ends(const MAP<unsigned,double>& lambda)
+{
+  MAP<int,MAP<int, MAP<int,double>>> complete_lambda;
+  std::unordered_map<int,int> empty_simple_map;
+
+  for(const auto& p : lambda)
+  {
+    for (int i = 0; i < p.first; ++i)
+    {
+      for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
+        complete_lambda[i][p.first][symbol] = p.second;
+    }
+  }
+
+  chart->update_relaxations(false, complete_lambda, empty_simple_map);
+}

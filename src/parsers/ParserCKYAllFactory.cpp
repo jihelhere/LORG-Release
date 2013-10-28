@@ -573,6 +573,103 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       }
     }
 
+
+    ////////////////
+    {
+      std::vector<double> priors5;
+      std::vector<annot_descendants_type> all_annot_descendants5;
+      std::vector<ParserCKYAll::AGrammar*> grammars5;
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs5;
+      // get grammars
+      if(config.exists("grammar5") or config.exists("archive-grammar5")) {
+
+        grammars5 = build_grammar(all_annot_descendants5, 3);
+        // compute priors for base grammar
+        priors5 = grammars5[0]->compute_priors();
+
+        ///////////////////
+        if(config.exists("alternate-grammar5") or config.exists("archive-alternategrammars5"))
+        {
+          alt_gs5 = build_alternate(all_annot_descendants5,4);
+        }
+
+        ///////////////////
+        results.push_back(create_parser(grammars5, string_to_pa(config.get_value<std::string>("parser-type")),
+                                        string_to_mpc(config.get_value<std::string>("max-type")), priors5, beam_threshold,
+                                        alt_gs5, all_annot_descendants5, accurate, min, config.get_value<int>("stubbornness"),
+                                        config.get_value<unsigned>("kbest")));
+
+        if (grammars5.back()->gram_conf.count("lex_unknown_map"))
+        {
+          if (results.back()->get_word_signature() == nullptr)
+          {
+          std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+          results.back()->set_word_signature(
+              WordSignatureFactory::create_wordsignature(
+                  WordSignature::string_2_lex_unknown_map(grammars5.back()->gram_conf.at("lex_unknown_map")),
+                  true));
+          }
+        }
+        if (grammars5.back()->gram_conf.count("remove_functions"))
+        {
+          if(grammars5.back()->gram_conf.at("remove_functions") == "0")
+          {
+            results.back()->set_is_funct(true);
+          }
+        }
+      }
+    }
+
+
+    ////////////////
+    {
+      std::vector<double> priors6;
+      std::vector<annot_descendants_type> all_annot_descendants6;
+      std::vector<ParserCKYAll::AGrammar*> grammars6;
+      std::vector< std::vector<ParserCKYAll::AGrammar*> > alt_gs6;
+      // get grammars
+      if(config.exists("grammar6") or config.exists("archive-grammar6")) {
+
+        grammars6 = build_grammar(all_annot_descendants6, 5);
+        // compute priors for base grammar
+        priors6 = grammars6[0]->compute_priors();
+
+        ///////////////////
+        if(config.exists("alternate-grammar6") or config.exists("archive-alternategrammars6"))
+        {
+          alt_gs6 = build_alternate(all_annot_descendants6,3);
+        }
+
+        ///////////////////
+        results.push_back(create_parser(grammars6, string_to_pa(config.get_value<std::string>("parser-type")),
+                                        string_to_mpc(config.get_value<std::string>("max-type")), priors6, beam_threshold,
+                                        alt_gs6, all_annot_descendants6, accurate, min, config.get_value<int>("stubbornness"),
+                                        config.get_value<unsigned>("kbest")));
+
+        if (grammars6.back()->gram_conf.count("lex_unknown_map"))
+        {
+          if (results.back()->get_word_signature() == nullptr)
+          {
+          std::cerr << "overwriting unknown_map from command-line (if you don't want this, edit the grammar)" << std::endl;
+          results.back()->set_word_signature(
+              WordSignatureFactory::create_wordsignature(
+                  WordSignature::string_2_lex_unknown_map(grammars6.back()->gram_conf.at("lex_unknown_map")),
+                  true));
+          }
+        }
+        if (grammars6.back()->gram_conf.count("remove_functions"))
+        {
+          if(grammars6.back()->gram_conf.at("remove_functions") == "0")
+          {
+            results.back()->set_is_funct(true);
+          }
+        }
+      }
+    }
+
+
+
+
     return results;
 }
 

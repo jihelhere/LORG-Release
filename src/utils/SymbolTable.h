@@ -174,6 +174,7 @@ public:
 
   std::unordered_map<int,int> build_simplification_map();
 
+  std::vector<unsigned> get_mwe_symbols() const;
 };
 
 inline

@@ -9,7 +9,7 @@
 
 #include "SymbolTable.h"
 #include "LorgConstants.h"
-//#include "RandomGenerator.h"
+#include "RandomGenerator.h"
 
 namespace {
 
@@ -83,10 +83,6 @@ void remove_function_from_nt_string( std::string& orig )
 
     //     }
     // }
-
-
-
-
 
 }
 
@@ -191,7 +187,7 @@ namespace {
     {
         std::ostringstream treename;
         treename << '[';
-        for(std::list<iterator>::const_reverse_iterator iter = daughters.rbegin(); iter != daughters.rend();++iter)
+        for(auto iter = daughters.rbegin(); iter != daughters.rend();++iter)
             treename << '(' << *(*iter) <<')';
         treename << ']';
 
@@ -206,7 +202,7 @@ namespace {
         treename << "[("  + ancestor_name + ")>";
         //  treename << "@"+ ancestor_name;
 
-        std::list<iterator>::const_reverse_iterator iter = daughters.rbegin();
+        auto iter = daughters.rbegin();
         while(markov > 0 && iter != daughters.rend()) {
             treename << '(' << *(*iter) << ')';
             --markov;
@@ -226,7 +222,7 @@ namespace {
         treename << "[("  + ancestor_name + ")>";
         // treename << "@"+ ancestor_name;
 
-        std::list<iterator>::const_iterator iter = daughters.begin();
+        auto iter = daughters.begin();
         while(markov > 0 && iter != daughters.end()) {
             treename << '(' << *(*iter) << ')';
             --markov;
@@ -279,7 +275,7 @@ namespace {
 
 void PtbPsTree::binarise(Bin_Direction direction, HorizMarkov mark)
 {
-    assert(direction == LEFT || direction == RIGHT);
+    assert(direction != NONE );
 
     std::string (*give_name)(const std::list<iterator>&, const std::string&, HorizMarkov) = NULL;
 
@@ -313,7 +309,27 @@ void PtbPsTree::binarise(Bin_Direction direction, HorizMarkov mark)
                 ancestor_iter.up();
             std::string ancestor_name = *ancestor_iter;
 
-            PtbPsTree new_tree = create_bintree(*pos,daughters, direction, ancestor_name, mark, give_name);
+
+
+            Bin_Direction real_direction;
+            if (direction == RAND)
+            {
+              if (RandomGenerator::instance_binarization()->next() < 0.5)
+              {
+                real_direction = LEFT;
+                give_name = n_daughters_left_to_string;
+              }
+              else
+              {
+                real_direction = RIGHT;
+                give_name = n_daughters_right_to_string;
+              }
+            }
+            else
+            {
+              real_direction = direction;
+            }
+            PtbPsTree new_tree = create_bintree(*pos,daughters, real_direction, ancestor_name, mark, give_name);
 
             //replace content with binarized content
             add_left_sister(pos,new_tree);

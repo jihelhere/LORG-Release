@@ -21,6 +21,7 @@ private:
 
   static unsigned global_seed;
   static RandomGenerator * my_instance;
+  static RandomGenerator * my_instance_binarization;
 
 
   // This is a typedef for a random number generator.
@@ -33,6 +34,7 @@ private:
  public:
 
   static RandomGenerator * instance();
+  static RandomGenerator * instance_binarization();
   double next();
 
   static void set_global_seed(unsigned value);

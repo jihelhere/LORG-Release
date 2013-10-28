@@ -1,9 +1,10 @@
 #include "RandomGenerator.h"
-#include <ctime> 
+#include <ctime>
 
 unsigned RandomGenerator::global_seed = 29 ; /*std::time(0);*/
 
 RandomGenerator * RandomGenerator::my_instance = NULL;
+RandomGenerator * RandomGenerator::my_instance_binarization = NULL;
 
 
 RandomGenerator::RandomGenerator(double min_value, double max_value, unsigned seed_value) : min(min_value), max(max_value), seed(seed_value)
@@ -32,12 +33,23 @@ double RandomGenerator::next()
 }
 
 
-RandomGenerator * RandomGenerator::instance() 
+RandomGenerator * RandomGenerator::instance()
 {
   if (my_instance == NULL) {
     my_instance = new RandomGenerator(0,1,global_seed);
   }
 
   return my_instance;
+}
+
+RandomGenerator * RandomGenerator::instance_binarization()
+{
+  if (my_instance_binarization == NULL) {
+    my_instance_binarization = new RandomGenerator(0,1,1);
+    // seed is fixed
+    // TODO change this
+  }
+
+  return my_instance_binarization;
 
 }

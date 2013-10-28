@@ -8,6 +8,7 @@ extern "C" {
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 
 struct wapiti_wrapper
@@ -16,9 +17,13 @@ struct wapiti_wrapper
   FILE * file;
 
   raw_t *raw;
+  dual_t* dual;
+  double score;
+  std::vector<std::string> best_string_sequence;
+
 
   wapiti_wrapper(const std::string& modelfilename)
-      : model(nullptr), file(nullptr), raw(nullptr)
+      : model(nullptr), file(nullptr), raw(nullptr), dual(nullptr)
   {
     this->model = mdl_new(rdr_new(false));
 
@@ -27,17 +32,17 @@ struct wapiti_wrapper
   }
 
   void set_file(const std::string& filename);
-  std::vector<std::string> crf_tag();
-  std::vector<std::string> redo_crf_tag();
+  double crf_tag();
+  double crf_retag();
 
-
-
+  void update_relaxations(const std::unordered_map<unsigned,double>& lambdas, char first, char second, int offset);
 
   ~wapiti_wrapper(){}
 
   void clean_sentence()
   {
     rdr_freeraw(this->raw);
+    dual_free(this->dual);
   }
 
   void clean()

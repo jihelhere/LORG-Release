@@ -169,6 +169,12 @@ class LorgOptions
         ("archive-grammar4", po::value<std::string>(), "undocumented")
         ("archive-alternategrammars4", po::value<std::vector<std::string>>(), "undocumented")
 
+        ("archive-grammar5", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars5", po::value<std::vector<std::string>>(), "undocumented")
+
+        ("archive-grammar6", po::value<std::string>(), "undocumented")
+        ("archive-alternategrammars6", po::value<std::vector<std::string>>(), "undocumented")
+
         ("output-archive", po::value<bool>()->default_value(false),
          "undocumented")
 

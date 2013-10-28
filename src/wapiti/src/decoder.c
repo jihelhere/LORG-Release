@@ -68,6 +68,8 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
 	double (*psi)[T][Y][Y] = (void *)vpsi;
+
+
 	// We first have to compute the Ψ_t(y',y,x_t) weights defined as
 	//   Ψ_t(y',y,x_t) = \exp( ∑_k θ_k f_k(y',y,x_t) )
 	// So at position 't' in the sequence, for each couple (y',y) we have
@@ -121,6 +123,7 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -168,7 +171,8 @@ static int tag_postsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
  *   enough stack space.
  */
 void tag_viterbi(mdl_t *mdl, const seq_t *seq,
-	         uint32_t out[], double *sc, double psc[], dual_t* d) {
+	         uint32_t out[], double *score, double psc[], dual_t* d)
+{
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
 	double   *vpsi  = xmalloc(sizeof(double  ) * T * Y * Y);
@@ -225,8 +229,8 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	for (uint32_t y = 1; y < Y; y++)
 		if (cur[y] > cur[bst])
 			bst = y;
-	if (sc != NULL)
-		*sc = cur[bst];
+	if (score != NULL)
+		*score = cur[bst];
 	for (uint32_t t = T; t > 0; t--) {
 		const uint32_t yp = (t != 1) ? (*back)[t - 1][bst] : 0;
 		const uint32_t y  = bst;

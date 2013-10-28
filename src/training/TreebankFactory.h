@@ -30,27 +30,34 @@ Treebank<Tree> * TreebankFactory::BuildEmptyTreebank(ConfigTable& conf)
   if (verbose)
     std::clog << "binarisation mode set to " << bin << ".\n";
 
-  // switch on strings would be so nice !
-  // --> switch over first char, if unique ;)
-  // the test above sort of spoils it though
-  switch(bin[0])
-    {
-    case 'n': // no binarisation
-      bindir = NONE;
-      if (verbose)
-    	  std::clog << "Grammar will not be binarised\n";
-      break;
-    case 'r': // right binarisation
-      bindir = RIGHT;
-      if (verbose)
-    	  std::clog << "Grammar will be right-binarised\n";
-      break;
-    case 'l': // left binarisation
-    default:
-      if (verbose)
-    	  std::clog << "Grammar will be left-binarised\n";
-    break;
-    }
+  if(bin == "none")
+  {
+    bindir = NONE;
+    if (verbose)
+      std::clog << "Grammar will not be binarised\n";
+  }
+  else if (bin == "right")
+  {
+    bindir = RIGHT;
+    if (verbose)
+      std::clog << "Grammar will be right-binarised\n";
+  }
+  else if (bin == "left")
+  {
+    bindir = LEFT;
+    if (verbose)
+      std::clog << "Grammar will be left-binarised\n";
+  }
+  else if (bin == "random")
+  {
+    bindir = RAND;
+    if (verbose)
+      std::clog << "Grammar will be randomly binarised\n";
+  }
+  else
+  {
+    throw std::out_of_range("binarisation direction");
+  }
 
   HorizMarkov binmark =  -1 ; //infinite -> "exact" binarization
   binmark =  conf.get_value<HorizMarkov>("hm");
