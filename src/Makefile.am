@@ -120,9 +120,11 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 	rules/BRule.h rules/BRule.cpp rules/BRuleC2f.h\
 	rules/URule.h rules/URule.cpp rules/URuleC2f.h\
 	rules/LexicalRule.h rules/LexicalRule.cpp rules/LexicalRuleC2f.h \
+	utils/tuple_serialization.hpp \
 	TwoStageLorgParseApp.h \
 	utils/WapitiWrapper.cpp utils/WapitiWrapper.h \
-	wapiti/src/dual.c wapiti/src/decoder.c wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c wapiti/src/lbfgs.c
+	wapiti/src/dual.c wapiti/src/decoder.c wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c wapiti/src/lbfgs.c \
+	wapiti/src/dual.h wapiti/src/decoder.h wapiti/src/model.h wapiti/src/options.h wapiti/src/pattern.h wapiti/src/progress.h wapiti/src/quark.h wapiti/src/reader.h wapiti/src/thread.h wapiti/src/tools.h wapiti/src/vmath.h wapiti/src/gradient.h wapiti/src/wapiti.h wapiti/src/sequence.h
 
 
 #wapiti/wapiti.c
@@ -176,6 +178,7 @@ feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	utils/data_parsers/ParseError.h \
 	utils/SymbolTable.h utils/SymbolTable.cpp \
 	rules/Types4Rules.h rules/MetaProduction.h \
-	rules/Production.cpp rules/Production.h
+	rules/Production.cpp rules/Production.h \
+	utils/RandomGenerator.h utils/RandomGenerator.cpp
 
 feature_extractor_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB)

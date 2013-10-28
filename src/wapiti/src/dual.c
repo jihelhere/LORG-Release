@@ -10,10 +10,10 @@ void dual_init_vectors(dual_t *d){
    {
      for(t = 0 ; t < d->Y ; ++t)
      {
-       d->unary_u[i*(d->N)+t] = 0.0;
+       d->unary_u[i*(d->Y)+t] = 0.0;
        for(t2 = 0 ; t2 < d->Y ; ++t2)
        {
-         d->binary_u[i*(d->N)*t*(d->Y) + t2] = 0.0;
+         d->binary_u[i*(d->Y)*(d->Y)+t*(d->Y)+t2] = 0.0;
        }
      }
    }
@@ -31,7 +31,7 @@ dual_t* dual_init(uint32_t slength, uint32_t nlabels)
   {
     fatal("memory error");
   }
-  d->binary_u = (double*)malloc(sizeof(double)*slength*nlabels*nlabels);
+  d->binary_u = (double*)malloc(sizeof(double)*slength*nlabels*nlabels * nlabels*nlabels);
   if(d->binary_u == NULL)
   {
     free(d->unary_u);
@@ -45,18 +45,18 @@ dual_t* dual_init(uint32_t slength, uint32_t nlabels)
 
 double dual_get_unary_penalty(dual_t *d, uint32_t i,uint32_t t)
 {
-  uint32_t index = i * (d->N) + t;
+  uint32_t index = i * (d->Y) + t;
    return (d->unary_u[index]);
 }
 
 void dual_set_unary_penalty(dual_t *d, uint32_t i,uint32_t t,double val)
 {
-     d->unary_u[i*(d->N)+t] = val;
+     d->unary_u[i*(d->Y)+t] = val;
 }
 
 void dual_add_unary_penalty(dual_t *d, uint32_t i,uint32_t t,double val)
 {
-     d->unary_u[i*(d->N)+t] += val;
+     d->unary_u[i*(d->Y)+t] += val;
 }
 
 
@@ -79,16 +79,16 @@ void dual_free(dual_t *d)
 
 double dual_get_binary_penalty(dual_t *d, uint32_t i,uint32_t t1, uint32_t t2)
 {
-  uint32_t index = i * (d->N) * t1 * (d->Y) + t2;
+  uint32_t index = i * (d->Y * d->Y) + t1 * (d->Y) + t2;
   return (d->binary_u[index]);
 }
 
 void dual_set_binary_penalty(dual_t *d, uint32_t i,uint32_t t1, uint32_t t2, double val)
 {
-  d->binary_u[i*(d->N)*t1*(d->Y)+t2] = val;
+  d->binary_u[i*(d->Y * d->Y)+t1*(d->Y)+t2] = val;
 }
 
 void dual_add_binary_penalty(dual_t *d, uint32_t i,uint32_t t1, uint32_t t2, double val)
 {
-  d->binary_u[i*(d->N)*t1*(d->Y)+t2] += val;
+  d->binary_u[i*(d->Y)* (d->Y)+t1*(d->Y)+t2] += val;
 }

@@ -17,6 +17,8 @@ typedef struct dual_s dual_t;
 
 
 dual_t* dual_init(uint32_t, uint32_t);
+void dual_free(dual_t *d);
+
 void dual_set_unary_penalty(dual_t *, uint32_t, uint32_t, double);
 void dual_add_unary_penalty(dual_t *, uint32_t, uint32_t, double);
 double dual_get_unary_penalty(dual_t *, uint32_t, uint32_t);

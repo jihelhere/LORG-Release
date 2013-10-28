@@ -342,6 +342,8 @@ void PackedEdge<Types>::to_set(SET<const PackedEdge<Types>*>& results ) const
   else
     if(best.get(0).dtrs->is_lexical())
     {
+      // const LexicalDaughter * daughters =  static_cast<const LexicalDaughter*>(best.get(0).dtrs);
+      // results.insert(daughters->left_daughter());
     }
     else
     {

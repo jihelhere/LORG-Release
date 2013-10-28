@@ -8,7 +8,7 @@
 #include <boost/regex.hpp>
 #include <iostream>
 
-enum Bin_Direction {LEFT, RIGHT, NONE};
+enum Bin_Direction {LEFT, RIGHT, NONE, RAND};
 typedef int HorizMarkov; // negative value for infinite horizontal markovisation
 
 

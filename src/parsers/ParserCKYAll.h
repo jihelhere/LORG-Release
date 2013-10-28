@@ -90,6 +90,8 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   get_vectorized_representation(int start_symbol) = 0;
 
   virtual void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&, const std::unordered_map<int,int>&) = 0;
+  virtual void update_relaxations_starts(const MAP<unsigned,double>&) = 0;
+  virtual void update_relaxations_ends(const MAP<unsigned,double>&) = 0;
 
   virtual void clean() = 0;
 
@@ -334,7 +336,8 @@ protected:
 
   void update_relaxations(bool simplify, const MAP<int,MAP<int,  MAP<int,double>>>&,
                           const std::unordered_map<int,int>&);
-
+  void update_relaxations_starts(const MAP<unsigned,double>&);
+  void update_relaxations_ends(const MAP<unsigned,double>&);
 
  protected: // attributes
   Chart * chart; // the chart

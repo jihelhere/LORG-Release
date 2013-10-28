@@ -117,5 +117,20 @@ std::unordered_map<int,int> SymbolTable::build_simplification_map()
   }
 
   return result;
+}
 
+std::vector<unsigned> SymbolTable::get_mwe_symbols() const
+{
+  std::vector<unsigned> results;
+
+  typedef symtab::left_map map_type;
+  const map_type & m = table.left;
+
+  for (const auto& pair : m)
+  {
+    if(pair.first[0] == 'M' and pair.first[1] == 'W')
+      results.push_back(pair.second);
+  }
+
+  return results;
 }
