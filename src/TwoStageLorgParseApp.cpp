@@ -51,19 +51,19 @@ int TwoStageLorgParseApp::run()
   while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
 
-    // //Extra verbose
-    if(verbose) {
-      std::clog << "Tokens: ";
-      for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
-      {
-        std::clog << "<" << i->get_form() << ">";
-        std::clog << "(" << i->get_start() << ", " << i->get_end() << ")";
-      }
-      std::clog << "\n";
+    // // //Extra verbose
+    // if(verbose) {
+    //   std::clog << "Tokens: ";
+    //   for(std::vector<Word>::const_iterator i(sentence.begin()); i != sentence.end(); ++i)
+    //   {
+    //     std::clog << "<" << i->get_form() << ">";
+    //     std::clog << "(" << i->get_start() << ", " << i->get_end() << ")";
+    //   }
+    //   std::clog << "\n";
 
-      std::clog << "length " << sentence.size() << std::endl;
-      std::clog << "brackets " << brackets.size() << std::endl;
-    }
+    //   std::clog << "length " << sentence.size() << std::endl;
+    //   std::clog << "brackets " << brackets.size() << std::endl;
+    // }
 
     std::vector<std::vector<Word>> sentences(parsers.size(), sentence);
 
@@ -118,11 +118,11 @@ int TwoStageLorgParseApp::run()
       {
         crfs[i].crf_tag();
 
-        for(const auto& s : crfs[i].best_string_sequence)
-        {
-          std::cout << s << " " ;
-        }
-        std::cout << std::endl;
+        // for(const auto& s : crfs[i].best_string_sequence)
+        // {
+        //   std::cout << s << " " ;
+        // }
+        // std::cout << std::endl;
       }
 
       int k = 0;
@@ -139,11 +139,11 @@ int TwoStageLorgParseApp::run()
       {
         crfs[i].crf_retag();
 
-        for(const auto& s : crfs[i].best_string_sequence)
-        {
-          std::cout << s << " " ;
-        }
-        std::cout << std::endl;
+        // for(const auto& s : crfs[i].best_string_sequence)
+        // {
+        //   std::cout << s << " " ;
+        // }
+        // std::cout << std::endl;
       }
 
       ///
@@ -743,8 +743,8 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
 
     //update stepsize
-    std::cout << "nlu = " << nlu << std::endl;
-    std::cout << "lu = " << lu << std::endl;
+    // std::cout << "nlu = " << nlu << std::endl;
+    // std::cout << "lu = " << lu << std::endl;
     if (nlu > lu )//|| (k % 20) == 0)
     {
       ++t;
