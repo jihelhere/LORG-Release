@@ -74,7 +74,7 @@ void PCKYAllCell<Types>::reserve_binary_daughters(const std::vector<int> & count
 }
 
 template<class Types>
-void PCKYAllCell<Types>::process_candidate(Edge & left,
+inline void PCKYAllCell<Types>::process_candidate(Edge & left,
                                             Edge & right,
                                             const BinaryRule* rule,
                                             double LR_inside)
@@ -174,41 +174,30 @@ void PCKYAllCell<Types>::compute_outside_probabilities()
 template<class Types>
 void PCKYAllCell<Types>::clean()
 {
-
   bool changed;
   do {
     changed =  false;
 
     // go through all the lists of unary daughters and remove the ones pointing on removed edges
     for(auto & edge : edges)
-      if(not edge.is_closed()) {
-        auto & udaughters = edge.get_unary_daughters();
-        udaughters.erase(std::remove_if(udaughters.begin(), udaughters.end(),
-                                        toFunc(& UnaryDaughter::points_towards_invalid_edges)),
-                         udaughters.end());
+    {
+      if(edge.is_closed())
+        continue;
 
-        if (edge.no_daughters())
-        {
-          edge.close();
-          changed =  true;
-        }
-        // else
-        // {
-        //   std::cout << "clean: still has daughters" << std::endl;
-        //   for (const auto& u :  udaughters)
-        //   {
-        //     std::cout << *(u.get_rule()) << std::endl;
-        //   }
-        //   for (const auto& l :  edge.get_lexical_daughters())
-        //   {
-        //     std::cout << *(l.get_rule()) << std::endl;
-        //   }
-        // }
+      auto & udaughters = edge.get_unary_daughters();
+      udaughters.erase(std::remove_if(udaughters.begin(), udaughters.end(),
+                                      toFunc(& UnaryDaughter::points_towards_invalid_edges)),
+                       udaughters.end());
+
+      if (edge.no_daughters())
+      {
+        edge.close();
+        changed =  true;
       }
+    }
   } while(changed);
 
   // final memory reclaim
-  // TODO: benchmark this carefully
   bool all_null = true;
   for(auto & edge : edges)
     if(not edge.is_closed()) {
@@ -221,8 +210,6 @@ void PCKYAllCell<Types>::clean()
     {
       closed = true;
     }
-  // else
-  //   std::cout << "clean: not closed" << std::endl;
 }
 
 
