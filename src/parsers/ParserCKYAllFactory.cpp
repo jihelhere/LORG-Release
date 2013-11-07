@@ -24,6 +24,9 @@
 
 #include "utils/tuple_serialization.hpp"
 
+#include <thread>
+
+
 
 typedef boost::archive::text_oarchive oarchive;
 typedef boost::archive::text_iarchive iarchive;
@@ -363,20 +366,33 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
             }
           }
           if(config.exists("archive-alternategrammars" + str_idx)) {
+
+            std::vector<std::thread> threads;
+            std::vector<std::tuple<std::vector<ParserCKYAll::AGrammar*>, SymbolTable, SymbolTable>> triples(filenames.size());
+
             for(size_t i = 0; i < filenames.size(); ++i)
             {
-              if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
+              threads.push_back( std::thread(
+                  [&triples, &filenames](int j)
+                  {
+                    std::ifstream ifs(filenames[j]);
+                    iarchive(ifs) >> triples[j];
+                  }, i));
+            }
 
+            for(auto& thread : threads)
+            {
+              thread.join();
+            }
+
+            for(size_t i = 0; i < filenames.size(); ++i)
+            {
               std::vector<ParserCKYAll::AGrammar*> grammars;
-
-              std::tuple<decltype(grammars), SymbolTable, SymbolTable> triple;
-              std::ifstream ifs(filenames[i]);
-              iarchive(ifs) >> triple;
-              grammars = std::get<0>(triple);
+              grammars = std::get<0>(triples[i]);
 
               if(parser_idx != 0)
               {
-                align_grammar(grammars, std::get<2>(triple), std::get<1>(triple));
+                align_grammar(grammars, std::get<2>(triples[i]), std::get<1>(triples[i]));
               }
 
               my_alts.push_back(grammars);
@@ -583,7 +599,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar5") or config.exists("archive-grammar5")) {
 
-        grammars5 = build_grammar(all_annot_descendants5, 3);
+        grammars5 = build_grammar(all_annot_descendants5, 4);
         // compute priors for base grammar
         priors5 = grammars5[0]->compute_priors();
 
@@ -637,7 +653,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
         ///////////////////
         if(config.exists("alternate-grammar6") or config.exists("archive-alternategrammars6"))
         {
-          alt_gs6 = build_alternate(all_annot_descendants6,3);
+          alt_gs6 = build_alternate(all_annot_descendants6,5);
         }
 
         ///////////////////

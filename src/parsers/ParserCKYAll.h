@@ -31,7 +31,6 @@ using namespace tbb;
 typedef std::vector< std::vector<std::vector< std::vector<unsigned> > > > annot_descendants_type;
 
 
-
 class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, LexicalRuleC2f> >
 {
  public:
@@ -214,10 +213,8 @@ public:
 
   void initialise_chart(const std::vector< Word >& sentence, const std::vector<bracketing>& brackets)
   {
-    chart = new Chart(sentence, SymbolTable::instance_nt().get_symbol_count(),
-                      //get_nonterm_count(),
-                      brackets);
-//     std::cout << *chart << std::endl;
+    chart = new Chart(sentence, SymbolTable::instance_nt().get_symbol_count(), brackets);
+    //     std::cout << *chart << std::endl;
 
   }
 

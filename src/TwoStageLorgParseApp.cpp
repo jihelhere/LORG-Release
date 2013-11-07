@@ -90,7 +90,7 @@ int TwoStageLorgParseApp::run()
       }
     };
 
-    std::vector<std::thread> threads;
+
 
     tick_count sent_start = tick_count::now();
 
@@ -98,19 +98,21 @@ int TwoStageLorgParseApp::run()
 
     if(sentence.size() <=  max_length && sentence.size() > 0) {
 
+      std::vector<std::thread> threads;
+
       for(size_t i = 0; i < parsers.size(); ++i)
       {
-        //        threads.push_back(std::thread(process_sentence,i));
+        threads.push_back(std::thread(process_sentence,i));
         // std::cerr << i << std::endl;
-        process_sentence(i); // for replicability
+        //process_sentence(i); // for replicability
         // TODO : find why solutions are different in multithreaded code
         // std::cerr << i << std::endl;
       }
 
-      // for(auto& thread : threads)
-      // {
-      //   thread.join();
-      // }
+      for(auto& thread : threads)
+      {
+        thread.join();
+      }
 
 
       // std::vector<std::vector<std::string>> crf_results(crfs.size());

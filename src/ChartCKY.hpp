@@ -30,20 +30,20 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
     nb_cells = (size*(size+1))/2;
     unsigned nb_edges = nb_cells*grammar_size;
     //       the_cells.assign(nbcells, protoCell);
-    the_cells = (Cell*) new char[nb_cells*sizeof(Cell)];
-    the_edges = (Edge*) new char[nb_edges*sizeof(Edge)];
-    std::fill((char*)the_cells, (char*)(the_cells+nb_cells), 0);
-    std::fill((char*)the_edges, (char*)(the_edges+nb_edges), 0);
+    the_cells = reinterpret_cast<Cell*>(new char[nb_cells*sizeof(Cell)]);
+    the_edges = reinterpret_cast<Edge*>(new char[nb_edges*sizeof(Edge)]);
+    std::fill(reinterpret_cast<char*>(the_cells), reinterpret_cast<char*>(the_cells+nb_cells), 0);
+    std::fill(reinterpret_cast<char*>(the_edges), reinterpret_cast<char*>(the_edges+nb_edges), 0);
   }
 //     chart = new Cell * [size];
 
   Edge * edge = the_edges;
-  for(unsigned i = 0; i < size; ++i) {
-
+  for(unsigned i = 0; i < size; ++i)
+  {
     //    std::cout << "i: " << i << std::endl;
     {
       //         BLOCKTIMING("ChartCKY<Types>::ChartCKY chart[i] = line_start;");
-//         chart[i] = line_start;//new Cell[size-i];
+      //         chart[i] = line_start;//new Cell[size-i];
     }
 //     for(unsigned j = i; j < size;++j, edge+=grammar_size) {
 //       //         BLOCKTIMING("ChartCKY<Types>::ChartCKY cell.init");
@@ -61,7 +61,9 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
       //         BLOCKTIMING("ChartCKY<Types>::ChartCKY cell.init");
       Cell& cell = access(i,j);
       bool close = brackets.end() != std::find_if(brackets.begin(),brackets.end(),
-                                                  [&](const bracketing & other){return bracketing(i,i+j).overlap(other);}) ;
+                                                  [&](const bracketing & other)
+                                                  {return bracketing(i,i+j).overlap(other);}
+                                                  );
       cell.init(close, i, j, edge, i==0 and j==size-1);
     }
   }
@@ -72,7 +74,6 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
     // todo: proper error handling
     if(access(sentence[i].get_start(), sentence[i].get_end()-1).is_closed())
       std::clog << "Problem in chart initialisation: brackets and tokenization are insconsistent." << std::endl;
-
     access(sentence[i].get_start(), sentence[i].get_end()-1).add_word(sentence[i]);
   }
 //     std::cout << "Chart is built and intialised" << std::endl;

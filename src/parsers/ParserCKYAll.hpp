@@ -128,28 +128,26 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
     for (const auto & same_rhs0_rules: brules) {
 
       //std::cout << "accessing left" << std::endl;
+      Edge & left_edge = left_cell.get_edge(same_rhs0_rules.rhs0);
+      if (left_edge.is_closed())
+        continue;
 
-      Edge & left_edge = left_cell.get_edge(same_rhs0_rules.rhs0) ;
-      if (not left_edge.is_closed()) {
+      //std::cout << "accessing LR1" << std::endl;
+      double L = left_edge.get_annotations().inside_probabilities.array[0];
 
-        //std::cout << "accessing LR1" << std::endl;
-        double LR1 = left_edge.get_annotations().inside_probabilities.array[0];
+      //iterating through all the rules P -> L R, indexed by R, L fixed
+      for(const auto & same_rhs: same_rhs0_rules) {
+        // std::cout << "accessing right" << std::endl;
+        Edge & right_edge = right_cell.get_edge(same_rhs.rhs1);
+        if (right_edge.is_closed())
+          continue;
 
-        //iterating through all the rules P -> L R, indexed by R, L fixed
-        for(const auto & same_rhs: same_rhs0_rules) {
+        // std::cout << "accessing LR" << std::endl;
+        double LR = L * right_edge.get_annotations().inside_probabilities.array[0];
 
-          // std::cout << "accessing right" << std::endl;
-          Edge & right_edge = right_cell.get_edge(same_rhs.rhs1);
-          if (not right_edge.is_closed()) {
-
-            // std::cout << "accessing LR" << std::endl;
-            double LR = LR1 * right_edge.get_annotations().inside_probabilities.array[0];
-
-            //iterating through all the rules P -> L R, indexed by P, R and L fixed
-            for(const auto & rule: same_rhs) {
-              result_cell.process_candidate(left_edge,right_edge, rule, LR);
-            }
-          }
+        //iterating through all the rules P -> L R, indexed by P, R and L fixed
+        for(const auto & rule: same_rhs) {
+          result_cell.process_candidate(left_edge,right_edge, rule, LR);
         }
       }
     }
