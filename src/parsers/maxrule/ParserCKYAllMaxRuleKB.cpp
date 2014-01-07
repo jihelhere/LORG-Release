@@ -4,7 +4,10 @@
 
 #include "ParserCKYAllMaxRuleKB.h"
 #include "parsers/ParserCKYAll.hpp"
+
+#ifdef USE_THREADS
 #include "utils/tick_count.h"
+#endif
 
 ParserCKYAllMaxRuleKB::ParserCKYAllMaxRuleKB(ParserCKYAllFactory::MaxParsing_Calculation c,
                                              std::vector<AGrammar*>& cgs,

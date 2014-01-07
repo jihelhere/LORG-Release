@@ -101,7 +101,7 @@ public:
   void opencells_apply_top_down_nothread( std::function<void(Cell &)> f );
   void opencells_apply_top_down_nothread( std::function<void(const Cell &)> f ) const;
 
-  std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([out](Cell & cell){return out << cell << endl; }); return out; }
+  std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([&out](Cell & cell){return out << cell << endl; }); return out; }
 };
 
 

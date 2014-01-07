@@ -150,6 +150,6 @@ twostage_lorgparser_test_SOURCES += ParserEdgeTest.cpp \
 									main.cpp
 
 twostage_lorgparser_test_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(AM_CPPFLAGS)
-twostage_lorgparser_test_CXXFLAGS= -O6 -pipe
+twostage_lorgparser_test_CXXFLAGS= -O3 -pipe -ftemplate-depth=512
 
 twostage_lorgparser_test_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)

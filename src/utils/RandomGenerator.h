@@ -28,7 +28,7 @@ private:
   // Try boost::mt19937 or boost::ecuyer1988 instead of boost::minstd_rand
   //typedef boost::mt19937 base_generator_type;
   typedef boost::minstd_rand base_generator_type;
-  boost::variate_generator<base_generator_type&, boost::uniform_real<double> > *uni;
+  //boost::variate_generator<base_generator_type&, boost::uniform_real<double> > *uni;
 
   RandomGenerator(double min_value, double max_value, unsigned seed = global_seed);
  public:

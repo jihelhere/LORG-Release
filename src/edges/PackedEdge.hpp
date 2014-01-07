@@ -678,7 +678,6 @@ void PackedEdge<Types>::update_relaxations(const double & u)
   for(auto& bi : binary_daughters)
   {
     bi.update_relaxation(-u);
-
   }
 
 

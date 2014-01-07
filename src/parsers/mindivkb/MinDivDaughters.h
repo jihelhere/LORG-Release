@@ -10,7 +10,7 @@
 
 
 
-struct MinDivBRule : public BRuleC2f {
+class MinDivBRule : public BRuleC2f {
   double update_outside_annotations_return_marginal(const std::vector<double>& up_out,
                                                     const std::vector<double>& left_in,
                                                     const std::vector<double>& right_in,
@@ -18,18 +18,15 @@ struct MinDivBRule : public BRuleC2f {
                                                     std::vector<double>& right_out) const;
 };
 
-struct MinDivURule : public URuleC2f {
+class MinDivURule : public URuleC2f {
   double update_outside_annotations_return_marginal(const std::vector<double>& up,
                                                     const std::vector<double>& in_left,
                                                     std::vector<double>& out_left) const;
 };
 
-struct MinDivLRule : public LexicalRuleC2f {
+class MinDivLRule : public LexicalRuleC2f {
   double update_outside_annotations_return_marginal(const std::vector<double>& up) const;
 };
-
-
-
 
 
 

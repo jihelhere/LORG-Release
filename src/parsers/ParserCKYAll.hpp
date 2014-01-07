@@ -3,7 +3,9 @@
 #include "ParserCKYAll.h"
 #include "ChartCKY.hpp"
 
+#ifdef USE_THREADS
 #include "utils/tick_count.h"
+#endif
 
 template <class Types>
 ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(std::vector<AGrammar*>& cgs,
@@ -125,7 +127,7 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
     //iterating through all the rules P -> L R, indexed by L
 
 
-    for (const auto & same_rhs0_rules: brules) {
+    for (const auto & same_rhs0_rules: brules->vrhs0) {
 
       //std::cout << "accessing left" << std::endl;
       Edge & left_edge = left_cell.get_edge(same_rhs0_rules.rhs0);
@@ -598,7 +600,7 @@ ParserCKYAll_Impl<Types>::update_relaxations_starts(const MAP<unsigned,double>& 
 
   for(const auto& p : lambda)
   {
-    for (int i = p.first; i < chart->get_size(); ++i)
+    for (size_t i = p.first; i < chart->get_size(); ++i)
     {
       for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
         complete_lambda[p.first][i][symbol] = p.second;
@@ -618,7 +620,7 @@ ParserCKYAll_Impl<Types>::update_relaxations_ends(const MAP<unsigned,double>& la
 
   for(const auto& p : lambda)
   {
-    for (int i = 0; i < p.first; ++i)
+    for (size_t i = 0; i < p.first; ++i)
     {
       for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
         complete_lambda[i][p.first][symbol] = p.second;

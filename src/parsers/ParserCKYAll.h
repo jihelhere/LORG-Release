@@ -221,7 +221,11 @@ public:
   void clean() { delete chart; chart = nullptr;}
 
 
-  void set_nbthreads(unsigned n)
+  void set_nbthreads(unsigned
+#ifdef USE_THREADS
+                     n
+#endif
+)
   {
 #ifdef USE_THREADS
     Chart::nbthreads = n;

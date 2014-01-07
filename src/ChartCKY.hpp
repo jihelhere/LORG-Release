@@ -168,7 +168,7 @@ inline
 void
 ChartCKY<Types>::opencells_apply_top_down( std::function<void(Cell &)> f)
 {
-  opencells_apply_bottom_up_nothread(f);
+  opencells_apply_top_down_nothread(f);
 }
 
 

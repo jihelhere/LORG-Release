@@ -151,19 +151,24 @@ void ParserCKYAllMaxRuleMultiple::extract_solution()
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
   // first we backup all annotations for all grammars
+
+  //std::cerr << "precompute_all_backups" << std::endl;
   precompute_all_backups();
 
   // actual computation
   // inside/outside + max rule score
   // all in one function
+  //std::cerr << "multiple_inside_outside_specific" << std::endl;
   multiple_inside_outside_specific();
 
 
   if(!chart->get_root().is_closed() && chart->get_root().exists_edge(start_symbol)) {
-    //    std::cerr << "calculate_best_edge" << std::endl;
-
+    //std::cerr << "initialise_candidates" << std::endl;
     initialise_candidates();
+
+    //std::cerr << "extend_all_derivations" << std::endl;
     extend_all_derivations();
+    //std::cerr << "after extend_all_derivations" << std::endl;
   }
 
 
@@ -211,6 +216,17 @@ void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
     cell.apply_on_edges( &ProbaModel::pick_best_unary,
                          &ProbaModel::pick_best );
   }  );
+
+  // std::cout << "init" << std::endl;
+  // chart->opencells_apply_bottom_up([](Cell&cell) { cell.apply_on_edges(&ProbaModel::init);});
+  // std::cout << "lexical" << std::endl;
+  // chart->opencells_apply_bottom_up([](Cell&cell) { cell.apply_on_edges(&ProbaModel::pick_best_lexical);});
+  // std::cout << "binary" << std::endl;
+  // chart->opencells_apply_bottom_up([](Cell&cell) { cell.apply_on_edges(&ProbaModel::pick_best_binary);});
+  // std::cout << "unary" << std::endl;
+  // chart->opencells_apply_bottom_up([](Cell&cell) { cell.apply_on_edges(&ProbaModel::pick_best_unary);});
+  // std::cout << "best" << std::endl;
+  // chart->opencells_apply_bottom_up( [](Cell&cell){ cell.apply_on_edges(&ProbaModel::pick_best);});
 }
 
 void ParserCKYAllMaxRuleMultiple::backup_annotations() const
