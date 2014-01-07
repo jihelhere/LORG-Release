@@ -822,8 +822,8 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
 
     //update stepsize
-    std::cout << "nlu = " << nlu << std::endl;
-    std::cout << "lu = " << lu << std::endl;
+    // std::cout << "nlu = " << nlu << std::endl;
+    // std::cout << "lu = " << lu << std::endl;
     if (nlu > lu )//|| (k % 20) == 0)
     {
       ++t;
