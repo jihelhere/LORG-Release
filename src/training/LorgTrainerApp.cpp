@@ -122,6 +122,7 @@ void LorgTrainerApp::test_grammar(const std::string & suffix, int num)
             exit(1);
         }
         file_out.close();
+        fs::remove(output_path);
     }
 }
 
@@ -187,8 +188,11 @@ int LorgTrainerApp::run()
         file_out.close();
     }
 
+    if (verbose)
+    {
+      test_grammar("_base");
+    }
 
-    test_grammar("_base");
 
 
 
@@ -218,8 +222,12 @@ int LorgTrainerApp::run()
     if (base_grammar_only){ return 0;}
 
 
-    for(unsigned iter = 1; iter <= n_iterations; ++iter)
+    if (verbose)
+    {
+      for(unsigned iter = 1; iter <= n_iterations; ++iter)
         test_grammar("_smoothed",iter);
+    }
+    test_grammar("_final",-1);
 
 
     // SPLIT/EM starts here !
@@ -378,10 +386,9 @@ int LorgTrainerApp::run()
 
         em_grammar.lexical_smoothing();
         em_trainer.smooth_grammar_rules(em_grammar, smooth_grammar, smooth_lexicon,smooth_method);
-
+      }
         std::clog << "outputting final grammar" << std::endl;
         write_grammar(em_grammar, "_final");
-      }
 
 
     if(verbose)

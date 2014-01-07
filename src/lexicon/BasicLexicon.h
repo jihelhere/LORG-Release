@@ -78,7 +78,7 @@ private:
 
 #ifdef USE_THREADS
   //  friend class basic_lexicon_update_thread;
-  friend class basic_lexicon_update_thread_tbb;
+  friend struct basic_lexicon_update_thread_tbb;
 #endif
 };
 

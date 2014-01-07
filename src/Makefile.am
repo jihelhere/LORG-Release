@@ -7,7 +7,7 @@ endif
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I. -I${top_srcdir}/src
 #AM_LDFLAGS = $(BOOST_LDFLAGS)
 
-bin_PROGRAMS = simple_lorgparser twostage_lorgparser feature_extractor
+bin_PROGRAMS = simple_lorgparser twostage_lorgparser feature_extractor wapiti_dd
 #gram2clmodel
 
 common_sources = rules/Types4Rules.h rules/MetaProduction.h \
@@ -68,7 +68,7 @@ simple_lorgparser_SOURCES += simple_lorgparser.cpp \
 
 
 simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
-simple_lorgparser_CXXFLAGS= -O6 -pipe
+simple_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
@@ -131,9 +131,10 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 
 
 
+
 twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
-twostage_lorgparser_CXXFLAGS= -O6 -pipe -fomit-frame-pointer
-twostage_lorgparser_CFLAGS= -O6 -pipe -fomit-frame-pointer
+twostage_lorgparser_CXXFLAGS= -O3 -pipe -fomit-frame-pointer -ftemplate-depth=512
+twostage_lorgparser_CFLAGS= -O3 -pipe -fomit-frame-pointer
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
@@ -149,6 +150,33 @@ endif
 twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)
 
 #twostage_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler
+
+
+wapiti_dd_SOURCES = wapiti_dd.cpp WapitiDDApp.h WapitiDDApp.cpp \
+	utils/WapitiWrapper.cpp utils/WapitiWrapper.h \
+	wapiti/src/dual.c wapiti/src/decoder.c wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c wapiti/src/lbfgs.c \
+	wapiti/src/dual.h wapiti/src/decoder.h wapiti/src/model.h wapiti/src/options.h wapiti/src/pattern.h wapiti/src/progress.h wapiti/src/quark.h wapiti/src/reader.h wapiti/src/thread.h wapiti/src/tools.h wapiti/src/vmath.h wapiti/src/gradient.h wapiti/src/wapiti.h wapiti/src/sequence.h \
+	Word.cpp Word.h \
+	LorgApp.cpp LorgApp.h \
+	LorgParseApp.cpp LorgParseApp.h \
+	utils/threads.h \
+	utils/SymbolTable.cpp utils/SymbolTable.h \
+	utils/TokeniserFactory.h utils/TokeniserFactory.cpp\
+	utils/Tokeniser.h utils/Tokeniser.cpp utils/TokeniserSpec.h \
+	utils/ConfigTable.h utils/ConfigTable.cpp utils/LorgOptions.h \
+	utils/EnglishSpec.h Bracketing.h
+
+wapiti_dd_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+wapiti_dd_CXXFLAGS= -O3 -pipe -fomit-frame-pointer -ftemplate-depth=512
+wapiti_dd_CFLAGS= -O3 -pipe -fomit-frame-pointer
+
+if WANT_TBB
+wapiti_dd_CPPFLAGS+=-DUSE_THREADS
+endif
+
+wapiti_dd_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)
+
+
 
 
 # gram2clmodel_CXXFLAGS= -O2 -g -pg -Wall

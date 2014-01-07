@@ -194,6 +194,7 @@ class LorgOptions
 
         ("crf-model", po::value<std::vector<std::string>>(), "wapiti models (BIO)")
         ("crf-input", po::value<std::vector<std::string>>(), "wapiti input (BIO)")
+        ("crf-coefficient", po::value<std::vector<int>>(), "wapiti input (BIO)")
         ;
     options.add(parser_opts);
   }

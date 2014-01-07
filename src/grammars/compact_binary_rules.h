@@ -18,6 +18,9 @@ namespace compact_binary_rules {
     const_iterator _end;
 
     vector_rhs1() : rhs1(), rules(), _begin(), _end() {}
+
+    inline const_iterator begin() const { return _begin; }
+    inline const_iterator end() const { return _end; }
   };
 
   // this structure stores vector_rhs1 sharing attribute rhs0
@@ -32,6 +35,9 @@ namespace compact_binary_rules {
     const_iterator _end;
 
     vector_rhs0() : rhs0(), vrhs1(), _begin(), _end() {}
+
+    inline const_iterator begin() const { return _begin; }
+    inline const_iterator end() const { return _end; }
   };
 
   // this structure stores vector_rhs0
@@ -50,23 +56,30 @@ namespace compact_binary_rules {
     template<class BinaryRule>
     static vector_brules * convert(const std::vector<BinaryRule>&);
 
-    inline const_iterator begin() const { return _begin; }
-    inline const_iterator end() const { return _end; }
+    // inline const_iterator begin() const { return _begin; }
+    // inline const_iterator end() const { return _end; }
   };
-}
+};
 
 namespace std {
   template<typename info>
-  inline typename compact_binary_rules::vector_brules<const info *>::const_iterator begin(typename compact_binary_rules::vector_brules<const info *>* const & v) { return v->_begin; }
+  inline typename compact_binary_rules::vector_brules<const info *>::const_iterator
+  begin(typename compact_binary_rules::vector_brules<const info *>* const & v)
+  { return v->_begin; }
+
+
   template<typename info>
-  inline typename compact_binary_rules::vector_brules<const info *>::const_iterator end(typename compact_binary_rules::vector_brules<const info *>* const & v) { return v->_end; }
-  template<typename info>
-  inline typename compact_binary_rules::vector_rhs0<const info *>::const_iterator begin(const typename compact_binary_rules::vector_rhs0<const info *> & v) { return v._begin; }
-  template<typename info>
-  inline typename compact_binary_rules::vector_rhs0<const info *>::const_iterator end(const typename compact_binary_rules::vector_rhs0<const info *> & v) { return v._end; }
-  template<typename info>
-  inline typename compact_binary_rules::vector_rhs1<const info *>::const_iterator begin(const typename compact_binary_rules::vector_rhs1<const info *> & v) { return v._begin; }
-  template<typename info>
-  inline typename compact_binary_rules::vector_rhs1<const info *>::const_iterator end(const typename compact_binary_rules::vector_rhs1<const info *> & v) { return v._end; }
+  inline typename compact_binary_rules::vector_brules<const info *>::const_iterator
+  end(typename compact_binary_rules::vector_brules<const info *>* const & v)
+  { return v->_end; }
+
+//   template<typename info>
+//   inline typename compact_binary_rules::vector_rhs0<const info *>::const_iterator begin(const typename compact_binary_rules::vector_rhs0<const info *> & v) { return v._begin; }
+//   template<typename info>
+//   inline typename compact_binary_rules::vector_rhs0<const info *>::const_iterator end(const typename compact_binary_rules::vector_rhs0<const info *> & v) { return v._end; }
+//   template<typename info>
+//   inline typename compact_binary_rules::vector_rhs1<const info *>::const_iterator begin(const typename compact_binary_rules::vector_rhs1<const info *> & v) { return v._begin; }
+//   template<typename info>
+//   inline typename compact_binary_rules::vector_rhs1<const info *>::const_iterator end(const typename compact_binary_rules::vector_rhs1<const info *> & v) { return v._end; }
 };
 #endif /* _COMPACT_BINARY_RULES_H_ */

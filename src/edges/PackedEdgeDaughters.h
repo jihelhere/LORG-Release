@@ -2,7 +2,9 @@
 #ifndef PACKEDEDGEDAUGHTERS_H
 #define PACKEDEDGEDAUGHTERS_H
 
+#ifdef USE_THREADS
 #include "utils/tick_count.h"
+#endif
 
 #include "rules/BRuleC2f.h"
 #include "rules/URuleC2f.h"

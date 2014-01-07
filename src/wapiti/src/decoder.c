@@ -44,6 +44,8 @@
 #include "vmath.h"
 #include "dual.h"
 
+#include <math.h>
+
 /******************************************************************************
  * Sequence tagging
  *
@@ -102,7 +104,7 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 				const uint64_t o = pos->uobs[n];
 				sum += x[mdl->uoff[o] + y];
 			}
-                        sum += dual_get_unary_penalty(dual,t,y);
+                        //sum += dual_get_unary_penalty(dual,t,y);
                         //printf("(%d,%d):%f\n",t,y,dual_get_penalty(d,t,y));
 			for (uint32_t yp = 0; yp < Y; yp++)
 				(*psi)[t][yp][y] = sum;
@@ -114,7 +116,16 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
 			for (uint32_t y = 0; y < Y; y++, d++) {
 				double sum = 0.0;
-                                sum += dual_get_binary_penalty(dual,t,yp,y);
+
+                                /* double tmp = dual_get_binary_penalty(dual,t,yp,y); */
+                                /* if (tmp != 0.0) */
+                                /* { */
+                                /*   fprintf(stderr, "penalty detected\n"); */
+                                /*   fprintf(stderr, "previous tag: %s\n", qrk_id2str(mdl->reader->lbl, yp)); */
+                                /*   fprintf(stderr, "current tag: %s\n", qrk_id2str(mdl->reader->lbl, y)); */
+                                /* } */
+
+                                //sum += dual_get_binary_penalty(dual,t,yp,y);
 				for (uint32_t n = 0; n < pos->bcnt; n++) {
 					const uint64_t o = pos->bobs[n];
 					sum += x[mdl->boff[o] + d];
@@ -185,6 +196,7 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	// labels.
 	int op;
 	op = tag_expsc(mdl, seq, vpsi,d);
+        //op = tag_postsc(mdl,seq,vpsi);
 	// Now we can do the Viterbi algorithm. This is very similar to the
 	// forward pass
 	//   | α_1(y) = Ψ_1(y,x_1)
@@ -199,19 +211,30 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	// we only need the current and previous value of the α vectors, not
 	// the full matrix.
 	for (uint32_t y = 0; y < Y; y++)
-		cur[y] = (*psi)[0][0][y];
+          if (op)
+            //cur[y] = log((*psi)[0][0][y]);
+            cur[y] = (*psi)[0][0][y];
+          else
+            cur[y] = (*psi)[0][0][y];
 	for (uint32_t t = 1; t < T; t++) {
 		for (uint32_t y = 0; y < Y; y++)
 			old[y] = cur[y];
 		for (uint32_t y = 0; y < Y; y++) {
-			double   bst = -1.0;
+			double   bst = -DBL_MAX;
 			uint32_t idx = 0;
 			for (uint32_t yp = 0; yp < Y; yp++) {
 				double val = old[yp];
 				if (op)
-					val *= (*psi)[t][yp][y];
+                                {
+                                  //val += log((*psi)[t][yp][y]);
+                                  val *= (*psi)[t][yp][y];
+                                  val += dual_get_binary_penalty(d,t,yp,y);
+                                }
 				else
+                                {
 					val += (*psi)[t][yp][y];
+                                        val += dual_get_binary_penalty(d,t,yp,y);
+                                }
 				if (val > bst) {
 					bst = val;
 					idx = yp;

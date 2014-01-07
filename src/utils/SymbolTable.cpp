@@ -128,7 +128,8 @@ std::vector<unsigned> SymbolTable::get_mwe_symbols() const
 
   for (const auto& pair : m)
   {
-    if(pair.first[0] == 'M' and pair.first[1] == 'W')
+    //if(pair.first[0] == 'M' and pair.first[1] == 'W')
+    if(pair.first[pair.first.size()-1] == '+' )
       results.push_back(pair.second);
   }
 

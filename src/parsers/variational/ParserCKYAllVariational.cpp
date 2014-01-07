@@ -4,7 +4,10 @@
 #include "VariationalProbabilityKB.h"
 
 #include "parsers/ParserCKYAll.hpp"
+
+#ifdef USE_THREADS
 #include "utils/tick_count.h"
+#endif
 
 ParserCKYAllVariational::ParserCKYAllVariational(std::vector<AGrammar*>& cgs,
                                                    const std::vector<double>& p, double b_t,

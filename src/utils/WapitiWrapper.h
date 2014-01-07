@@ -15,6 +15,8 @@ struct wapiti_wrapper
 {
   mdl_t * model;
   FILE * file;
+  double coefficient;
+
 
   raw_t *raw;
   dual_t* dual;
@@ -22,8 +24,8 @@ struct wapiti_wrapper
   std::vector<std::string> best_string_sequence;
 
 
-  wapiti_wrapper(const std::string& modelfilename)
-      : model(nullptr), file(nullptr), raw(nullptr), dual(nullptr)
+  wapiti_wrapper(const std::string& modelfilename, int coef = 1)
+      : model(nullptr), file(nullptr), coefficient(coef), raw(nullptr), dual(nullptr)
   {
     this->model = mdl_new(rdr_new(false));
 
@@ -32,6 +34,8 @@ struct wapiti_wrapper
   }
 
   void set_file(const std::string& filename);
+  void set_coefficient(int c);
+
   double crf_tag();
   double crf_retag();
 
@@ -49,5 +53,8 @@ struct wapiti_wrapper
   {
     mdl_free(this->model);
   }
+
+  friend std::ostream& operator<<(std::ostream& out, const wapiti_wrapper& w);
+
 
 };

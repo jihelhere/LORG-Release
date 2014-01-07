@@ -29,8 +29,10 @@
 
 #include "utils/lorg_functional.h"
 #include "utils/hash_impl.h"
-#include <utils/tick_count.h>
 
+#ifdef USE_THREADS
+#include <utils/tick_count.h>
+#endif
 
 typedef std::pair< int, unsigned> asymb;
 typedef std::unordered_map<asymb, std::unordered_map< asymb, asymb> > PathMatrix;
@@ -77,7 +79,7 @@ private:
      \brief Forbidden constructors
   */
   PackedEdge() {}
-  PackedEdge(const PackedEdge<Types> &o) {}
+  PackedEdge(const PackedEdge<Types> &) {}
 
 public:
   void reserve_binary_daughters(int size)
@@ -204,7 +206,7 @@ public:
 
   bool no_daughters() { return binary_daughters.empty() and unary_daughters.empty() and lexical_daughters.empty(); }
   bool is_closed() const { return not open; }
-  void close() { open=false; Edge::~Edge();}
+  void close() { open=false; this->~Edge();}
   //  void destroy() {Edge::~Edge();}
 
   void update_relaxations(const double & u);
@@ -271,9 +273,22 @@ public:
   void process(function<void(Edge &)> f) { f(*this); }
   void process(function<void(const Edge &)> f) { f(*this); }
 
+
+
+  void process(function<void(ProbaModel &, Edge &, LexicalDaughter &, double)> f, double l) {for( auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d,l);}
+  void process(function<void(ProbaModel &, Edge &, UnaryDaughter &, double)> f, double l)   {for( auto& d: get_unary_daughters()) f(get_prob_model(), *this, d,l);}
+  void process(function<void(ProbaModel &, Edge &, BinaryDaughter &, double)> f, double l)  {for( auto& d: get_binary_daughters()) f(get_prob_model(), *this, d,l);}
+
+
+
+  template<typename Function, typename  Arg, typename... OtherFunctions>
+  void apply(std::pair<Function, Arg>&& p, OtherFunctions&&... o)
+  {process(toFunc(p.first, p.second));apply(o...);}
+
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) {process(toFunc(f));apply(o...);}
   void apply() const {}
+
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) const {process(toFunc(f));apply(o...);}
 

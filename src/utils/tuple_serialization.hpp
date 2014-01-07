@@ -16,7 +16,7 @@
 namespace boost {
 namespace serialization {
 
-template<uint N>
+template<unsigned N>
 struct Serialize
 {
   template<class Archive, typename... Args>

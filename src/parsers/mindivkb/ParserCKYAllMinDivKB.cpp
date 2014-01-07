@@ -3,8 +3,10 @@
 #define _PARSERCKYALLMINDIVKB_CPP_
 
 #include "ParserCKYAllMinDivKB.h"
-#include <utils/tick_count.h>
 
+#ifdef USE_THREADS
+#include <utils/tick_count.h>
+#endif
 
 
 

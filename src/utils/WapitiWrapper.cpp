@@ -2,12 +2,14 @@
 #include "WapitiWrapper.h"
 
 
-
-
-
 void wapiti_wrapper::set_file(const std::string& filename)
 {
   this->file = fopen(filename.c_str(), "r");
+}
+
+void wapiti_wrapper::set_coefficient(int c)
+{
+  this->coefficient = c;
 }
 
 
@@ -52,8 +54,8 @@ double wapiti_wrapper::crf_retag()
 
   uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
   double   *psc = (double*)xmalloc(sizeof(double) * T);
-  double   *scs = (double*)xmalloc(sizeof(double));
-  tag_viterbi(this->model, seq, (uint32_t*)out, scs, psc,this->dual);
+  //double   *scs = (double*)xmalloc(sizeof(double));
+  tag_viterbi(this->model, seq, (uint32_t*)out, &(this->score), psc,this->dual);
 
   best_string_sequence.clear();
   for (size_t i = 0; i < T; ++i)
@@ -62,7 +64,7 @@ double wapiti_wrapper::crf_retag()
   }
 
 
-  free(scs);
+  //free(scs);
   free(psc);
   free(out);
   rdr_freeseq(seq);
@@ -93,4 +95,20 @@ void wapiti_wrapper::update_relaxations(const std::unordered_map<unsigned,double
     }
   }
 
+}
+
+
+std::ostream& operator<<(std::ostream& out, const wapiti_wrapper& w)
+{
+  // for (size_t i = 0; i < best_string_sequence.size(); ++i)
+  // {
+  //   out << sentence[j].get_form() << "\t" << crfs[i].best_string_sequence[j] << std::endl;
+  // }
+
+  for(const auto& s : w.best_string_sequence)
+  {
+    out << s << " " ;
+  }
+
+  return out;
 }

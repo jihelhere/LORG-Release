@@ -5,7 +5,7 @@
 #include <rules/URuleC2f.h>
 
 class MinDivProbabilityKB;
-class MinDivEdgeDaughterProbability;
+struct MinDivEdgeDaughterProbability;
 class MinDivBRule;
 class MinDivURule;
 class MinDivLRule;
@@ -18,7 +18,7 @@ struct MinDivKBTypes {
   typedef MinDivProbabilityKB EdgeProbability ;
   typedef MinDivEdgeDaughterProbability EdgeDaughterProbability ;
   typedef Word ChartWord ;
-  
+
   typedef PackedEdge< MinDivKBTypes > Edge ;
   typedef PCKYAllCell< MinDivKBTypes > Cell ;
   typedef ChartCKY< MinDivKBTypes > Chart ;

@@ -19,7 +19,7 @@ public:
 
     const IdentifierType& get_id() {return unknown_id;};
 
-    virtual const char * what() { return "Unknown Object Type passed to Factory";};
+    const char * what() const noexcept{ return "Unknown Object Type passed to Factory";} ;
 
     ~Exception() throw() {};
 

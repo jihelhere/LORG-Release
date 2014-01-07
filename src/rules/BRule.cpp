@@ -101,8 +101,9 @@ void BRule::update_inside_annotations(std::vector<double>& up,
 }
 
 
-
+#ifdef USE_THREADS
 #include "utils/threads.h"
+#endif
 
 void BRule::update_outside_annotations(const std::vector<double>& up_out,
                                        const std::vector<double>& left_in,
