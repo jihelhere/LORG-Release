@@ -38,7 +38,7 @@ void ParserCKYAllMaxRuleKB::extend_all_derivations()
   for (unsigned i = 2; i <= k; ++i)
   {
     //      std::cout << "before extend" << std::endl;
-    chart->get_root().get_edge(start_symbol).extend_derivation(i,true);
+    chart->get_root().get_edge(start_symbol).extend_derivation(i,true, std::vector<double>(1,log_normalisation_factor));
   }
 }
 
@@ -83,10 +83,10 @@ void ParserCKYAllMaxRuleKB::initialise_candidates()
   double sentence_probability = std::log(get_sentence_probability());
   //  unsigned sent_size = chart->get_size();
 
-  MaxRuleProbabilityKB::set_log_normalisation_factor(sentence_probability);
+  this->set_log_normalisation_factor(sentence_probability);
   MaxRuleProbabilityKB::set_size(k);
 
-  calculate_maxrule_probabilities();
+  calculate_maxrule_probabilities(log_normalisation_factor);
 }
 
 

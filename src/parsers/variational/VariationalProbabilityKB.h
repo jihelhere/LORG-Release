@@ -60,13 +60,13 @@ public:
 
   inline void init() {}
   inline void store_marginals(const Edge& edge);
-  inline void update_lexical(Edge& e, LexicalDaughter& dtr);
-  inline void update_unary(Edge& e, UnaryDaughter& dtr);
-  inline void update_binary(Edge& e, BinaryDaughter& dtr);
+  inline void update_lexical(Edge& e, LexicalDaughter& dtr, double /*unused*/);
+  inline void update_unary(Edge& e, UnaryDaughter& dtr, double /*unused*/);
+  inline void update_binary(Edge& e, BinaryDaughter& dtr, double /*unused*/);
   inline void finalize();
 
   inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
-  inline void extend_derivation(Edge*, unsigned, bool) ;
+  inline void extend_derivation(Edge*, unsigned, bool, const std::vector<double>& /*unused*/) ;
 
   inline unsigned n_deriv() const {return derivations.size();};
 
@@ -99,7 +99,7 @@ inline std::ostream& operator<<(std::ostream& out, const VariationalProbabilityK
 }
 
 
-void VariationalProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
+void VariationalProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr, double /*unused*/)
 {
    //BLOCKTIMING("VariationalProbabilityKB::update_lexical");
   const AnnotationInfo & a = e.get_annotations();
@@ -124,7 +124,7 @@ void VariationalProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void VariationalProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
+void VariationalProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr, double /*unused*/)
 {
   //BLOCKTIMING("VariationalProbabilityKB::update_unary");
   const AnnotationInfo & a = e.get_annotations();
@@ -146,7 +146,7 @@ void VariationalProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void VariationalProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr)
+void VariationalProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr, double /*unused*/)
 {
   //BLOCKTIMING("VariationalProbabilityKB::update_binary");
   const AnnotationInfo & a = e.get_annotations();
@@ -233,7 +233,7 @@ void VariationalProbabilityKB:: finalize()
   }
 }
 
-void VariationalProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licence_unaries)
+void VariationalProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licence_unaries, const std::vector<double>& /*  unused */)
 {
   if(derivations.size() == i) {
     return;
@@ -295,7 +295,7 @@ void VariationalProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pe
     //extend to the left
     Edge& left  = d->left_daughter();
     unsigned nextleft = pep.left_index + 1;
-    left.extend_derivation(nextleft+1,true);
+    left.extend_derivation(nextleft+1,true, std::vector<double>());
 
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
@@ -320,7 +320,7 @@ void VariationalProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pe
     Edge& right = d->right_daughter();
     unsigned nextright = pep.right_index + 1;
 
-    right.extend_derivation(nextright+1,true);
+    right.extend_derivation(nextright+1,true, std::vector<double>());
 
     if(nextright < right.get_prob_model().n_deriv()) {
       //        std::cout << "bin extending on the right" << std::endl;
@@ -356,7 +356,7 @@ void VariationalProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pe
     Edge& left  = d->left_daughter();
     unsigned nextleft = pep.left_index + 1;
 
-    left.extend_derivation(nextleft+1, false);
+    left.extend_derivation(nextleft+1, false, std::vector<double>());
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;

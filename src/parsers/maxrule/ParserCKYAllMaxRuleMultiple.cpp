@@ -14,7 +14,8 @@ ParserCKYAllMaxRuleMultiple::ParserCKYAllMaxRuleMultiple(ParserCKYAllFactory::Ma
                                                          const std::vector< annot_descendants_type >& all_annot_descendants_,
                                                          bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
 : ParserCKYAllMaxRule<MaxRuleMultipleTypes>(c, cgs, p, b_t, all_annot_descendants_[0], accurate_, min_beam, stubborn),
-    fine_grammars(fgs), all_annot_descendants(all_annot_descendants_), nb_grammars(fgs.size() + 1), k(k_)
+  fine_grammars(fgs), all_annot_descendants(all_annot_descendants_), nb_grammars(fgs.size() + 1), k(k_),
+  log_normalisation_factor(0), log_normalisation_factor_backup()
 {
 
   // create a mapping of all grammars
@@ -118,7 +119,7 @@ void ParserCKYAllMaxRuleMultiple::multiple_inside_outside_specific()
 {
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
-  MaxRuleProbabilityMultiple::reset_log_normalisation_factor();
+  this->reset_log_normalisation_factor();
 
   for(unsigned i = 0; i < fine_grammars.size() + 1; ++i) {
 
@@ -136,7 +137,7 @@ void ParserCKYAllMaxRuleMultiple::multiple_inside_outside_specific()
       chart->get_root().get_edge(start_symbol).get_annotations().reset_outside_probabilities(1.0, false);
       compute_outside_probabilities();
 
-      MaxRuleProbabilityMultiple::set_log_normalisation_factor(std::log(get_sentence_probability()));
+      this->set_log_normalisation_factor(std::log(get_sentence_probability()));
 
     }
 
@@ -200,21 +201,53 @@ void ParserCKYAllMaxRuleMultiple::calculate_maxrule_probabilities()
 
   //unsigned sent_size = chart->get_size();
 
-  ParserCKYAllMaxRule::calculate_maxrule_probabilities();
+  ParserCKYAllMaxRule::calculate_maxrule_probabilities(0); // arg is ignored
 }
 
 
 
 void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
 {
-  chart->opencells_apply_bottom_up( [](Cell&cell)
+
+  const std::vector<double>& log_norms = this->log_normalisation_factor_backup;
+
+  chart->opencells_apply_bottom_up( [&log_norms](Cell&cell)
   {
-    cell.apply_on_edges(
-        &ProbaModel::init,
-        &ProbaModel::pick_best_lexical,
-        &ProbaModel::pick_best_binary );
-    cell.apply_on_edges( &ProbaModel::pick_best_unary,
-                         &ProbaModel::pick_best );
+    // // for some typing reasons, this doesn't want to compile
+    // cell.apply_on_edges(
+    //     &ProbaModel::init,
+    //     std::make_pair(&ProbaModel::pick_best_lexical, log_norms),
+    //     std::make_pair(&ProbaModel::pick_best_binary, log_norms));
+    // cell.apply_on_edges(
+    //     std::make_pair(&ProbaModel::pick_best_unary, log_norms),
+    //     &ProbaModel::pick_best);
+
+
+    for(unsigned i=0; i<cell.get_max_size(); ++i) {/*std::cout << "edge " << i << std::endl ;*/
+      if(cell.exists_edge(i))
+      {
+        auto& e =  cell.get_edge(i);
+
+        auto& p = e.get_prob_model();
+        p.init();
+        for(auto& d: e.get_lexical_daughters())
+          p.pick_best_lexical(d, log_norms);
+        for(auto& d: e.get_binary_daughters())
+          p.pick_best_binary(d, log_norms);
+      }
+    }
+
+    for(unsigned i=0; i<cell.get_max_size(); ++i) {/*std::cout << "edge " << i << std::endl ;*/
+      if(cell.exists_edge(i))
+      {
+        auto& e =  cell.get_edge(i);
+
+        auto& p = e.get_prob_model();
+        for(auto& d: e.get_unary_daughters())
+          p.pick_best_unary(d, log_norms);
+        p.pick_best();
+      }
+    }
   }  );
 
   // std::cout << "init" << std::endl;
@@ -250,7 +283,7 @@ void ParserCKYAllMaxRuleMultiple::extend_all_derivations()
   for (unsigned i = 2; i <= k; ++i)
     {
       //      std::cout << "before extend" << std::endl;
-      chart->get_root().get_edge(start_symbol).extend_derivation(i,true);
+      chart->get_root().get_edge(start_symbol).extend_derivation(i,true, std::vector<double>());
     }
 }
 
@@ -262,6 +295,24 @@ void ParserCKYAllMaxRuleMultiple::initialise_candidates()
 
 
   calculate_best_edge();
+}
+
+
+void ParserCKYAllMaxRuleMultiple::set_log_normalisation_factor(double lnf)
+{
+  log_normalisation_factor = lnf;
+
+  log_normalisation_factor_backup.push_back(lnf);
+}
+
+void ParserCKYAllMaxRuleMultiple::reset_log_normalisation_factor()
+{
+  log_normalisation_factor_backup.resize(0);
+}
+
+const double& ParserCKYAllMaxRuleMultiple::get_log_normalisation_factor()
+{
+  return log_normalisation_factor;
 }
 
 

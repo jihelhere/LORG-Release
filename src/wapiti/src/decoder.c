@@ -104,10 +104,10 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
 				const uint64_t o = pos->uobs[n];
 				sum += x[mdl->uoff[o] + y];
 			}
-                        //sum += dual_get_unary_penalty(dual,t,y);
+                        sum += dual_get_unary_penalty(dual,t,y);
                         //printf("(%d,%d):%f\n",t,y,dual_get_penalty(d,t,y));
 			for (uint32_t yp = 0; yp < Y; yp++)
-				(*psi)[t][yp][y] = sum;
+                          (*psi)[t][yp][y] = sum;
 
 		}
 	}
@@ -120,15 +120,17 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi,dual_t* dual) {
                                 /* double tmp = dual_get_binary_penalty(dual,t,yp,y); */
                                 /* if (tmp != 0.0) */
                                 /* { */
-                                /*   fprintf(stderr, "penalty detected\n"); */
+                                /*   fprintf(stderr, "penalty detected: %f\n", tmp); */
                                 /*   fprintf(stderr, "previous tag: %s\n", qrk_id2str(mdl->reader->lbl, yp)); */
                                 /*   fprintf(stderr, "current tag: %s\n", qrk_id2str(mdl->reader->lbl, y)); */
                                 /* } */
 
-                                //sum += dual_get_binary_penalty(dual,t,yp,y);
+                                sum += dual_get_binary_penalty(dual,t,yp,y);
+
 				for (uint32_t n = 0; n < pos->bcnt; n++) {
 					const uint64_t o = pos->bobs[n];
 					sum += x[mdl->boff[o] + d];
+                                        //sum += x[mdl->boff[o] + d] + dual_get_binary_penalty(dual,t,yp,y);
 				}
 				(*psi)[t][yp][y] += sum;
 			}
@@ -186,17 +188,28 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 {
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
+
 	double   *vpsi  = xmalloc(sizeof(double  ) * T * Y * Y);
 	uint32_t *vback = xmalloc(sizeof(uint32_t) * T * Y);
 	double   (*psi) [T][Y][Y] = (void *)vpsi;
 	uint32_t (*back)[T][Y]    = (void *)vback;
+
 	double *cur = xmalloc(sizeof(double) * Y);
 	double *old = xmalloc(sizeof(double) * Y);
 	// We first compute the scores for each transitions in the lattice of
 	// labels.
 	int op;
-	op = tag_expsc(mdl, seq, vpsi,d);
-        //op = tag_postsc(mdl,seq,vpsi);
+	op = tag_expsc(mdl, seq, vpsi, d);
+
+
+        mdl->opt = &opt_defaults;
+        //mdl->opt->lblpost = true;
+        //mdl->opt->sparse = true;
+
+        /* fprintf(stderr, "Before tag_postsc\n"); */
+        /* op = tag_postsc(mdl,seq,vpsi); */
+        /* fprintf(stderr, "After tag_postsc\n"); */
+
 	// Now we can do the Viterbi algorithm. This is very similar to the
 	// forward pass
 	//   | α_1(y) = Ψ_1(y,x_1)
@@ -226,14 +239,15 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 				double val = old[yp];
 				if (op)
                                 {
-                                  //val += log((*psi)[t][yp][y]);
+                                  //fprintf(stderr, "%f\n", (*psi)[t][yp][y]);
                                   val *= (*psi)[t][yp][y];
-                                  val += dual_get_binary_penalty(d,t,yp,y);
+                                  //val += dual_get_binary_penalty(d,t,yp,y);
                                 }
 				else
                                 {
-					val += (*psi)[t][yp][y];
-                                        val += dual_get_binary_penalty(d,t,yp,y);
+                                  //fprintf(stderr, "%f\n", (*psi)[t][yp][y]);
+                                  val += (*psi)[t][yp][y];
+                                  //val += dual_get_binary_penalty(d,t,yp,y);
                                 }
 				if (val > bst) {
 					bst = val;
@@ -251,7 +265,10 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	uint32_t bst = 0;
 	for (uint32_t y = 1; y < Y; y++)
 		if (cur[y] > cur[bst])
-			bst = y;
+                  bst = y;
+
+        fprintf(stderr, "bst: %f\n", cur[bst]);
+
 	if (score != NULL)
 		*score = cur[bst];
 	for (uint32_t t = T; t > 0; t--) {

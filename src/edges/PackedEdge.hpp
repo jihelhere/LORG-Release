@@ -127,9 +127,9 @@ inline
 typename Types::EdgeProbability& PackedEdge<Types>::get_prob_model() {return best;}
 
 template<class Types>
-inline void PackedEdge<Types>::extend_derivation(unsigned i, bool licence_unaries)
+inline void PackedEdge<Types>::extend_derivation(unsigned i, bool licence_unaries, const std::vector<double>& log_norms)
 {
-  best.extend_derivation(this,i, licence_unaries);
+  best.extend_derivation(this,i, licence_unaries, log_norms);
 }
 
 
@@ -631,42 +631,6 @@ double PackedEdge<Types>::marginalise() const
 template <typename Types>
 void PackedEdge<Types>::update_relaxations(const double & u)
 {
-  // static
-  // std::function<unsigned(unsigned)> simplified_nt =
-  //     [](unsigned id )
-  //     {
-  //       //std::cout << id << std::endl;
-  //       std::string name = SymbolTable::instance_nt().get_label_string(id);
-
-  //       //        std::cout << name << std::endl;
-
-  //       static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
-  //       static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-  //       boost::cmatch matched;
-  //       bool is_artificial = false;
-
-  //       if(boost::regex_match(name.c_str(), matched, exp_artifical))
-  //       {
-  //         name = std::string(matched[1].first, matched[1].second);
-  //         is_artificial = true;
-  //       }
-
-  //       if(boost::regex_match(name.c_str(),matched,exp_funct))
-  //       {
-  //         name = std::string(matched[1].first, matched[1].second);
-  //       }
-
-  //       if(is_artificial)
-  //       {
-  //         name = "[(" + name + ")>]";
-  //       }
-
-  //       //std::cout << name << std::endl;
-
-  //       return SymbolTable::instance_nt().get_label_id(name);
-  //     };
-
-
   for(auto& le : lexical_daughters)
   {
     le.update_relaxation(-u);
@@ -679,58 +643,6 @@ void PackedEdge<Types>::update_relaxations(const double & u)
   {
     bi.update_relaxation(-u);
   }
-
-
-  // for (auto& e : u)
-  // {
-  //   int rhs0 = e.first;
-  //   for (auto& f : e.second)
-  //   {
-  //     int rhs1 = f.first;
-  //     double update = f.second;
-
-  //     switch(rhs1)
-  //     {
-  //       case -2 : // lexical
-  //         for(auto& le : lexical_daughters)
-  //         {
-  //           //if(l.get_rule()->get_rhs0() == rhs0)
-  //           //{
-  //             le.update_relaxation(-update);
-  //             //              std::cout << "lexical update" << std::endl;
-  //             break;
-  //             //}
-  //         }
-  //         break;
-  //       case -1 : // unary
-  //         for(auto& un : unary_daughters)
-  //         {
-  //           if(simplified_nt(un.get_rule()->get_rhs0()) == unsigned(rhs0))
-  //           {
-  //             un.update_relaxation(-update);
-  //             //              std::cout << "unary update" << std::endl;
-  //             //break;
-  //           }
-  //         }
-
-  //         break;
-
-  //       default : // binary
-
-  //         for(auto& bi : binary_daughters)
-  //         {
-  //           if(simplified_nt(bi.get_rule()->get_rhs0()) == unsigned(rhs0)
-  //              && simplified_nt(bi.get_rule()->get_rhs1()) == unsigned(rhs1))
-  //           {
-  //             bi.update_relaxation(-update);
-  //             //if(update != 0.0)
-  //               //                std::cout << "binary update " << b.get_relaxation() << std::endl;
-  //             //break;
-  //           }
-  //         }
-  //     }
-  //   }
-  // }
 }
 
 #endif

@@ -393,6 +393,7 @@ int WapitiDDApp::find_consensus()
 
     for (size_t i = 0; i < crfs.size(); ++i)
     {
+      std::cerr << "c: " << crfs[i].score << std::endl;
       nlu += crfs[i].score;
     }
 

@@ -187,7 +187,7 @@ public:
   void replace_rule_probabilities(unsigned i);
 
 
-  void extend_derivation(unsigned i, bool licence_unaries);
+  void extend_derivation(unsigned i, bool licence_unaries, const std::vector<double>& log_norms);
 
   bool valid_prob_at(unsigned i) const;
 
@@ -274,16 +274,28 @@ public:
   void process(function<void(const Edge &)> f) { f(*this); }
 
 
+  // void process(function<void(ProbaModel &, Edge &, LexicalDaughter &, double)> f, double l) {for( auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d,l);}
+  // void process(function<void(ProbaModel &, Edge &, UnaryDaughter &, double)> f, double l)   {for( auto& d: get_unary_daughters()) f(get_prob_model(), *this, d,l);}
+  // void process(function<void(ProbaModel &, Edge &, BinaryDaughter &, double)> f, double l)  {for( auto& d: get_binary_daughters()) f(get_prob_model(), *this, d,l);}
 
-  void process(function<void(ProbaModel &, Edge &, LexicalDaughter &, double)> f, double l) {for( auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d,l);}
-  void process(function<void(ProbaModel &, Edge &, UnaryDaughter &, double)> f, double l)   {for( auto& d: get_unary_daughters()) f(get_prob_model(), *this, d,l);}
-  void process(function<void(ProbaModel &, Edge &, BinaryDaughter &, double)> f, double l)  {for( auto& d: get_binary_daughters()) f(get_prob_model(), *this, d,l);}
+
+  template <typename T>
+  void process(function<void(ProbaModel &, Edge &, LexicalDaughter &, T)> f, T arg)
+  {for( auto& d: get_lexical_daughters()) f(get_prob_model(), *this, d, arg);}
+
+  template <typename T>
+  void process(function<void(ProbaModel &, Edge &, UnaryDaughter &, T)> f,  T arg)
+  {for( auto& d: get_unary_daughters()) f(get_prob_model(), *this, d, arg);}
+
+  template <typename T>
+  void process(function<void(ProbaModel &, Edge &, BinaryDaughter &, T)> f,  T arg)
+  {for( auto& d: get_binary_daughters()) f(get_prob_model(), *this, d, arg);}
 
 
 
   template<typename Function, typename  Arg, typename... OtherFunctions>
-  void apply(std::pair<Function, Arg>&& p, OtherFunctions&&... o)
-  {process(toFunc(p.first, p.second));apply(o...);}
+  void apply(std::pair<Function, Arg>& p, OtherFunctions&&... o)
+  {process(toFunc(p.first), p.second);apply(o...);}
 
   template<typename Function, typename... OtherFunctions>
   void apply(Function&& f, OtherFunctions&&... o) {process(toFunc(f));apply(o...);}

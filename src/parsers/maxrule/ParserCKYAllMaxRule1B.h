@@ -37,7 +37,12 @@ protected:
    */
   void calculate_chart_specific_rule_probabilities_and_best_edge();
 
-  static double log_normalisation_factor;
+ private:
+  double log_normalisation_factor;
+
+  void set_log_normalisation_factor(double lnf);
+
+
 };
 
 #endif /* _PARSERCKYALLMAXVARONEBEST_H_ */

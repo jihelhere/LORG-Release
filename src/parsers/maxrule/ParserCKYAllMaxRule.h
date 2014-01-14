@@ -36,18 +36,58 @@ class ParserCKYAllMaxRule : public ParserCKYAll_Impl<Types>
    *
    * @return void
    **/
-   void calculate_maxrule_probabilities()
+   void calculate_maxrule_probabilities(double log_norms)
    {
      this->chart->opencells_apply_bottom_up(
-      [](Cell & cell)
+      [&log_norms](Cell & cell)
       {
-//       std::cout << "filling cell " << &cell << " : ======================================================" << cell << std::endl;
-        cell.apply_on_edges (toFunc(&ProbaModel::init),
-                             toFunc(&ProbaModel::update_lexical),
-                             toFunc (&ProbaModel::update_binary));
-        cell.apply_on_edges (toFunc(&ProbaModel::update_unary),
-                             toFunc (&ProbaModel::finalize));
-//       std::cout << "best filled for cell " << &cell << " : " << cell << std::endl;
+        // std::cout << "filling cell " << &cell
+        //           << " : ======================================================"
+        //           << cell << std::endl;
+
+
+        for(unsigned i=0; i<cell.get_max_size(); ++i) {/*std::cout << "edge " << i << std::endl ;*/
+          if(cell.exists_edge(i))
+          {
+            auto& e =  cell.get_edge(i);
+
+            auto& p = e.get_prob_model();
+            p.init();
+            for(auto& d: e.get_lexical_daughters())
+              p.update_lexical(e, d, log_norms);
+            for(auto& d: e.get_binary_daughters())
+              p.update_binary(e, d, log_norms);
+          }
+        }
+
+        for(unsigned i=0; i<cell.get_max_size(); ++i) {/*std::cout << "edge " << i << std::endl ;*/
+          if(cell.exists_edge(i))
+          {
+            auto& e =  cell.get_edge(i);
+
+            auto& p = e.get_prob_model();
+            for(auto& d: e.get_unary_daughters())
+              p.update_unary(e, d, log_norms);
+
+
+            p.finalize();
+          }
+        }
+
+
+
+
+        // WHY NOT ??
+        // cell.apply_on_edges (
+        //     toFunc(&ProbaModel::init),
+        //     std::make_pair(toFunc(&ProbaModel::update_lexical), log_normalisation_factor),
+        //     std::make_pair(toFunc (&ProbaModel::update_binary), log_normalisation_factor));
+
+        // cell.apply_on_edges (
+        //     std::make_pair(toFunc(&ProbaModel::update_unary), log_normalisation_factor),
+        //     toFunc (&ProbaModel::finalize));
+
+        // std::cout << "best filled for cell " << &cell << " : " << cell << std::endl;
       }
     );
   }

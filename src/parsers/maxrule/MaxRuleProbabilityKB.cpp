@@ -5,7 +5,6 @@
 #include "MaxRuleProbabilityKB.h"
 
 
-double MaxRuleProbabilityKB::log_normalisation_factor = 0;
 unsigned MaxRuleProbabilityKB::size = 0;
 
 

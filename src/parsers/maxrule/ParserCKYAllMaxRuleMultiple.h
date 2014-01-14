@@ -75,8 +75,17 @@ protected: // attributes
 private:
   unsigned nb_grammars;
   unsigned k;
+
+  double log_normalisation_factor;
+  std::vector<double> log_normalisation_factor_backup;
+
   void initialise_candidates();
   void extend_all_derivations();
+
+  void set_log_normalisation_factor(double lnf);
+  void reset_log_normalisation_factor();
+  const double& get_log_normalisation_factor();
+  inline const double& get_log_normalisation_factor(unsigned i);
 };
 
 inline
@@ -85,6 +94,10 @@ const ParserCKYAll::AGrammar& ParserCKYAllMaxRuleMultiple::get_fine_grammar(unsi
   return *fine_grammars[i][j];
 }
 
-
+const double& ParserCKYAllMaxRuleMultiple::get_log_normalisation_factor(unsigned i)
+{
+  //  std::cout << "size: " << log_normalisation_factor_backup.size() << std::endl;;
+  return log_normalisation_factor_backup[i];
+}
 
 #endif /* _PARSERCKYALLMAXVARMULTIPLE_H_ */

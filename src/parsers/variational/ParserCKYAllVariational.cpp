@@ -36,7 +36,7 @@ void ParserCKYAllVariational::extend_all_derivations()
   for (unsigned i = 2; i <= k; ++i)
   {
     //      std::cout << "before extend" << std::endl;
-    chart->get_root().get_edge(start_symbol).extend_derivation(i,true);
+    chart->get_root().get_edge(start_symbol).extend_derivation(i,true, std::vector<double>());
   }
 }
 
@@ -84,5 +84,5 @@ void ParserCKYAllVariational::initialise_candidates()
         cell.apply_on_edges (toFunc(&ProbaModel::store_marginals));
       });
 
-  calculate_maxrule_probabilities();
+  calculate_maxrule_probabilities(0); // arg is ignored
 }
