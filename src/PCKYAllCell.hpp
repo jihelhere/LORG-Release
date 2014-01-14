@@ -476,13 +476,13 @@ template<class Types>
 void PCKYAllCell<Types>::change_rules_resize(unsigned new_size, unsigned finer_idx)
 {
   apply_on_edges(function<void(Edge&)>([new_size,finer_idx](Edge&e){
-    //resize
+        //resize
         e.get_annotations().reset_probabilities(0.0, true);
-    e.get_annotations().resize(new_size);
-    //replace rule
-    e.replace_rule_probabilities(finer_idx);
-  })
-  );
+        e.get_annotations().resize(new_size);
+        //replace rule
+        e.replace_rule_probabilities(finer_idx);
+      })
+    );
 }
 
 
@@ -508,44 +508,6 @@ void
 PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& case_l,
                                        const std::unordered_map<int,int>& simple_map)
 {
-  // static
-  // std::function<int(unsigned)> simplified_nt =
-  //     [](unsigned id )
-  //     {
-  //       //std::cout << id << std::endl;
-  //       std::string name = SymbolTable::instance_nt().get_label_string(id);
-
-  //       //        std::cout << name << std::endl;
-  //       if(name[0] == '[')
-  //         return -1;
-
-
-  //       static const boost::regex exp_artifical ("^\\[\\((.*)\\)>\\]$");
-  //       static const boost::regex exp_funct ("^([A-Za-z]+\\$?)[=-].*");
-  //       boost::cmatch matched;
-  //       bool is_artificial = false;
-
-  //       if(boost::regex_match(name.c_str(), matched, exp_artifical))
-  //       {
-  //         name = std::string(matched[1].first, matched[1].second);
-  //         is_artificial = true;
-  //       }
-
-  //       if(boost::regex_match(name.c_str(),matched,exp_funct))
-  //       {
-  //         name = std::string(matched[1].first, matched[1].second);
-  //       }
-
-  //       if(is_artificial)
-  //       {
-  //         name = "[(" + name + ")>]";
-  //       }
-
-  //       //std::cout << name << std::endl;
-
-  //       return int(SymbolTable::instance_nt().get_label_id(name));
-  //     };
-
   // TODO write a version of apply_edges with index (i)
   for(unsigned i = 0; i < max_size; ++i)
     if(not edges[i].is_closed())

@@ -696,7 +696,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 // needed for c2f pruning
 ///////////
 /**
- *     \brief create an efficient data structure for c2f parsing
+ *   \brief create an efficient data structure for c2f parsing
  *   from a vector of trees denoting annotation histories
  *   \param annot_histories the trees
  */
