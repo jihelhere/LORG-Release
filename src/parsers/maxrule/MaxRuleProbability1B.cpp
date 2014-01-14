@@ -6,14 +6,6 @@
 
 #include <numeric>
 
-double MaxRuleProbability1B::log_normalisation_factor = 0;
-
-void MaxRuleProbability1B::set_log_normalisation_factor(double lnf)
-{
-  log_normalisation_factor = lnf;
-}
-
-
 template<>
 ParserCKYAllFactory::MaxParsing_Calculation
 MaxRuleTreeLogProbaComputer<MaxRuleProbability1B>::calculation = ParserCKYAllFactory::Product;

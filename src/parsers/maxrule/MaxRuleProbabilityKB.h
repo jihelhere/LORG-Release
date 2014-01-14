@@ -47,8 +47,6 @@ private:
   heap_type candidates;
   heap_type derivations;
 
-
-  static double log_normalisation_factor;
   static unsigned size;
 
 public:
@@ -58,7 +56,6 @@ public:
 
   inline static void set_size(unsigned k) {size = k;}
 
-  inline static void set_log_normalisation_factor(double lnf) {log_normalisation_factor = lnf;};
   static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {QInsideComputer::set_calculation(c);}
 
   inline const heap_type & get_candidates() const { return candidates; }
@@ -69,14 +66,14 @@ public:
   inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
 
 
-  inline void update_lexical(Edge& e, LexicalDaughter& dtr);
-  inline void update_unary(Edge& e, UnaryDaughter& dtr);
-  inline void update_binary(Edge& e, BinaryDaughter& dtr);
+  inline void update_lexical(Edge& e, LexicalDaughter& dtr, double log_normalisation_factor);
+  inline void update_unary(Edge& e, UnaryDaughter& dtr, double log_normalisation_factor);
+  inline void update_binary(Edge& e, BinaryDaughter& dtr, double log_normalisation_factor);
   inline void finalize();
 
 
-  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
-  inline void extend_derivation(Edge*, unsigned, bool) ;
+  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries, double log_normalisation_factor);
+  inline void extend_derivation(Edge*, unsigned, bool, const std::vector<double>& vec_log_normalisation_factor) ;
 
   inline unsigned n_deriv() const {return derivations.size();};
 
@@ -107,7 +104,7 @@ inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbabilityKB & 
 }
 
 
-void MaxRuleProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
+void MaxRuleProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr, double log_normalisation_factor)
 {
    //BLOCKTIMING("MaxRuleProbabilityKB::update_lexical");
  const AnnotationInfo & a = e.get_annotations();
@@ -132,7 +129,7 @@ void MaxRuleProbabilityKB::update_lexical(Edge& e, LexicalDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void MaxRuleProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
+void MaxRuleProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr, double log_normalisation_factor)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_unary");
   const AnnotationInfo & a = e.get_annotations();
@@ -154,7 +151,7 @@ void MaxRuleProbabilityKB::update_unary(Edge& e, UnaryDaughter& dtr)
 //   std::cout << *this << std::endl;
 }
 
-void MaxRuleProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr)
+void MaxRuleProbabilityKB::update_binary(Edge& e, BinaryDaughter& dtr, double log_normalisation_factor)
 {
   //BLOCKTIMING("MaxRuleProbabilityKB::update_binary");
   const AnnotationInfo & a = e.get_annotations();
@@ -240,7 +237,8 @@ void MaxRuleProbabilityKB:: finalize()
   }
 }
 
-void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licence_unaries)
+void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licence_unaries,
+                                             const std::vector<double>& vec_log_normalisation_factor)
 {
   if(derivations.size() == i) {
     return;
@@ -254,7 +252,7 @@ void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licenc
 
     assert(last.probability <= 0);
 
-    find_succ(edge,last,licence_unaries);
+    find_succ(edge,last,licence_unaries, vec_log_normalisation_factor[0]);
     //    std::cout << "after find_succ" << std::endl;
   }
 
@@ -291,7 +289,7 @@ void MaxRuleProbabilityKB::extend_derivation(Edge* edge, unsigned i, bool licenc
 
 }
 
-void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries)
+void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries, double log_normalisation_factor)
 {
   if(pep.dtrs->is_lexical())  { return;}
   // binary -> extend left and right daughters
@@ -301,7 +299,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, b
     //extend to the left
     Edge& left  = d->left_daughter();
     unsigned nextleft = pep.left_index + 1;
-    left.extend_derivation(nextleft+1,true);
+    left.extend_derivation(nextleft+1,true, std::vector<double>(1,log_normalisation_factor));
 
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
@@ -326,7 +324,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, b
     Edge& right = d->right_daughter();
     unsigned nextright = pep.right_index + 1;
 
-    right.extend_derivation(nextright+1,true);
+    right.extend_derivation(nextright+1,true, std::vector<double>(1, log_normalisation_factor));
 
     if(nextright < right.get_prob_model().n_deriv()) {
       //        std::cout << "bin extending on the right" << std::endl;
@@ -362,7 +360,7 @@ void MaxRuleProbabilityKB::find_succ(Edge* edge, packed_edge_probability& pep, b
     Edge& left  = d->left_daughter();
     unsigned nextleft = pep.left_index + 1;
 
-    left.extend_derivation(nextleft+1, false);
+    left.extend_derivation(nextleft+1, false, std::vector<double>(1, log_normalisation_factor));
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;

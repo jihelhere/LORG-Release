@@ -15,6 +15,8 @@ void wapiti_wrapper::set_coefficient(int c)
 
 double wapiti_wrapper::crf_tag()
 {
+  //std::cerr << "crf_tag" << std::endl;
+
   this->raw = rdr_readraw(this->model->reader, this->file);
   seq_t * seq = rdr_raw2seq(this->model->reader, this->raw, false);
 
@@ -25,7 +27,10 @@ double wapiti_wrapper::crf_tag()
   uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
   double   *psc = (double*)xmalloc(sizeof(double) * T);
 
+
+  //std::cerr << "before tag_viterbi" << std::endl;
   tag_viterbi(this->model, seq, (uint32_t*)out, &(this->score), psc,this->dual);
+  //std::cerr << "after tag_viterbi" << std::endl;
 
   std::vector<std::string> result(T);
 
@@ -52,11 +57,16 @@ double wapiti_wrapper::crf_retag()
 
   //this->dual = dual_init(T, this->model->nlbl);
 
+
+  //auto save_score = this->score;
+
   uint32_t *out = (uint32_t*)xmalloc(sizeof(uint32_t) * T);
   double   *psc = (double*)xmalloc(sizeof(double) * T);
   //double   *scs = (double*)xmalloc(sizeof(double));
   tag_viterbi(this->model, seq, (uint32_t*)out, &(this->score), psc,this->dual);
 
+
+  //auto save_string_sequence = best_string_sequence;
   best_string_sequence.clear();
   for (size_t i = 0; i < T; ++i)
   {
@@ -89,7 +99,13 @@ void wapiti_wrapper::update_relaxations(const std::unordered_map<unsigned,double
         if ((second != '*') and (qrk_id2str(this->model->reader->lbl, j)[1] != second))
           continue;
 
+
+        //std::cout << "update_relaxations1: " <<pair.second << std::endl;
         dual_add_binary_penalty(this->dual, pair.first + offset, i, j, -pair.second);
+        //dual_add_unary_penalty(this->dual, pair.first, i, -pair.second);
+        //dual_add_unary_penalty(this->dual, pair.first + offset, j, -pair.second);
+
+        //        std::cout << "update_relaxations2: " <<dual_get_binary_penalty(this->dual, pair.first + offset, i,j) << std::endl;
 
       }
     }

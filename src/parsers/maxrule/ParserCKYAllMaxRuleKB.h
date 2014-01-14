@@ -28,6 +28,9 @@ class ParserCKYAllMaxRuleKB : public ParserCKYAllMaxRule<MaxRuleKBTypes>
   void initialise_candidates();
 
   void extend_all_derivations();
+
+  double log_normalisation_factor;
+  void set_log_normalisation_factor(double lnf) {log_normalisation_factor = lnf;};
 };
 
 #endif /* _PARSERCKYALLMAXVARKB_H_ */

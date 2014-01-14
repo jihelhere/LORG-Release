@@ -63,11 +63,6 @@ public:
   {candidates.reserve(50);};
   ~MaxRuleProbabilityMultiple() {};
 
-  static void set_log_normalisation_factor(double lnf);
-  static void reset_log_normalisation_factor();
-  static const double& get_log_normalisation_factor();
-  inline static const double& get_log_normalisation_factor(unsigned i);
-
   inline static void set_size(unsigned k)       {size = k;}
 
   inline static void set_nbgrammars(unsigned n) {nb_grammars = n;}
@@ -84,18 +79,21 @@ public:
   inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
   inline       packed_edge_probability& get(unsigned idx)       {return derivations[idx];}
 
-  inline void update_lexical(Edge&, const LexicalDaughter&) { throw std::runtime_error("I shall not be called");}
-  inline void update_unary(Edge&, const UnaryDaughter&) {throw std::runtime_error("I shall not be called");};
-  inline void update_binary(Edge&, const BinaryDaughter&) {throw std::runtime_error("I shall not be called");};
+  inline void update_lexical(Edge&, const LexicalDaughter&, double /*unused*/)
+  { throw std::runtime_error("I shall not be called");}
+  inline void update_unary(Edge&, const UnaryDaughter&, double /*unused*/)
+  {throw std::runtime_error("I shall not be called");};
+  inline void update_binary(Edge&, const BinaryDaughter&, double /*unused*/)
+  {throw std::runtime_error("I shall not be called");};
   inline void finalize();
 
-  inline void pick_best_lexical(LexicalDaughter& dtr);
-  inline void pick_best_binary(BinaryDaughter& dtr);
-  inline void pick_best_unary(UnaryDaughter& dtr);
+  inline void pick_best_lexical(LexicalDaughter& dtr, const std::vector<double>& log_norms);
+  inline void pick_best_binary(BinaryDaughter& dtr, const std::vector<double>& log_norms);
+  inline void pick_best_unary(UnaryDaughter& dtr, const std::vector<double>& log_norms);
   inline void pick_best();
 
-  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries);
-  inline void extend_derivation(Edge*, unsigned, bool);
+  inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries, const std::vector<double>& log_norms);
+  inline void extend_derivation(Edge*, unsigned, bool, const std::vector<double>& log_norms);
 
 
   inline unsigned n_deriv() const {return derivations.size();}
@@ -140,19 +138,12 @@ inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbabilityMulti
 
 
 
-const double& MaxRuleProbabilityMultiple::get_log_normalisation_factor(unsigned i)
-{
-  //  std::cout << "size: " << log_normalisation_factor_backup.size() << std::endl;;
-  return log_normalisation_factor_backup[i];
-}
-
-
 void MaxRuleProbabilityMultiple::finalize()
 {
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr)
+void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr, const std::vector<double>& lnfs)
 {
   packed_edge_probability p;
   p.dtrs = &dtr;
@@ -170,7 +161,7 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr)
     p.probability = 0;
     for (unsigned i = 0; i < upannots.size(); ++i)
     {
-      if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+      if(lnfs[i] == -std::numeric_limits<double>::infinity())
         continue;
 
       const std::vector<double>& rule_probs = d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
@@ -188,7 +179,7 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr)
       double logprob =
           // (get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity()) ?
           // -std::numeric_limits<double>::infinity() :
-          std::log(probability) - get_log_normalisation_factor(i);
+          std::log(probability) - lnfs[i];
 
       // ???
       //    p.probability += logprob + std::exp(logprob);
@@ -212,7 +203,7 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr)
   candidates.push_back(p);
 }
 
-void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr)
+void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr, const std::vector<double>& log_norms)
 {
   //    std::cout << "binary case" << std::endl;
 
@@ -237,14 +228,14 @@ void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr)
 
     for (unsigned i = 0; i < upannots.size(); ++i)
     {
-      if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+      if(log_norms[i] == -std::numeric_limits<double>::infinity())
         continue;
       //          std::cout << *( d->get_rule()->get_coarser(upannots.size() - i + 1)) << std::endl;
 
       const std::vector<std::vector<std::vector<double> > >& rule_probs =
           d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
-      p.probability += QInsideComputer::compute_simple(upannots[i], get_log_normalisation_factor(i),
+      p.probability += QInsideComputer::compute_simple(upannots[i], log_norms[i],
                                                        leftannots[i], rightannots[i],
                                                        rule_probs);
 
@@ -268,7 +259,7 @@ void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr)
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr)
+void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr, const std::vector<double>& log_norms)
 {
   Edge& left  = dtr.left_daughter();
 
@@ -295,11 +286,11 @@ void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr)
 
       for (unsigned i = 0; i < upannots.size(); ++i)
       {
-        if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+        if(log_norms[i] == -std::numeric_limits<double>::infinity())
           continue;
         const auto& rule_probs = d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
-        p.probability += QInsideComputer::compute_simple(upannots[i], get_log_normalisation_factor(i),
+        p.probability += QInsideComputer::compute_simple(upannots[i], log_norms[i],
                                                          leftannots[i], rule_probs);
 
         if(p.probability ==-std::numeric_limits<double>::infinity())
@@ -373,7 +364,8 @@ const std::vector<AnnotationInfo>& MaxRuleProbabilityMultiple::get_annotations_b
 ///////////////////////////
 
 
-void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool licence_unaries)
+void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool licence_unaries,
+                                                   const std::vector<double>& log_norms)
 {
   if(derivations.size() == i) {
     return;
@@ -392,7 +384,7 @@ void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool 
     //   last.probability = 0;
     // }
 
-    find_succ(edge,last,licence_unaries);
+    find_succ(edge,last,licence_unaries, log_norms);
     //    std::cout << "after find_succ" << std::endl;
   }
 
@@ -430,7 +422,7 @@ void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool 
 }
 
 
-void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries)
+void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& pep, bool licence_unaries, const std::vector<double>& log_norms)
 {
   if(pep.dtrs->is_lexical())  {
     //std::cout << "find_suc lex" << std::endl;
@@ -455,7 +447,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
     //extend to the left
     //    std::cout << "bin extending on the left" << std::endl;
     unsigned nextleft = pep.left_index + 1;
-    left.extend_derivation(nextleft+1,true);
+    left.extend_derivation(nextleft+1,true, log_norms);
 
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
@@ -467,7 +459,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
 
       for (unsigned i = 0; i < upannots.size(); ++i)
         {
-          if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+          if(log_norms[i] == -std::numeric_limits<double>::infinity())
             continue;
           //          std::cout << *( d->get_rule()->get_coarser(upannots.size() - i + 1)) << std::endl;
 
@@ -475,10 +467,10 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
             d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
           p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                                                     get_log_normalisation_factor(i),
-                                                                                     leftannots[i],
-                                                                                     rightannots[i],
-                                                                                     rule_probs);
+                                                           log_norms[i],
+                                                           leftannots[i],
+                                                           rightannots[i],
+                                                           rule_probs);
         }
 
       p.probability += left.get_prob_model().get(p.left_index).probability + right.get_prob_model().get(p.right_index).probability;
@@ -499,7 +491,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
     //extend to the right
     unsigned nextright = pep.right_index + 1;
 
-    right.extend_derivation(nextright+1,true);
+    right.extend_derivation(nextright+1,true, log_norms);
 
     if(nextright < right.get_prob_model().n_deriv()) {
       //      std::cout << "bin extending on the right" << std::endl;
@@ -512,16 +504,16 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
 
       for (unsigned i = 0; i < upannots.size(); ++i)
         {
-          if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+          if(log_norms[i] == -std::numeric_limits<double>::infinity())
             continue;
           const std::vector<std::vector<std::vector<double> > >& rule_probs =
             d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
           p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                                                     get_log_normalisation_factor(i),
-                                                                                     leftannots[i],
-                                                                                     rightannots[i],
-                                                                                     rule_probs);
+                                                           log_norms[i],
+                                                           leftannots[i],
+                                                           rightannots[i],
+                                                           rule_probs);
         }
 
       p.probability += left.get_prob_model().get(p.left_index).probability + right.get_prob_model().get(p.right_index).probability;
@@ -556,7 +548,7 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
     //extend to the left
     unsigned nextleft = pep.left_index + 1;
 
-    left.extend_derivation(nextleft+1, false);
+    left.extend_derivation(nextleft+1, false, log_norms);
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;
@@ -567,13 +559,13 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
 
       for (unsigned i = 0; i < upannots.size(); ++i)
         {
-          if(get_log_normalisation_factor(i) == -std::numeric_limits<double>::infinity())
+          if(log_norms[i] == -std::numeric_limits<double>::infinity())
             continue;
           const std::vector<std::vector<double> >& rule_probs =
             d->get_rule()->get_coarser(upannots.size() - i - 1)->get_probability();
 
           p.probability += QInsideComputer::compute_simple(upannots[i],
-                                                           get_log_normalisation_factor(i),
+                                                           log_norms[i],
                                                            leftannots[i],
                                                            rule_probs);
         }

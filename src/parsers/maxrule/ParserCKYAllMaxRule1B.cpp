@@ -5,8 +5,6 @@
 #include "ParserCKYAllMaxRule1B.h"
 #include "parsers/ParserCKYAll.hpp"
 
-double ParserCKYAllMaxRule1B::log_normalisation_factor = 0;
-
 ParserCKYAllMaxRule1B::ParserCKYAllMaxRule1B(ParserCKYAllFactory::MaxParsing_Calculation c,
                                              std::vector<AGrammar*>& cgs,
                                              const std::vector<double>& p, double b_t,
@@ -39,13 +37,19 @@ void ParserCKYAllMaxRule1B::calculate_chart_specific_rule_probabilities_and_best
   //std::cout << "calculate_chart_specific_rule_probabilities_and_best_edge: " << get_sentence_probability() << std::endl;
 
   double sentence_log_probability = std::log(get_sentence_probability());
-  MaxRuleProbability1B::set_log_normalisation_factor(sentence_log_probability);
-  ParserCKYAllMaxRule::calculate_maxrule_probabilities();
+  this->set_log_normalisation_factor(sentence_log_probability);
+  ParserCKYAllMaxRule::calculate_maxrule_probabilities(log_normalisation_factor);
 }
 
 void ParserCKYAllMaxRule1B::simple_extract_solution()
 {
-  ParserCKYAllMaxRule::calculate_maxrule_probabilities();
+  ParserCKYAllMaxRule::calculate_maxrule_probabilities(log_normalisation_factor);
+}
+
+
+void ParserCKYAllMaxRule1B::set_log_normalisation_factor(double lnf)
+{
+  log_normalisation_factor = lnf;
 }
 
 #endif /* _PARSERCKYALLMAXVARONEBEST_H_ */

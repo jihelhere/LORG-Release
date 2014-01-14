@@ -43,21 +43,20 @@ public:
 
 private:
   packed_edge_probability best;
-  static double log_normalisation_factor;
 public:
   MaxRuleProbability1B() : best() {};
   ~MaxRuleProbability1B() {};
 
-  static void set_log_normalisation_factor(double lnf);
+
   static void set_calculation(ParserCKYAllFactory::MaxParsing_Calculation c) {QInsideComputer::set_calculation(c);}
 
   inline void init() {best.init();}
   inline const packed_edge_probability& get(unsigned/*ignored*/) const {return best;}
   inline packed_edge_probability& get(unsigned /*ignored*/) {return best;}
 
-  inline void update_lexical(Edge& e, LexicalDaughter& dtr);
-  inline void update_unary(Edge& e,   UnaryDaughter& dtr);
-  inline void update_binary(Edge& e,  BinaryDaughter& dtr);
+  inline void update_lexical(Edge& e, LexicalDaughter& dtr, double log_normalisation_factor);
+  inline void update_unary(Edge& e,   UnaryDaughter& dtr, double log_normalisation_factor);
+  inline void update_binary(Edge& e,  BinaryDaughter& dtr, double log_normalisation_factor);
   inline void finalize();
 
   inline unsigned n_deriv() const {return 1;}
@@ -71,7 +70,7 @@ inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbability1B & 
 }
 
 
-inline void MaxRuleProbability1B::update_lexical(Edge & edge, LexicalDaughter& dtr)
+inline void MaxRuleProbability1B::update_lexical(Edge & edge, LexicalDaughter& dtr, double log_normalisation_factor)
 {
     if (not dtr.is_calculated())
     {
@@ -93,7 +92,7 @@ inline void MaxRuleProbability1B::update_lexical(Edge & edge, LexicalDaughter& d
 }
 
 
-inline void MaxRuleProbability1B::update_unary (Edge & e, UnaryDaughter & dtr)
+inline void MaxRuleProbability1B::update_unary (Edge & e, UnaryDaughter & dtr, double log_normalisation_factor)
 {
   //  std::cout << "update with " << *(dtr.get_rule()) << std::endl;
 
@@ -130,7 +129,7 @@ inline void MaxRuleProbability1B::update_unary (Edge & e, UnaryDaughter & dtr)
 }
 
 inline void
-MaxRuleProbability1B::update_binary (Edge & e, BinaryDaughter & dtr)
+MaxRuleProbability1B::update_binary (Edge & e, BinaryDaughter & dtr, double log_normalisation_factor)
 {
   //std::cout << "update with " << *(dtr.get_rule()) << std::endl;
 
