@@ -595,15 +595,33 @@ template <class Types>
 void
 ParserCKYAll_Impl<Types>::update_relaxations_starts(const MAP<unsigned,double>& lambda)
 {
+  //  std::cerr << "update_relaxations_starts" << std::endl;
+
+
   MAP<int,MAP<int, MAP<int,double>>> complete_lambda;
   std::unordered_map<int,int> empty_simple_map;
 
   for(const auto& p : lambda)
   {
+    //    std::cerr << "here 1" << std::endl;
+
     for (size_t i = p.first; i < chart->get_size(); ++i)
     {
-      for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
+      //      std::cerr << "here 2" << std::endl;
+
+
+      for (const auto& symbol : SymbolTable::instance_nt().get_mwe_symbols())
+      {
+        //        std::cerr << "symbol: " << symbol << std::endl;
+
+
+        // std::cerr << "constraints at (" << p.first << "," << i << ") "
+        //           << SymbolTable::instance_nt().get_label_string(symbol)
+        //           << " val: " << p.second
+        //           << std::endl;
+
         complete_lambda[p.first][i][symbol] = p.second;
+      }
     }
   }
 
@@ -622,7 +640,7 @@ ParserCKYAll_Impl<Types>::update_relaxations_ends(const MAP<unsigned,double>& la
   {
     for (size_t i = 0; i < p.first; ++i)
     {
-      for (const auto symbol : SymbolTable::instance_nt().get_mwe_symbols())
+      for (const auto& symbol : SymbolTable::instance_nt().get_mwe_symbols())
         complete_lambda[i][p.first][symbol] = p.second;
     }
   }

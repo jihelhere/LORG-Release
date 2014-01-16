@@ -133,5 +133,7 @@ std::vector<unsigned> SymbolTable::get_mwe_symbols() const
       results.push_back(pair.second);
   }
 
+  //std::cerr << "mwe symbols.size: " << results.size() << std::endl;
+
   return results;
 }

@@ -21,7 +21,7 @@ private:
   bool read_config(ConfigTable& configuration);
   LorgOptions get_options() const;
 
-  int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&);
+  int find_consensus(std::vector<std::pair<PtbPsTree*,double>>&, size_t sent_length);
 
   std::vector<std::string> crf_tag(FILE* f, int idx);
 
@@ -30,7 +30,8 @@ private:
   std::vector<Tagger> taggers;
 
 
-  std::vector<wapiti_wrapper> crfs;
+  std::vector<wapiti_wrapper_bi> bi_crfs;
+  std::vector<wapiti_wrapper_pos> pos_crfs;
 
   bool output_annotations;
   unsigned kbest;

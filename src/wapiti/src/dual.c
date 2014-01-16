@@ -92,3 +92,27 @@ void dual_add_binary_penalty(dual_t *d, uint32_t i,uint32_t t1, uint32_t t2, dou
 {
   d->binary_u[i*(d->Y)* (d->Y)+t1*(d->Y)+t2] += val;
 }
+
+
+
+
+double dual_sum(dual_t * d)
+{
+  uint32_t i,t,t2;
+
+  double res = 0.0;
+
+   for(i = 0 ; i < d-> N ; ++i)
+   {
+     for(t = 0 ; t < d->Y ; ++t)
+     {
+       res += d->unary_u[i*(d->Y)+t];
+       for(t2 = 0 ; t2 < d->Y ; ++t2)
+       {
+         res+= d->binary_u[i*(d->Y)*(d->Y)+t*(d->Y)+t2];
+       }
+     }
+   }
+
+   return res;
+}

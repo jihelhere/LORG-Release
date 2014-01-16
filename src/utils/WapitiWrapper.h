@@ -39,8 +39,6 @@ struct wapiti_wrapper
   double crf_tag();
   double crf_retag();
 
-  void update_relaxations(const std::unordered_map<unsigned,double>& lambdas, char first, char second, int offset);
-
   ~wapiti_wrapper(){}
 
   void clean_sentence()
@@ -55,6 +53,18 @@ struct wapiti_wrapper
   }
 
   friend std::ostream& operator<<(std::ostream& out, const wapiti_wrapper& w);
+};
 
 
+struct wapiti_wrapper_bi : wapiti_wrapper
+{
+  wapiti_wrapper_bi(const std::string& modelfilename, int coef = 1) : wapiti_wrapper(modelfilename, coef) {};
+  void update_relaxations(const std::unordered_map<unsigned,double>& lambdas, char first, char second, int offset);
+};
+
+
+struct wapiti_wrapper_pos : wapiti_wrapper
+{
+  wapiti_wrapper_pos(const std::string& modelfilename, int coef = 1) : wapiti_wrapper(modelfilename, coef) {};
+  void update_relaxations( const std::unordered_map<int, std::unordered_map<int,  std::unordered_map<int,double>>>&lambdas);
 };

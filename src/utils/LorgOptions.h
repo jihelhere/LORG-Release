@@ -192,9 +192,10 @@ class LorgOptions
         ("stubbornness,s", po::value<int>()->default_value(-1), "number of retries (with lower beam-threshold) if packed forest construction fails. Last try is performed without threshold. Set to negative value to skip this.")
         ("nbthreads", po::value<unsigned>()->default_value(0), "Number of threads for processing the chart")
 
-        ("crf-model", po::value<std::vector<std::string>>(), "wapiti models (BIO)")
-        ("crf-input", po::value<std::vector<std::string>>(), "wapiti input (BIO)")
-        ("crf-coefficient", po::value<std::vector<int>>(), "wapiti input (BIO)")
+        ("crf-model", po::value<std::vector<std::string>>(), "wapiti models")
+        ("crf-input", po::value<std::vector<std::string>>(), "wapiti input")
+        ("crf-coefficient", po::value<std::vector<int>>(), "wapiti coefficient")
+        ("crf-type", po::value<std::vector<std::string>>(), "wapiti type (pos or ftb_bi)")
         ;
     options.add(parser_opts);
   }
