@@ -1,6 +1,8 @@
 #include <iostream>
 #include "WapitiWrapper.h"
 
+#include "utils/SymbolTable.h"
+
 
 void wapiti_wrapper::set_file(const std::string& filename)
 {
@@ -82,8 +84,28 @@ double wapiti_wrapper::crf_retag()
   return this->score;
 }
 
+////////////////////////// std //////////////////////////////
 
-void wapiti_wrapper::update_relaxations(const std::unordered_map<unsigned,double>& lambdas, char first, char second, int offset)
+std::ostream& operator<<(std::ostream& out, const wapiti_wrapper& w)
+{
+  // for (size_t i = 0; i < best_string_sequence.size(); ++i)
+  // {
+  //   out << sentence[j].get_form() << "\t" << crfs[i].best_string_sequence[j] << std::endl;
+  // }
+
+  for(const auto& s : w.best_string_sequence)
+  {
+    out << s << " " ;
+  }
+
+  return out;
+}
+
+
+///////////////////////////// BI //////////////////////////////////////////////////////////
+
+
+void wapiti_wrapper_bi::update_relaxations(const std::unordered_map<unsigned,double>& lambdas, char first, char second, int offset)
 {
   unsigned cpt = qrk_count(this->model->reader->lbl);
 
@@ -99,9 +121,15 @@ void wapiti_wrapper::update_relaxations(const std::unordered_map<unsigned,double
         if ((second != '*') and (qrk_id2str(this->model->reader->lbl, j)[1] != second))
           continue;
 
+        // std::cerr << "constraints at " << (pair.first + offset)
+        //           << " for " << qrk_id2str(this->model->reader->lbl, i)[1]
+        //           << " to " << qrk_id2str(this->model->reader->lbl, j)[1]
+        //           << " val: " << pair.second
+        //           << std::endl;
 
         //std::cout << "update_relaxations1: " <<pair.second << std::endl;
         dual_add_binary_penalty(this->dual, pair.first + offset, i, j, -pair.second);
+        //std::cerr << "sum dual: " << dual_sum(this->dual) << std::endl;
         //dual_add_unary_penalty(this->dual, pair.first, i, -pair.second);
         //dual_add_unary_penalty(this->dual, pair.first + offset, j, -pair.second);
 
@@ -114,17 +142,28 @@ void wapiti_wrapper::update_relaxations(const std::unordered_map<unsigned,double
 }
 
 
-std::ostream& operator<<(std::ostream& out, const wapiti_wrapper& w)
-{
-  // for (size_t i = 0; i < best_string_sequence.size(); ++i)
-  // {
-  //   out << sentence[j].get_form() << "\t" << crfs[i].best_string_sequence[j] << std::endl;
-  // }
+/////////////////////////////////////// POS /////////////////////////////////////////////
 
-  for(const auto& s : w.best_string_sequence)
+void wapiti_wrapper_pos::update_relaxations(const std::unordered_map<int, std::unordered_map<int,  std::unordered_map<int,double>>>&lambdas)
+{
+  for (const auto& i : lambdas)
   {
-    out << s << " " ;
+    int begin = i.first;
+    for (const auto& j : i.second)
+    {
+      int end = j.first;
+      for (auto& k: j.second)
+      {
+        int symbol = k.first;
+        dual_add_unary_penalty(this->dual,
+                               begin,
+                               qrk_str2id(this->model->reader->lbl,
+                                          SymbolTable::instance_nt().get_label_string(symbol).c_str()),
+                               -k.second);
+      }
+    }
   }
 
-  return out;
+
+  return;
 }

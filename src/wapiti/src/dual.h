@@ -27,4 +27,7 @@ void dual_set_binary_penalty(dual_t *, uint32_t, uint32_t, uint32_t, double);
 void dual_add_binary_penalty(dual_t *, uint32_t, uint32_t, uint32_t, double);
 double dual_get_binary_penalty(dual_t *, uint32_t, uint32_t, uint32_t);
 
+double dual_sum(dual_t *);
+
+
 #endif

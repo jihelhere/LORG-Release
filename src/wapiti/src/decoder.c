@@ -202,6 +202,8 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	op = tag_expsc(mdl, seq, vpsi, d);
 
 
+        //fprintf(stderr, "T = %d\n", T);
+
         mdl->opt = &opt_defaults;
         //mdl->opt->lblpost = true;
         //mdl->opt->sparse = true;
@@ -267,7 +269,7 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 		if (cur[y] > cur[bst])
                   bst = y;
 
-        fprintf(stderr, "bst: %f\n", cur[bst]);
+        //        fprintf(stderr, "bst: %f\n", cur[bst]);
 
 	if (score != NULL)
 		*score = cur[bst];
