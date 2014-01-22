@@ -1,8 +1,6 @@
 #include <iostream>
 #include "WapitiWrapper.h"
 
-#include "utils/SymbolTable.h"
-
 
 void wapiti_wrapper::set_file(const std::string& filename)
 {
@@ -163,7 +161,4 @@ void wapiti_wrapper_pos::update_relaxations(const std::unordered_map<int, std::u
       }
     }
   }
-
-
-  return;
 }

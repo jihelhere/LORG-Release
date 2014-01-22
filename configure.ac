@@ -19,8 +19,8 @@ AC_LANG_CPLUSPLUS
 
 
 AX_CXX_COMPILE_STDCXX_11([noext])
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option],\
-[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option"])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -march=native],\
+[CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -march=native"])
 
 
 AC_CONFIG_HEADERS([config.h])
