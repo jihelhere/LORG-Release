@@ -21,5 +21,5 @@ private:
   std::vector<std::string> crf_tag(FILE* f, int idx);
 
 
-  std::vector<wapiti_wrapper> crfs;
+  std::vector<wapiti_wrapper_bi> crfs;
 };

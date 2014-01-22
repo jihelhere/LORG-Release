@@ -1,6 +1,8 @@
 // -*- mode: c++ -*-
 #pragma once
 
+#include "utils/SymbolTable.h"
+
 extern "C" {
 #include "wapiti/src/decoder.h"
 #include "wapiti/src/tools.h"

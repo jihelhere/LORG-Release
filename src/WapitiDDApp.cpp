@@ -146,7 +146,7 @@ bool WapitiDDApp::read_config(ConfigTable& configuration)
 
     for (const auto& name : crf_model_names)
     {
-      crfs.push_back(wapiti_wrapper(name));
+      crfs.push_back(wapiti_wrapper_bi(name));
     }
 
 

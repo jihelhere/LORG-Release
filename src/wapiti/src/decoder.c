@@ -204,7 +204,7 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 
         //fprintf(stderr, "T = %d\n", T);
 
-        mdl->opt = &opt_defaults;
+        //mdl->opt = &opt_defaults;
         //mdl->opt->lblpost = true;
         //mdl->opt->sparse = true;
 
