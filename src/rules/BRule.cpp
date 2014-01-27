@@ -208,21 +208,32 @@ void BRule::remove_unlikely_annotations(const double& threshold)
 
 void BRule::compact()
 {
+  // int nb_elements = 0;
+  // int nb_zeros = 0;
+
   //get rid of lines of zeros
   for(unsigned i = 0; i < probabilities.size(); ++i)
     for(unsigned j = 0; j < probabilities[i].size(); ++j) {
       bool allzeros = true;
       for(unsigned k = 0; k < probabilities[i][j].size(); ++k) {
+        //        ++nb_elements;
         if(probabilities[i][j][k] != 0.0) {
           allzeros = false;
           break;
         }
+        // else
+        // {
+        //   ++nb_zeros;
+        // }
       }
       if(allzeros)
       {
+        //std::cerr << "compacted something of size " << probabilities[i][j].size() << std::endl;
         probabilities[i][j].clear();
+        probabilities[i][j].shrink_to_fit();
+
       }
-      std::vector<double>(probabilities[i][j].begin(), probabilities[i][j].end()).swap(probabilities[i][j]);
+      //std::vector<double>(probabilities[i][j].begin(), probabilities[i][j].end()).swap(probabilities[i][j]);
     }
 
   //get rid of lines of empty vectors
@@ -236,10 +247,18 @@ void BRule::compact()
     }
     if(allempty)
     {
+      //std::cerr << "compacted 2 levels" << std::endl;
       probabilities[i].clear();
     }
-    std::vector< std::vector<double> >(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
+    probabilities[i].shrink_to_fit();
+    //std::vector< std::vector<double> >(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
   }
+
+  // std::cerr << "nb zeros: " <<nb_zeros
+  //           << "nb_elements: " << nb_elements
+  //           << " ratio: " << double(nb_zeros) *100 / double(nb_elements)
+  //           << std::endl;
+
 }
 
 

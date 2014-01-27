@@ -48,8 +48,6 @@ public:
   unsigned short& operator[](short label);
 
 
-
-
   /**
      \brief sets the number of annotations to be associated with this non-terminal label.
      \if the label is not already in the map, it will create a new entry for the label.

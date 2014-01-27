@@ -371,7 +371,10 @@ std::vector<MyRule*> calculate_mapping(const typename rulevect2mapvect<Key,MyRul
       r2remove.push_back(i->second[0]);
     else
       for(unsigned g = 0 ; g < size - 1; ++g)
-        i->second[g]->add_finer(i->second[g+1]);
+        if(i->second[g]->get_finer() == nullptr)
+          i->second[g]->set_finer(i->second[g+1]);
+        else
+          i->second[g]->set_finer_alt(i->second[g+1]);
   }
   return r2remove;
 }

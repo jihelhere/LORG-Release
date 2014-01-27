@@ -1,5 +1,4 @@
-#ifndef _PACKEDEDGE_HPP_
-#define _PACKEDEDGE_HPP_
+#pragma once
 
 #include "utils/ConfigTable.h"
 
@@ -47,14 +46,6 @@ AnnotationInfo& PackedEdge<Types>::get_annotations() {return annotations;}
 template<class Types>
 inline
 const AnnotationInfo& PackedEdge<Types>::get_annotations() const {return annotations;}
-
-// template<class Types>
-// inline
-// std::vector<AnnotationInfo>& PackedEdge<Types>::get_annotations_backup() {return best.get_annotations_backup();}
-
-// template<class Types>
-// inline
-// const std::vector<AnnotationInfo>& PackedEdge<Types>::get_annotations_backup() const {return best.get_annotations_backup();}
 
 template<class Types>
 inline
@@ -150,11 +141,6 @@ PathMatrix PackedEdge<Types>::unary_chains = PathMatrix();
 
 
 
-
-
-
-
-// should be renamed (Why Viterbi?) and moved
 template <class Types>
 void PackedEdge<Types>::set_unary_chains(const PathMatrix& pathmatrix)
 {
@@ -173,12 +159,13 @@ struct c2f_replace_struct_helper
   unsigned idx;
   c2f_replace_struct_helper(unsigned i) : idx(i) {};
 
-  //reset the rule to the 'finer_id'th rule in the vector
-  //TODO implement the Charniak-style coarse-to-fine method - this will involve replacing this rule with several
   template <typename T>
   void operator ()(T& daughter) const
   {
-    daughter.set_rule(static_cast<const typename T::Rule *>(daughter.get_rule()->get(idx)));
+    if(idx == 0)
+      daughter.set_rule(static_cast<const typename T::Rule *>(daughter.get_rule()->get_finer()));
+    else
+      daughter.set_rule(static_cast<const typename T::Rule *>(daughter.get_rule()->get_finer_alt()));
   }
 };
 
@@ -259,14 +246,13 @@ void PackedEdge<Types>::clean_invalidated_binaries()
 //   }
 
   auto removed_begin = std::remove_if(binary_daughters.begin(),
-                         binary_daughters.end(),
-                         toFunc(& BinaryDaughter::points_towards_invalid_edges));
+                                      binary_daughters.end(),
+                                      toFunc(& BinaryDaughter::points_towards_invalid_edges));
 
   binary_daughters . erase(removed_begin, binary_daughters.end());
 
   // Reclaim memory !
   binary_daughters . shrink_to_fit() ;
-  //   decltype(binary_daughters)(binary_daughters).swap(binary_daughters);
 
   assert(binary_daughters.capacity() == binary_daughters.size());
 }
@@ -624,25 +610,3 @@ double PackedEdge<Types>::marginalise() const
   return std::log(normalisation_factor);
 
 }
-
-
-
-
-template <typename Types>
-void PackedEdge<Types>::update_relaxations(const double & u)
-{
-  for(auto& le : lexical_daughters)
-  {
-    le.update_relaxation(-u);
-  }
-  for(auto& un : unary_daughters)
-  {
-    un.update_relaxation(-u);
-  }
-  for(auto& bi : binary_daughters)
-  {
-    bi.update_relaxation(-u);
-  }
-}
-
-#endif

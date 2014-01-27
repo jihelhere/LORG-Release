@@ -50,6 +50,9 @@ public:
 
   void initialize_id(const WordSignature& wordsignature);
 
+  void untag();
+
+
 public:
 
 protected:
@@ -72,36 +75,43 @@ private:
 inline
 bool Word::is_tagged() const
 {
-  return !tags.empty();
+  return !this->tags.empty();
 }
 
 inline
 short Word::get_given_tag(unsigned i) const
 {
-  assert(i < tags.size());
-  return tags[i];
+  assert(i < this->tags.size());
+  return this->tags[i];
 }
 
 inline
 const std::vector<const MetaProduction*>& Word::get_rules() const
 {
-  return rules;
+  return this->rules;
 }
 
 inline
 int Word::get_id() const
 {
-  return id;
+  return this->id;
 }
 
 inline
 int Word::get_start() const
 {
-  return start;
+  return this->start;
 }
 
 inline
 int Word::get_end() const
 {
-  return end;
+  return this->end;
+}
+
+
+inline
+void Word::untag()
+{
+  this->tags.clear();
 }

@@ -138,7 +138,6 @@ int TwoStageLorgParseApp::run()
       }
 
 
-
       int k = 0;
 
       if (parsers.size() + bi_crfs.size() + pos_crfs.size() > 1)

@@ -23,24 +23,18 @@ class PackedEdgeDaughters
 {
 protected:
   const AnnotatedRule * rule;
-  double relaxation;
   bool calculated;
   double q_score;
 
 public:
   PackedEdgeDaughters(const AnnotatedRule * r = 0)
-      : rule(r), relaxation(0.0),
-        calculated(false), q_score(-std::numeric_limits<double>::infinity())
+      : rule(r), calculated(false), q_score(-std::numeric_limits<double>::infinity())
   {};
   ~PackedEdgeDaughters() {};
 
   inline bool is_unary() const {return get_rule()->is_unary();}
   inline bool is_binary() const {return get_rule()->is_binary();}
   inline bool is_lexical() const {return get_rule()->is_lexical();}
-
-  inline double get_relaxation() const {return relaxation;}
-  inline void set_relaxation(double v) {relaxation = v;}
-  inline void update_relaxation(double v) {relaxation += v;}
 
   inline bool is_calculated() const {return calculated;}
   inline void set_calculated(bool v) {calculated = v;}
@@ -90,14 +84,12 @@ public:
 
   ~BinaryPackedEdgeDaughters() {};
 
-  //   inline const Edge& left_daughter() const  {return *left;}
-  //   inline const Edge& right_daughter() const {return *right;}
   inline Edge& left_daughter() const {return *left;}
   inline Edge& right_daughter() const {return *right;}
 
   inline bool operator==(const BinaryPackedEdgeDaughters& other)
   {
-    return Parent::rule == other.rule && left == other.left && right ==other.right;
+    return Parent::rule == other.rule && left == other.left && right == other.right;
   }
   inline bool points_towards_invalid_edges() const
   {
@@ -107,17 +99,17 @@ public:
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
     Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities.array,
-                                        left->get_annotations().inside_probabilities.array,
-                                        right->get_annotations().inside_probabilities.array);
+                                                  left->get_annotations().inside_probabilities.array,
+                                                  right->get_annotations().inside_probabilities.array);
   }
 
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
     Parent::get_rule()->update_outside_annotations(annotations.outside_probabilities.array,
-                                        left->get_annotations().inside_probabilities.array,
-                                        right->get_annotations().inside_probabilities.array,
-                                        left->get_annotations().outside_probabilities.array,
-                                        right->get_annotations().outside_probabilities.array);
+                                                   left->get_annotations().inside_probabilities.array,
+                                                   right->get_annotations().inside_probabilities.array,
+                                                   left->get_annotations().outside_probabilities.array,
+                                                   right->get_annotations().outside_probabilities.array);
   }
 };
 

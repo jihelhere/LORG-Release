@@ -69,7 +69,6 @@ class ParserCKYAllMaxRule : public ParserCKYAll_Impl<Types>
             for(auto& d: e.get_unary_daughters())
               p.update_unary(e, d, log_norms);
 
-
             p.finalize();
           }
         }
