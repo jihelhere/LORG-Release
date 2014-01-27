@@ -249,7 +249,8 @@ void URule::compact()
     {
       probabilities[i].clear();
     }
-    std::vector<double>(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
+    probabilities[i].shrink_to_fit();
+    //std::vector<double>(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
   }
 }
 

@@ -78,8 +78,8 @@ private:
   /**
      \brief Forbidden constructors
   */
-  PackedEdge() {}
-  PackedEdge(const PackedEdge<Types> &) {}
+  PackedEdge() : relaxation(0) {}
+  PackedEdge(const PackedEdge<Types> &) : relaxation(0) {}
 
 public:
   void reserve_binary_daughters(int size)
@@ -104,7 +104,6 @@ public:
 
   const lvector& get_lexical_daughters() const;
   lvector& get_lexical_daughters();
-
 
 
  /**
@@ -209,7 +208,12 @@ public:
   void close() { open=false; this->~Edge();}
   //  void destroy() {Edge::~Edge();}
 
-  void update_relaxations(const double & u);
+  //void update_relaxations(const double & u);
+
+
+  inline double get_relaxation() const {return relaxation;}
+  inline void set_relaxation(double v) {relaxation = -v;}
+  inline void update_relaxation(double v) {relaxation -= v;}
 
 
 protected :
@@ -225,6 +229,8 @@ protected :
 private:
   ProbaModel best;
   const Cell* cell;
+
+  double relaxation;
 
 
   void to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos, int lhs, unsigned index) const;

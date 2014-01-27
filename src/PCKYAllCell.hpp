@@ -21,39 +21,34 @@ template<class Types>
 unsigned PCKYAllCell<Types>::max_size = 0;
 
 template<class Types>
-PCKYAllCell<Types>::PCKYAllCell() {
-}
+PCKYAllCell<Types>::PCKYAllCell() {}
 
-template<class Types>
-PCKYAllCell<Types>::PCKYAllCell( const PCKYAllCell<Types> & o )
-{
-  edges = (Edge*) new char[max_size*sizeof(Edge)];
-  memcpy(edges, o.edges, max_size*sizeof(Edge));
+// template<class Types>
+// PCKYAllCell<Types>::PCKYAllCell( const PCKYAllCell<Types> & o )
+// {
+//   edges = (Edge*) new char[max_size*sizeof(Edge)];
+//   memcpy(edges, o.edges, max_size*sizeof(Edge));
 
-//   std::copy(&(o.edges), &(o.edges)+1, &edges);
-//   std::cout << "size of edges = " << edges.size() << " " << edges.capacity() <<  " " << max_size << std:: endl;
-//   memcpy(e, o.edges.data(), max_size*sizeof(Edge));
+// //   std::copy(&(o.edges), &(o.edges)+1, &edges);
+// //   std::cout << "size of edges = " << edges.size() << " " << edges.capacity() <<  " " << max_size << std:: endl;
+// //   memcpy(e, o.edges.data(), max_size*sizeof(Edge));
 
 //   std::cout << "copy constructor of " << this << " from " << &o << std::endl;
-//   *this = o ;
-//   memcpy(this, &o, sizeof(PCKYAllCell<Types>));
+// //   *this = o ;
+// //   memcpy(this, &o, sizeof(PCKYAllCell<Types>));
 
-}
+// }
 
 template<class Types>
 void PCKYAllCell<Types>::clear()
 {
-//   static Edge protoEdge;
-//   edges.assign(max_size, protoEdge);
   std::fill((char*)edges, (char*) (edges+max_size), 0);
 
   for (size_t i = 0; i < max_size; ++i)
   {
     (edges+i)->set_cell(this);
   }
-
 }
-
 
 
 
@@ -63,21 +58,21 @@ PCKYAllCell<Types>::~PCKYAllCell()
   apply_on_edges( &Edge::close );
 }
 
-template<class Types>
-void PCKYAllCell<Types>::reserve_binary_daughters(const std::vector<int> & counts)
-{
-  for(int i=counts.size()-1; i>=0; --i) {
-    if (counts[i]!=0) {
-      edges[i].reserve_binary_daughters(counts[i]);
-    }
-  }
-}
+// template<class Types>
+// void PCKYAllCell<Types>::reserve_binary_daughters(const std::vector<int> & counts)
+// {
+//   for(int i=counts.size()-1; i>=0; --i) {
+//     if (counts[i]!=0) {
+//       edges[i].reserve_binary_daughters(counts[i]);
+//     }
+//   }
+// }
 
 template<class Types>
 inline void PCKYAllCell<Types>::process_candidate(Edge & left,
-                                            Edge & right,
-                                            const BinaryRule* rule,
-                                            double LR_inside)
+                                                  Edge & right,
+                                                  const BinaryRule* rule,
+                                                  double LR_inside)
 {
   Edge & e = edges[rule->get_lhs()];
   e.add_daughters(left,right,rule);
@@ -89,13 +84,13 @@ void PCKYAllCell<Types>::process_candidate(const UnaryRule* rule, double L_insid
 {
   assert(rule);
   assert(rule->get_probability().size() > 0);
-  // static int i = 0;
-  // ++i;
 
   Edge & e = edges[rule->get_lhs()];
   e.add_daughters(edges[rule->get_rhs0()],rule);
 
-  //   std::cout << "PCKYAllCell<Types>::process_candidate. array at " << & e.get_annotations().inside_probabilities_unary_temp.array[0] << std::endl; std::cout.flush();
+  // std::cout << "PCKYAllCell<Types>::process_candidate. array at "
+  //           << & e.get_annotations().inside_probabilities_unary_temp.array[0]
+  //           << std::endl; std::cout.flush();
   e.get_annotations().inside_probabilities_unary_temp.array[0] += L_inside * rule->get_probability()[0][0];
 
 }
@@ -104,14 +99,15 @@ template<class Types>
 inline
 void PCKYAllCell<Types>::add_word(const Word & word)
 {
-  //typedef typename Types::LexicalDaughter LDaughters;
   //assert(edges.size() == max_size);
   for(const auto & rule : word.get_rules())
   {
     const typename Types::LRule* r = static_cast<const typename Types::LRule*>(rule);
     int tag = rule->get_lhs();
-    if (0==edges[tag].get_annotations().get_size())
-      edges[tag].local_resize_annotations(1);
+
+    // if (0 == edges[tag].get_annotations().get_size())
+    //   edges[tag].local_resize_annotations(1);
+
     edges[tag].add_daughters(r, &word);
     edges[tag].get_annotations().inside_probabilities.array[0] += r->get_probability()[0];
   }
@@ -138,15 +134,12 @@ template<class Types>
 void PCKYAllCell<Types>::compute_inside_probabilities()
 {
   //     apply_on_edges( & Edge::clean_invalidated_binaries);
-
   //     std::cout << begin << ":" << end << std::endl;
-
 
   apply_on_edges(
       std::function<void(Edge&)>
       ([](Edge& edge)
        {
-
          edge.get_annotations().reset_probabilities(0.0, true);}) ,
       & LexicalDaughter::update_inside_annotations  ,
       &  BinaryDaughter::update_inside_annotations  ,
@@ -175,8 +168,11 @@ template<class Types>
 void PCKYAllCell<Types>::clean()
 {
   bool changed;
+  int i = 0;
+  //#define MAX_UNARY_CHAIN_LENGTH 3
   do {
     changed =  false;
+    //++i;
 
     // go through all the lists of unary daughters and remove the ones pointing on removed edges
     for(auto & edge : edges)
@@ -195,7 +191,7 @@ void PCKYAllCell<Types>::clean()
         changed =  true;
       }
     }
-  } while(changed);
+  } while(changed /*and i <= MAX_UNARY_CHAIN_LENGTH*/);
 
   // final memory reclaim
   bool all_null = true;
@@ -227,10 +223,18 @@ void PCKYAllCell<Types>::beam(const std::vector<double>& priors, double threshol
   //computing unannotated inside probabilities
   //looking for the probablity of the most probable symbol
   for(unsigned i = 0; i < max_size; ++i)
-    if(not edges[i].is_closed()) {
-      sums[i] *= std::accumulate(edges[i].get_annotations().inside_probabilities.array.begin(),
-                                 edges[i].get_annotations().inside_probabilities.array.end(),
-                                 0.0);
+    if(not edges[i].is_closed())
+
+    {
+
+      // sums[i] *= std::accumulate(edges[i].get_annotations().inside_probabilities.array.begin(),
+      //                            edges[i].get_annotations().inside_probabilities.array.end(),
+      //                            0.0);
+
+      //because it is always used with the PCFG
+      // we can remplace by:
+
+      sums[i] *= edges[i].get_annotations().inside_probabilities.array[0];
       max = std::max(max, sums[i]);
     }
 
@@ -518,14 +522,14 @@ PCKYAllCell<Types>::update_relaxations(bool simplify, const MAP<int,double>& cas
 
         if(case_l.count(i_s))
         {
-          edges[i].update_relaxations(case_l.at(i_s));
+          edges[i].update_relaxation(case_l.at(i_s));
         }
       }
       // TODO check
       else
        if(SymbolTable::instance_nt().get_label_string(i)[0] != '[' and case_l.count(i))
         {
-          edges[i].update_relaxations(case_l.at(i));
+          edges[i].update_relaxation(case_l.at(i));
         }
     }
 }

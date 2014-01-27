@@ -45,8 +45,6 @@ private:
   heap_type candidates;
   heap_type derivations;
 
-  static double log_normalisation_factor;
-  static std::vector<double> log_normalisation_factor_backup;
   static unsigned size;
   static unsigned nb_grammars;
 
@@ -87,9 +85,9 @@ public:
   {throw std::runtime_error("I shall not be called");};
   inline void finalize();
 
-  inline void pick_best_lexical(LexicalDaughter& dtr, const std::vector<double>& log_norms);
-  inline void pick_best_binary(BinaryDaughter& dtr, const std::vector<double>& log_norms);
-  inline void pick_best_unary(UnaryDaughter& dtr, const std::vector<double>& log_norms);
+  inline void pick_best_lexical(const Edge& e, LexicalDaughter& dtr, const std::vector<double>& log_norms);
+  inline void pick_best_binary(const Edge& e, BinaryDaughter& dtr, const std::vector<double>& log_norms);
+  inline void pick_best_unary(const Edge& e, UnaryDaughter& dtr, const std::vector<double>& log_norms);
   inline void pick_best();
 
   inline void find_succ(Edge*,packed_edge_probability& pep, bool licence_unaries, const std::vector<double>& log_norms);
@@ -117,18 +115,18 @@ public:
 
 private:
 
-  struct test_helper
-  {
-    const packed_edge_probability& pep;
-    test_helper(const packed_edge_probability& p) : pep(p) {};
+  // struct test_helper
+  // {
+  //   const packed_edge_probability& pep;
+  //   test_helper(const packed_edge_probability& p) : pep(p) {};
 
-    bool operator()(const packed_edge_probability& p)
-    {
-      //      return false;
-      return p.probability == pep.probability
-        //  || p.dtrs == pep.dtrs
-        ;}
-  };
+  //   bool operator()(const packed_edge_probability& p)
+  //   {
+  //     //      return false;
+  //     return p.probability == pep.probability
+  //       //  || p.dtrs == pep.dtrs
+  //       ;}
+  // };
 
 };
 inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbabilityMultiple & prob)
@@ -143,7 +141,8 @@ void MaxRuleProbabilityMultiple::finalize()
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr, const std::vector<double>& lnfs)
+void MaxRuleProbabilityMultiple::pick_best_lexical(const Edge& e,
+                                                   LexicalDaughter & dtr, const std::vector<double>& lnfs)
 {
   packed_edge_probability p;
   p.dtrs = &dtr;
@@ -194,16 +193,17 @@ void MaxRuleProbabilityMultiple::pick_best_lexical(LexicalDaughter & dtr, const 
     p.dtrs->set_q_score(p.probability);
   }
 
-  p.probability += dtr.get_relaxation();
+  p.probability += e.get_relaxation();
 
   //p.probability += std::exp(p.probability);
 
   if (candidates.empty() || p.probability > derivations[0].probability)
     derivations[0] = p;
-  candidates.push_back(p);
+  candidates.emplace_back(p);
 }
 
-void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr, const std::vector<double>& log_norms)
+void MaxRuleProbabilityMultiple::pick_best_binary(const Edge& e,
+                                                  BinaryDaughter& dtr, const std::vector<double>& log_norms)
 {
   //    std::cout << "binary case" << std::endl;
 
@@ -251,15 +251,16 @@ void MaxRuleProbabilityMultiple::pick_best_binary( BinaryDaughter& dtr, const st
 
   //  p.probability += std::exp(p.probability);
   p.probability += left.get_prob_model().get(0).probability + right.get_prob_model().get(0).probability;
-  p.probability += dtr.get_relaxation();
+  p.probability += e.get_relaxation();
 
   if (candidates.empty() || p.probability > derivations[0].probability)
     derivations[0] = p;
-  candidates.push_back(p);
+  candidates.emplace_back(p);
 }
 
 
-void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr, const std::vector<double>& log_norms)
+void MaxRuleProbabilityMultiple::pick_best_unary(const Edge& e,
+                                                 UnaryDaughter & dtr, const std::vector<double>& log_norms)
 {
   Edge& left  = dtr.left_daughter();
 
@@ -304,12 +305,12 @@ void MaxRuleProbabilityMultiple::pick_best_unary( UnaryDaughter & dtr, const std
     }
     //    p.probability += std::exp(p.probability);
     p.probability +=  left.get_prob_model().get(0).probability;
-    p.probability += dtr.get_relaxation();
+    p.probability += e.get_relaxation();
 
     if (candidates.empty() || p.probability > derivations[0].probability)
       derivations[0] = p;
 
-    candidates.push_back(p);
+    candidates.emplace_back(p);
   }
 }
 
@@ -392,7 +393,7 @@ void MaxRuleProbabilityMultiple::extend_derivation(Edge* edge, unsigned i, bool 
 
     //get next element from the candidates and append it to derivations
     pop_heap(candidates.begin(),candidates.end());
-    derivations.push_back(candidates.back());
+    derivations.emplace_back(candidates.back());
     candidates.pop_back();
 
     //    std::cout << "in edge " << edge << " there are " << derivations.size() << " derivations." << std::endl;
@@ -481,10 +482,14 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
       //      std::cout << p.probability << std::endl;
 
       // TODO : Find a proper way to remove duplicates !
-      if (std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()) {
-        candidates.push_back(p);
+      //      if (std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()) {
+        candidates.emplace_back(p);
         push_heap(candidates.begin(), candidates.end());
-      }
+      // }
+      // else
+      // {
+      //   std::cerr << "FOUND BIN" << std::endl;
+      // }
 
     }
 
@@ -524,10 +529,14 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
 
       //      std::cout << p.probability << std::endl;
 
-      if(std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()){
-        candidates.push_back(p);
+      //      if(std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()){
+        candidates.emplace_back(p);
         push_heap(candidates.begin(), candidates.end());
-      }
+      // }
+      // else
+      // {
+      //   std::cerr << "FOUND BIN 2" << std::endl;
+      // }
     }
   }
 
@@ -579,10 +588,14 @@ void MaxRuleProbabilityMultiple::find_succ(Edge* edge, packed_edge_probability& 
       //            std::cout << p.probability << std::endl;
 
 
-      if(std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()){
+      //      if(std::find_if(candidates.begin(), candidates.end(), test_helper(p)) == candidates.end()){
         candidates.push_back(p);
         push_heap(candidates.begin(), candidates.end());
-      }
+      // }
+      // else
+      // {
+      //   std::cerr << "FOUND UN" << std::endl;
+      // }
     }
   }
 }

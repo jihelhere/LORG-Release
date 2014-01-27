@@ -231,9 +231,9 @@ void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
         auto& p = e.get_prob_model();
         p.init();
         for(auto& d: e.get_lexical_daughters())
-          p.pick_best_lexical(d, log_norms);
+          p.pick_best_lexical(e, d, log_norms);
         for(auto& d: e.get_binary_daughters())
-          p.pick_best_binary(d, log_norms);
+          p.pick_best_binary(e, d, log_norms);
       }
     }
 
@@ -244,7 +244,7 @@ void ParserCKYAllMaxRuleMultiple::calculate_best_edge()
 
         auto& p = e.get_prob_model();
         for(auto& d: e.get_unary_daughters())
-          p.pick_best_unary(d, log_norms);
+          p.pick_best_unary(e, d, log_norms);
         p.pick_best();
       }
     }

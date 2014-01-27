@@ -40,33 +40,51 @@ template <class MyRule>
 class C2f : public MyRule
 {
 public:
-  C2f(const MyRule& r) : MyRule(r), finers(), coarser(NULL), logmode(false){};
-  C2f() : MyRule(), finers(), coarser(NULL), logmode(false){};
+  C2f(const MyRule& r) : MyRule(r), finer(NULL), finer_alt(NULL), coarser(NULL), logmode(false){};
+  C2f() : MyRule(), finer(NULL), finer_alt(NULL), coarser(NULL), logmode(false){};
 
   virtual ~C2f() {};
 
-  // void set_finers(const std::vector< C2f*>& fs)
+  // void add_finer(C2f* f)
   // {
-  //   finers = fs;
+  //   finers.push_back(f);
+  //   finers.back()->coarser = this;
   // }
 
-  void add_finer(C2f* f)
+  void set_finer(C2f * f)
   {
-    finers.push_back(f);
-    finers.back()->coarser = this;
+    finer = f;
+    f->coarser = this;
   }
 
-  const std::vector<const C2f*>& get_finers() const
+  void set_finer_alt(C2f * f)
   {
-    return finers;
+    finer_alt = f;
+    f->coarser = this;
   }
 
-  const C2f * get(int index) const
+
+  const C2f * get_finer() const
   {
-    if(index < 0) return this;
-    assert(unsigned(index) < finers.size());
-    return finers[index];
+    return finer;
   }
+
+  const C2f * get_finer_alt() const
+  {
+    return finer_alt;
+  }
+
+  // const std::vector<const C2f*>& get_finers() const
+  // {
+  //   return finers;
+  // }
+
+  // const C2f * get(int index) const
+  // {
+  //   if(index < 0) return this;
+  //   assert(unsigned(index) < finers.size());
+  //   return finers[index];
+  // }
 
 
   const C2f* get_coarser() const
@@ -96,7 +114,8 @@ public:
 
 
 private:
-  std::vector< C2f*> finers;
+  C2f* finer;
+  C2f* finer_alt;
   C2f* coarser;
 
   friend class boost::serialization::access;
@@ -107,7 +126,8 @@ private:
     void serialize(Archive & ar, const unsigned int /*version*/)
     {
       ar & boost::serialization::base_object<MyRule>(*this);
-      ar & finers;
+      ar & finer;
+      ar & finer_alt;
       ar & coarser;
       ar & logmode;
     }

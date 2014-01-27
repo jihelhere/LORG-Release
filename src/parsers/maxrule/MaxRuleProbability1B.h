@@ -79,10 +79,7 @@ inline void MaxRuleProbability1B::update_lexical(Edge & edge, LexicalDaughter& d
       dtr.set_calculated(true);
     }
 
-    double probability = dtr.get_q_score() + dtr.get_relaxation();
-
-    // if (dtr.get_relaxation() != 0.0)
-    //   std::cout << "lexical relax "<< dtr.get_relaxation() << std::endl;
+    double probability = dtr.get_q_score() + edge.get_relaxation();
 
     if (probability > best.probability)
     {
@@ -100,6 +97,8 @@ inline void MaxRuleProbability1B::update_unary (Edge & e, UnaryDaughter & dtr, d
 
   double probability = - std::numeric_limits<double>::infinity();
 
+
+  // unary rules are legal only above lexical/binary rules
   if(left.get_prob_model().get(0).dtrs &&
      (left.get_prob_model().get(0).dtrs->is_lexical() || left.get_prob_model().get(0).dtrs->is_binary()))
   {
@@ -112,7 +111,7 @@ inline void MaxRuleProbability1B::update_unary (Edge & e, UnaryDaughter & dtr, d
       dtr.set_calculated(true);
     }
 
-    probability = dtr.get_q_score() + dtr.get_relaxation()
+    probability = dtr.get_q_score() + e.get_relaxation()
                   + dtr.left_daughter().get_prob_model().get(0).probability;
 
     // if (dtr.get_relaxation() != 0.0)
@@ -150,7 +149,7 @@ MaxRuleProbability1B::update_binary (Edge & e, BinaryDaughter & dtr, double log_
     // TODO: FIX THIS
     if(probability != -std::numeric_limits<double>::infinity())
     {
-      probability += dtr.get_relaxation()
+      probability += e.get_relaxation()
                      + dtr.left_daughter().get_prob_model().get(0).probability
                      + dtr.right_daughter().get_prob_model().get(0).probability;
 
