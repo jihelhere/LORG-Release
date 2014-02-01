@@ -6,6 +6,8 @@
 #include <iostream>
 #include <iomanip>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -21,7 +23,7 @@
 #include <boost/fusion/include/std_pair.hpp>
 
 #include <boost/spirit/include/classic_position_iterator.hpp>
-
+#pragma clang diagnostic pop
 
 namespace classic = boost::spirit::classic;
 

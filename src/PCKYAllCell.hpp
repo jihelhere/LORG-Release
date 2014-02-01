@@ -168,7 +168,7 @@ template<class Types>
 void PCKYAllCell<Types>::clean()
 {
   bool changed;
-  int i = 0;
+  //int i = 0;
   //#define MAX_UNARY_CHAIN_LENGTH 3
   do {
     changed =  false;

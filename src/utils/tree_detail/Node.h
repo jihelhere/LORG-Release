@@ -10,9 +10,12 @@
 #include "ConstTreeIterator.h"
 #include "ConstDepthFirstTreeIterator.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 // include headers that implement a archive in simple text format
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#pragma clang diagnostic pop
 
 class DoubleRootException{};
 

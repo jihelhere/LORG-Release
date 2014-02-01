@@ -8,6 +8,8 @@
 
 #include "TreebankFactory.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/home/phoenix/statement/sequence.hpp>
@@ -15,9 +17,10 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/home/phoenix/algorithm.hpp>
 
-
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
 #include <boost/spirit/home/phoenix/bind/bind_member_variable.hpp>
+#pragma clang diagnostic pop
+
 
 #include "utils/RandomGenerator.h"
 

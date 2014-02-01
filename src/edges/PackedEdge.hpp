@@ -12,7 +12,7 @@ void PackedEdge<Types>::add_daughters(Edge & left, const UnaryRule* rule)
     this->open = true;
     this->local_resize_annotations(1);
   }
-  unary_daughters.push_back(UnaryDaughter(left,rule));
+  unary_daughters.emplace_back(UnaryDaughter(left,rule));
 }
 
 template<class Types>
@@ -24,7 +24,7 @@ void PackedEdge<Types>::add_daughters(Edge & left, Edge & right, const BinaryRul
     this->open = true;
     this->local_resize_annotations(1);
   }
-  binary_daughters.push_back(BinaryDaughter(left,right,rule));
+  binary_daughters.emplace_back(BinaryDaughter(left,right,rule));
 }
 
 template<class Types>
@@ -35,7 +35,7 @@ void PackedEdge<Types>::add_daughters(const LexicalRule* rule, const Word* w)
     this->open = true;
     this->local_resize_annotations(1);
   }
-  lexical_daughters.push_back(LexicalDaughter(rule, w));
+  lexical_daughters.emplace_back(LexicalDaughter(rule, w));
 }
 
 
@@ -186,8 +186,10 @@ void PackedEdge<Types>::replace_rule_probabilities(unsigned i)
 template <class Types>
 void PackedEdge<Types>::prepare_inside_probability()
 {
-  this->get_annotations().inside_probabilities_unary_temp.array = this->get_annotations().inside_probabilities.array ;
-  for(auto & prob: this->get_annotations().inside_probabilities_unary_temp.array) {
+  auto& annot = this->get_annotations();
+
+  annot.inside_probabilities_unary_temp.array = annot.inside_probabilities.array ;
+  for(auto & prob: annot.inside_probabilities_unary_temp.array) {
     if (prob != LorgConstants::NullProba) prob = 0;
   }
 }
@@ -202,8 +204,8 @@ void PackedEdge<Types>::adjust_inside_probability()
       if(annot.inside_probabilities.array[i] != LorgConstants::NullProba)
         annot.inside_probabilities.array[i] += annot.inside_probabilities_unary_temp.array[i];
 
-      if(annot.inside_probabilities_unary_temp.array[i] == LorgConstants::NullProba)
-        annot.inside_probabilities.array[i] = LorgConstants::NullProba;
+      // if(annot.inside_probabilities_unary_temp.array[i] == LorgConstants::NullProba)
+      //   annot.inside_probabilities.array[i] = LorgConstants::NullProba;
     }
 }
 
@@ -211,8 +213,10 @@ void PackedEdge<Types>::adjust_inside_probability()
 template <class Types>
 void PackedEdge<Types>::prepare_outside_probability()
 {
-  this->get_annotations().outside_probabilities_unary_temp.array = this->get_annotations().outside_probabilities.array ;
-  for(auto & prob: this->get_annotations().outside_probabilities_unary_temp.array) {
+  auto& annot = this->get_annotations();
+
+  annot.outside_probabilities_unary_temp.array = annot.outside_probabilities.array ;
+  for(auto & prob: annot.outside_probabilities_unary_temp.array) {
     if (prob != LorgConstants::NullProba) prob = 0;
   }
 }
@@ -220,10 +224,12 @@ void PackedEdge<Types>::prepare_outside_probability()
 template <class Types>
 void PackedEdge<Types>::adjust_outside_probability()
 {
-  for (unsigned i = 0; i < this->get_annotations().outside_probabilities.array.size(); ++i)
+  auto& annot = this->get_annotations();
+
+  for (unsigned i = 0; i < annot.outside_probabilities.array.size(); ++i)
     {
-      if(this->get_annotations().outside_probabilities.array[i] != LorgConstants::NullProba)
-        this->get_annotations().outside_probabilities.array[i] += this->get_annotations().outside_probabilities_unary_temp.array[i];
+      if(annot.outside_probabilities.array[i] != LorgConstants::NullProba)
+        annot.outside_probabilities.array[i] += annot.outside_probabilities_unary_temp.array[i];
     }
 }
 

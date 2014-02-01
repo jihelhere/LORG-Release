@@ -3,13 +3,19 @@
 #define _BRULEC2F_H_
 
 #include "BRule.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include "C2f.h"
+#pragma clang diagnostic pop
+
+
 //#include <cmath>
 
 typedef C2f<BRule> BRuleC2f;
 
 
-// class BRuleC2f : public C2f<BRule> 
+// class BRuleC2f : public C2f<BRule>
 // {
 // public:
 //   BRuleC2f(const BRule& r) : C2f<BRule>(r) {}

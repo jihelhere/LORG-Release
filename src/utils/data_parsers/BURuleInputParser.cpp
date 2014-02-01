@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -19,6 +21,7 @@
 #include <boost/config/warning_disable.hpp>
 
 #include <boost/fusion/include/std_pair.hpp>
+#pragma clang diagnostic pop
 
 
 namespace fusion = boost::fusion;

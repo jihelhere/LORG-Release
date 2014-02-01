@@ -20,7 +20,7 @@ namespace compact_binary_rules {
     vector_rhs1() : rhs1(), rules(), _begin(), _end() {}
 
     inline const_iterator begin() const { return _begin; }
-    inline const_iterator end() const { return _end; }
+    inline const_iterator end()   const { return _end; }
   };
 
   // this structure stores vector_rhs1 sharing attribute rhs0

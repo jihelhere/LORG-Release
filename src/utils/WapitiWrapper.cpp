@@ -149,7 +149,7 @@ void wapiti_wrapper_pos::update_relaxations(const std::unordered_map<int, std::u
     int begin = i.first;
     for (const auto& j : i.second)
     {
-      int end = j.first;
+      //int end = j.first;
       for (auto& k: j.second)
       {
         int symbol = k.first;

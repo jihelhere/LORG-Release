@@ -5,11 +5,13 @@
 #include <string>
 #include <algorithm>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 // include headers that implement a archive in simple text format
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
-
+#pragma clang diagnostic pop
 
 template <typename Bin, typename Un, typename Lex>
 class Grammar

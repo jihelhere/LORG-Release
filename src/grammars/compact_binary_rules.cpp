@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <stdexcept>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
-
+#pragma clang diagnostic pop
 using namespace compact_binary_rules;
 
 using namespace boost::phoenix;
@@ -33,6 +35,8 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
   result._begin = result.rules.begin();
   result._end = result.rules.end();
   result.rhs1 = pre.front()->get_rhs1();
+
+  result.rules.shrink_to_fit();
 }
 
 
@@ -48,6 +52,8 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
   result._begin = result.vrhs1.begin();
   result._end = result.vrhs1.end();
   result.rhs0 = pre.front().front()->get_rhs0();
+
+  result.vrhs1.shrink_to_fit();
 }
 
 
@@ -63,6 +69,8 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
 
   result._begin = result.vrhs0.begin();
   result._end = result.vrhs0.end();
+
+  result.vrhs0.shrink_to_fit();
 }
 
 template<typename info>
@@ -78,19 +86,21 @@ vector_brules<info>::convert(const std::vector<BinaryRule >& binary_rules)
   //partition brules according to their rhs0
   vvbrp brulesranked;
 
-  for(typename vbr::const_iterator brules_itr = binary_rules.begin();
-      brules_itr != binary_rules.end(); ++brules_itr) {
+  for(const auto& br : binary_rules)
+  //   typename vbr::const_iterator brules_itr = binary_rules.begin();
+  // brules_itr != binary_rules.end(); ++brules_itr)
+  {
 
-    int rhs0 = brules_itr->get_rhs0();
+    int rhs0 = br.get_rhs0();
 
-    typename vvbrp::iterator br_itr = std::find_if(brulesranked.begin(),brulesranked.end(),
-						   bind(&BinaryRule::get_rhs0,front(arg_names::arg1)) == rhs0
-						   );
+    auto br_itr = std::find_if(brulesranked.begin(),brulesranked.end(),
+                               bind(&BinaryRule::get_rhs0,front(arg_names::arg1)) == rhs0
+                               );
 
     if(br_itr != brulesranked.end())
-      br_itr->push_back(&(*brules_itr));
+      br_itr->push_back(&br);
     else
-      brulesranked.push_back(vbrp(1,&(*brules_itr)));
+      brulesranked.push_back(vbrp(1,&br));
   }
 
   vvvbrp prebrulesrankedranked;
@@ -99,20 +109,19 @@ vector_brules<info>::convert(const std::vector<BinaryRule >& binary_rules)
   //in each partition, repartition brules according to their rhs1
   for(unsigned i = 0; i < brulesranked.size();++i) {
     vbrp same_rhs0_vect = brulesranked[i];
-    for(typename vbrp::const_iterator same_rhs0_vect_itr = same_rhs0_vect.begin();
-	same_rhs0_vect_itr != same_rhs0_vect.end();++same_rhs0_vect_itr) {
+    for(const auto& r : same_rhs0_vect)
+    {
+      int rhs1 = r->get_rhs1();
 
-      int rhs1 = (*same_rhs0_vect_itr)->get_rhs1();
-
-      typename vvbrp::iterator itr = std::find_if(prebrulesrankedranked[i].begin(),
-						 prebrulesrankedranked[i].end(),
-						 bind(&BinaryRule::get_rhs1,front(arg_names::arg1)) == rhs1
-						 );
+      auto itr = std::find_if(prebrulesrankedranked[i].begin(),
+                              prebrulesrankedranked[i].end(),
+                              bind(&BinaryRule::get_rhs1,front(arg_names::arg1)) == rhs1
+                              );
 
       if(itr != prebrulesrankedranked[i].end())
-	itr->push_back(*same_rhs0_vect_itr);
+	itr->push_back(r);
       else
-	prebrulesrankedranked[i].push_back(vbrp(1,*same_rhs0_vect_itr));
+	prebrulesrankedranked[i].push_back(vbrp(1,r));
     }
   }
 

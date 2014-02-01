@@ -1,8 +1,10 @@
 #include "SymbolTable.h"
 
-
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#pragma clang diagnostic pop
 
 #include <fstream>
 

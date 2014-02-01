@@ -3,10 +3,16 @@
 #include "utils/SymbolTable.h"
 
 #include <algorithm>
+
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
+#pragma clang diagnostic pop
+
 
 namespace phx = boost::phoenix;
 
