@@ -11,9 +11,11 @@
 typedef std::map<int,std::vector<int> > Merge_map;
 typedef std::map<int,std::set<int> > Merge_lookup;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
-
+#pragma clang diagnostic pop
 
 class AnnotatedRule : public MetaProduction
 {

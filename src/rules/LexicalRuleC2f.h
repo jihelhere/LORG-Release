@@ -4,7 +4,11 @@
 #define _LEXICALRULEC2F_H_
 
 #include "LexicalRule.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include "C2f.h"
+#pragma clang diagnostic pop
 //#include <cmath>
 
 typedef C2f<LexicalRule> LexicalRuleC2f;

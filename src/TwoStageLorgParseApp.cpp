@@ -144,8 +144,8 @@ int TwoStageLorgParseApp::run()
         k = find_consensus(best_trees, sentence.size()); // doesn't
                                                          // work with lattices
 
-      if(verbose)
-        std::cerr << "k: " << k << std::endl;
+      // if(verbose)
+      //   std::cerr << "k: " << k << std::endl;
 
       ////
 
@@ -537,7 +537,10 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         int l;
         l  = simplification_map.at(r->get_lhs());
 
-        if(SymbolTable::instance_nt().get_label_string(l)[0] != '[')
+        if(SymbolTable::instance_nt().get_label_string(l)[0] != '['
+           &&
+           (!r->is_lexical() || !use_pos) // dont process lexicals twice
+           )
           // not an 'artificial node'
         {
           anchored_symbol vv(l, std::get<1>(e), std::get<2>(e));

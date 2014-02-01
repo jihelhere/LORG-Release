@@ -114,21 +114,8 @@ public:
   inline void backup_annotations(const AnnotationInfo& annotations);
 
 private:
-
-  // struct test_helper
-  // {
-  //   const packed_edge_probability& pep;
-  //   test_helper(const packed_edge_probability& p) : pep(p) {};
-
-  //   bool operator()(const packed_edge_probability& p)
-  //   {
-  //     //      return false;
-  //     return p.probability == pep.probability
-  //       //  || p.dtrs == pep.dtrs
-  //       ;}
-  // };
-
 };
+
 inline std::ostream& operator<<(std::ostream& out, const MaxRuleProbabilityMultiple & prob)
 {
   return out << "(MaxRuleMulltipleProb: " << &prob << ")";
