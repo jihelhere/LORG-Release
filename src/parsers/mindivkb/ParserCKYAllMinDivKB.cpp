@@ -114,7 +114,7 @@ MinDivProbabilityKB::extend_derivation (unsigned int i, bool licence_unaries)
 
   if(derivations.size() > 0) {
 
-    packed_edge_probability& last = derivations[derivations.size() -1];
+    packed_edge_probability_with_index& last = derivations[derivations.size() -1];
 
     //    std::cout << "last.probability " << last.probability << std::endl;
 
@@ -157,7 +157,7 @@ MinDivProbabilityKB::extend_derivation (unsigned int i, bool licence_unaries)
 
 }
 
-inline void MinDivProbabilityKB::find_succ(packed_edge_probability& pep, bool licence_unaries)
+inline void MinDivProbabilityKB::find_succ(packed_edge_probability_with_index& pep, bool licence_unaries)
 {
   if(pep.dtrs->is_lexical())  { return;}
   // binary -> extend left and right daughters
@@ -172,7 +172,7 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability& pep, bool li
     // we haven't reached the expected number of solutions
     if(nextleft < left.get_prob_model().n_deriv()) {
 
-      packed_edge_probability p(pep);
+      packed_edge_probability_with_index p(pep);
       p.left_index = nextleft;
       p.probability = d->tree_log_proba(p.left_index, p.right_index);
 
@@ -198,7 +198,7 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability& pep, bool li
       //        std::cout << "bin extending on the right" << std::endl;
 
 
-      packed_edge_probability p(pep);
+      packed_edge_probability_with_index p(pep);
       p.right_index = nextright;
       p.probability = d->tree_log_proba(p.left_index, p.right_index);
 
@@ -232,7 +232,7 @@ inline void MinDivProbabilityKB::find_succ(packed_edge_probability& pep, bool li
 
     if(nextleft < left.get_prob_model().n_deriv() ) {
       //        std::cout << "un extending" << std::endl;
-      packed_edge_probability p(pep);
+      packed_edge_probability_with_index p(pep);
       p.left_index = nextleft;
       p.probability = d->tree_log_proba(p.left_index);
 
@@ -312,11 +312,11 @@ inline void MinDivProbabilityKB::update_inside_unary(const UnaryDaughter& dtr)
 }
 inline void MinDivProbabilityKB::prepare_inside_unary()
 {
-  inside_unary_temp = inside_prob != LorgConstants::NullProba ? 0 : LorgConstants::NullProba ;
+  inside_unary_temp = 0.0;
 }
 inline void MinDivProbabilityKB::adjust_inside_unary()
 {
-  if (inside_prob!=LorgConstants::NullProba) inside_prob += inside_unary_temp ;
+  if (inside_prob!=0) inside_prob += inside_unary_temp ;
 }
 
 inline void ParserCKYAllMinDivKB::compute_inside_q_probabilities()
@@ -368,11 +368,11 @@ inline void MinDivProbabilityKB::update_outside_unary(const UnaryDaughter& dtr)
 }
 inline void MinDivProbabilityKB::prepare_outside_unary()
 {
-  outside_unary_temp = outside_prob != LorgConstants::NullProba ? 0 : LorgConstants::NullProba ;
+  outside_unary_temp = 0.0;
 }
 inline void MinDivProbabilityKB::adjust_outside_unary()
 {
-  if (outside_prob!=LorgConstants::NullProba) outside_prob += outside_unary_temp ;
+  if (outside_prob!=0.0) outside_prob += outside_unary_temp ;
 }
 
 
@@ -418,7 +418,7 @@ inline void ParserCKYAllMinDivKB::compute_inside_outside_q_probabilities()
 /***********************************************************************/
 inline void MinDivProbabilityKB::update_q_lexical(LexicalDaughter& dtr)
 {
-  if (outside_prob != LorgConstants::NullProba)
+  if (outside_prob != 0.0)
     dtr.q = dtr.mp / outside_prob;
   else
     dtr.q = 0 ;
@@ -426,7 +426,7 @@ inline void MinDivProbabilityKB::update_q_lexical(LexicalDaughter& dtr)
 
 inline void MinDivProbabilityKB::update_q_unary(UnaryDaughter& dtr)
 {
-  if (outside_prob != LorgConstants::NullProba)
+  if (outside_prob != 0.0)
     dtr.q = dtr.mp / (
       outside_prob
       * dtr.left_daughter().get_prob_model().inside_prob
@@ -434,7 +434,7 @@ inline void MinDivProbabilityKB::update_q_unary(UnaryDaughter& dtr)
 }
 inline void MinDivProbabilityKB::update_q_binary(BinaryDaughter& dtr)
 {
-  if (outside_prob != LorgConstants::NullProba)
+  if (outside_prob != 0.0)
     dtr.q = dtr.mp / (
       outside_prob
       * dtr. left_daughter().get_prob_model().inside_prob
@@ -462,7 +462,7 @@ template<class TDaughter>
 inline void MinDivProbabilityKB::update_best(TDaughter& dtr)
 {
 //   std::cout << "updating "<<*this << "(dtr: " << *dtr.get_rule() << ")" << std::endl;
-  packed_edge_probability pep;
+  packed_edge_probability_with_index pep;
 
   pep.probability = dtr.tree_log_proba();
 
@@ -485,7 +485,7 @@ inline void MinDivProbabilityKB:: finalize_best()
 {
   if(!candidates.empty()) {
     if(candidates.size() > size) {
-        std::nth_element(candidates.begin(),candidates.begin()+size,candidates.end(),std::greater<packed_edge_probability>());
+        std::nth_element(candidates.begin(),candidates.begin()+size,candidates.end(),std::greater<packed_edge_probability_with_index>());
         candidates.resize(size);
   }
   std::make_heap(candidates.begin(),candidates.end());

@@ -55,6 +55,7 @@ void PCKYAllCell<Types>::clear()
 template<class Types>
 PCKYAllCell<Types>::~PCKYAllCell()
 {
+  //std::cerr << "in PCKYAllCell destructor" << std::endl;
   apply_on_edges( &Edge::close );
 }
 
@@ -91,7 +92,7 @@ void PCKYAllCell<Types>::process_candidate(const UnaryRule* rule, double L_insid
   // std::cout << "PCKYAllCell<Types>::process_candidate. array at "
   //           << & e.get_annotations().inside_probabilities_unary_temp.array[0]
   //           << std::endl; std::cout.flush();
-  e.get_annotations().inside_probabilities_unary_temp.array[0] += L_inside * rule->get_probability()[0][0];
+  e.get_annotations().unary_temp.array[0] += L_inside * rule->get_probability()[0][0];
 
 }
 
@@ -100,16 +101,22 @@ inline
 void PCKYAllCell<Types>::add_word(const Word & word)
 {
   //assert(edges.size() == max_size);
+
+
+
+  //std::cout << word.get_rules().size() << std::endl;
+
   for(const auto & rule : word.get_rules())
   {
     const typename Types::LRule* r = static_cast<const typename Types::LRule*>(rule);
-    int tag = rule->get_lhs();
+    auto& e = edges[rule->get_lhs()];
+
 
     // if (0 == edges[tag].get_annotations().get_size())
     //   edges[tag].local_resize_annotations(1);
 
-    edges[tag].add_daughters(r, &word);
-    edges[tag].get_annotations().inside_probabilities.array[0] += r->get_probability()[0];
+    e.add_daughters(r, &word);
+    e.get_annotations().inside_probabilities.array[0] += r->get_probability()[0];
   }
 }
 
@@ -305,23 +312,23 @@ void PCKYAllCell<Types>::beam(double log_threshold, double log_sent_prob)
   double beam = log_threshold  + log_sent_prob;
 
   for(Edge & edge: edges)
-    if(not edge.is_closed()) {
+    if(not edge.is_closed())
+    {
       bool all_invalid = true;
       AnnotationInfo& ai = edge.get_annotations();
 
       // calculate posterior for each annotation
-      for(unsigned annot = 0 ; annot < ai.inside_probabilities.array.size(); ++annot) {
-        if(ai.inside_probabilities.array[annot] != LorgConstants::NullProba
-          //|| ai.outside_probabilities.array[annot] != LorgConstants::NullProba
-        ) {
-
-          double prob = std::log(ai.inside_probabilities.array[annot]) + std::log(ai.outside_probabilities.array[annot]);
-          //          double prob = std::log(ai.inside_probabilities.array[annot] * ai.outside_probabilities.array[annot]);
+      for(unsigned annot = 0 ; annot < ai.inside_probabilities.array.size(); ++annot)
+      {
+        if(not ai.invalids[annot])
+        {
+          //double prob = std::log(ai.inside_probabilities.array[annot]) + std::log(ai.outside_probabilities.array[annot]);
+          double prob = std::log(ai.inside_probabilities.array[annot] * ai.outside_probabilities.array[annot]);
 
           if (prob > beam)
             all_invalid = false;
           else {
-            ai.inside_probabilities.array[annot] = ai.outside_probabilities.array[annot] = LorgConstants::NullProba;
+            ai.invalids[annot] = true;
           }
         }
       }
@@ -361,7 +368,7 @@ struct pred_beam_huang
     double total_in = 0;
     double sum = 0;
     for(unsigned annot = 0 ; annot < ailefty.inside_probabilities.array.size(); ++annot) {
-      if(ailefty.inside_probabilities.array[annot] != LorgConstants::NullProba) {
+      if(not ailefty.invalids[annot]) {
         sum += ailefty.inside_probabilities.array[annot];
       }
     }
@@ -374,7 +381,7 @@ struct pred_beam_huang
 
     sum = 0;
     for(unsigned annot = 0 ; annot < airighty.inside_probabilities.array.size(); ++annot) {
-      if(airighty.inside_probabilities.array[annot] != LorgConstants::NullProba) {
+      if(not airighty.invalids[annot]) {
         sum += airighty.inside_probabilities.array[annot];
       }
     }
@@ -395,7 +402,7 @@ struct pred_beam_huang
     double total_in = 0;
 
     for(unsigned annot = 0 ; annot < ailefty.inside_probabilities.array.size(); ++annot) {
-      if(ailefty.inside_probabilities.array[annot] != LorgConstants::NullProba) {
+      if(not ailefty.invalids[annot]) {
         total_in += ailefty.inside_probabilities.array[annot];
       }
     }
@@ -420,7 +427,7 @@ void PCKYAllCell<Types>::beam_huang(double log_threshold, double log_sent_prob)
 
       double total_out = 0;
       for(unsigned annot = 0 ; annot < ai.outside_probabilities.array.size(); ++annot) {
-        if(ai.outside_probabilities.array[annot] != LorgConstants::NullProba) {
+        if(not ai.invalids[annot]) {
           total_out += ai.outside_probabilities.array[annot];
         }
       }
@@ -458,8 +465,7 @@ void PCKYAllCell<Types>::change_rules_resize(const AnnotatedLabelsInfo& next_ann
 
           const std::vector<unsigned>& next_invalids = annot_descendants_current[i][annot];
           for(std::vector<unsigned>::const_iterator new_annot(next_invalids.begin()); new_annot != next_invalids.end(); ++new_annot) {
-            a.inside_probabilities.array[*new_annot] = LorgConstants::NullProba;
-            a.outside_probabilities.array[*new_annot] = LorgConstants::NullProba;
+            a.invalids[*new_annot] = true;
           }
         }
       }

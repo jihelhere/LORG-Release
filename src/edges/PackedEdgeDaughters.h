@@ -71,21 +71,42 @@ public:
   typedef typename Types::Cell Cell;
   typedef typename Types::Edge Edge;
   typedef typename Types::Edge * EdgePtr ;
+  typedef typename Types::Edge & EdgeRef ;
   typedef typename Types::BRule Rule;
 
 protected:
   EdgePtr left;
   EdgePtr right;
-//   friend class Types::Edge ;
+  // EdgeRef left;
+  // EdgeRef right;
+
+  //   friend class Types::Edge ;
 public:
   BinaryPackedEdgeDaughters(Edge& le, Edge& ri, const typename Types::BRule * ru)
       : Parent(ru), left(&le),right(&ri)
+        //: Parent(ru), left(le),right(ri)
   {};
+
+  // inline BinaryPackedEdgeDaughters& operator=(const BinaryPackedEdgeDaughters& other)
+  // {
+  //   if (this == &other)
+  //   {
+  //     return *this;
+  //   }
+  //   this->rule = other.rule;
+  //   this->left = other.left;
+  //   this->right = other.right;
+
+  //   return *this;
+  // }
+
 
   ~BinaryPackedEdgeDaughters() {};
 
   inline Edge& left_daughter() const {return *left;}
-  inline Edge& right_daughter() const {return *right;}
+  inline Edge& right_daughter() const {return * right;}
+  // inline Edge& left_daughter() const {return left;}
+  // inline Edge& right_daughter() const  {return right;}
 
   inline bool operator==(const BinaryPackedEdgeDaughters& other)
   {
@@ -94,22 +115,32 @@ public:
   inline bool points_towards_invalid_edges() const
   {
     return left->is_closed() or right->is_closed() ;
+    //return left.is_closed() or right.is_closed() ;
   }
 
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
-    Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities.array,
-                                                  left->get_annotations().inside_probabilities.array,
-                                                  right->get_annotations().inside_probabilities.array);
+
+    const auto& lannot = left->get_annotations();
+    const auto& rannot = right->get_annotations();
+
+    Parent::get_rule()->update_inside_annotations(annotations,
+                                                  lannot,
+                                                  rannot
+                                                  );
   }
 
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
-    Parent::get_rule()->update_outside_annotations(annotations.outside_probabilities.array,
-                                                   left->get_annotations().inside_probabilities.array,
-                                                   right->get_annotations().inside_probabilities.array,
-                                                   left->get_annotations().outside_probabilities.array,
-                                                   right->get_annotations().outside_probabilities.array);
+    auto& lannot = left->get_annotations();
+    auto& rannot = right->get_annotations();
+
+
+
+    Parent::get_rule()->update_outside_annotations(annotations,
+                                                   lannot,
+                                                   rannot
+                                                   );
   }
 };
 
@@ -149,13 +180,16 @@ public:
   }
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
-    Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities_unary_temp.array,
-                                        left->get_annotations().inside_probabilities.array);
+
+    const auto& lannot = left->get_annotations();
+
+    Parent::get_rule()->update_inside_annotations(annotations, lannot);
   }
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
-    Parent::get_rule()->update_outside_annotations(annotations.outside_probabilities.array,
-                                         left->get_annotations().outside_probabilities_unary_temp.array);
+    auto& lannot = left->get_annotations();
+
+    Parent::get_rule()->update_outside_annotations(annotations, lannot);
   }
 };
 
@@ -188,7 +222,9 @@ public:
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
 //     BLOCKTIMING("LexicalPackedEdgeDaughters - update_inside_annotations");
     assert(Parent::get_rule() != NULL);
-    Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities.array);
+    // Parent::get_rule()->update_inside_annotations(annotations.inside_probabilities.array,
+    //                                               annotations.invalids);
+    Parent::get_rule()->update_inside_annotations(annotations);
   }
 };
 

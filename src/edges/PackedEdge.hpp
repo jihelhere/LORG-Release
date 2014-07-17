@@ -11,8 +11,10 @@ void PackedEdge<Types>::add_daughters(Edge & left, const UnaryRule* rule)
   if (not this->open) {
     this->open = true;
     this->local_resize_annotations(1);
+    unary_daughters.reserve(50);
   }
-  unary_daughters.emplace_back(UnaryDaughter(left,rule));
+  unary_daughters.emplace_back(left,rule);
+  //std::cout << "u: " << unary_daughters.size() << std::endl;
 }
 
 template<class Types>
@@ -23,8 +25,11 @@ void PackedEdge<Types>::add_daughters(Edge & left, Edge & right, const BinaryRul
   if (not this->open) {
     this->open = true;
     this->local_resize_annotations(1);
+    binary_daughters.reserve(100);
   }
-  binary_daughters.emplace_back(BinaryDaughter(left,right,rule));
+  binary_daughters.emplace_back(left,right,rule);
+
+  //std::cout << "b: " << binary_daughters.size() << std::endl;
 }
 
 template<class Types>
@@ -34,8 +39,10 @@ void PackedEdge<Types>::add_daughters(const LexicalRule* rule, const Word* w)
   if (not this->open) {
     this->open = true;
     this->local_resize_annotations(1);
+    lexical_daughters.reserve(5);
   }
-  lexical_daughters.emplace_back(LexicalDaughter(rule, w));
+  lexical_daughters.emplace_back(rule, w);
+  //std::cout << "l: " << lexical_daughters.size() << std::endl;
 }
 
 
@@ -120,7 +127,7 @@ typename Types::EdgeProbability& PackedEdge<Types>::get_prob_model() {return bes
 template<class Types>
 inline void PackedEdge<Types>::extend_derivation(unsigned i, bool licence_unaries, const std::vector<double>& log_norms)
 {
-  best.extend_derivation(this,i, licence_unaries, log_norms);
+  best.extend_derivation(this, i, licence_unaries, log_norms);
 }
 
 
@@ -129,7 +136,7 @@ template<class Types>
 inline
 bool PackedEdge<Types>::valid_prob_at(unsigned i) const
 {
-  return get_annotations().valid_prob_at(i, LorgConstants::NullProba);
+  return get_annotations().valid_prob_at(i);
 }
 
 
@@ -188,10 +195,8 @@ void PackedEdge<Types>::prepare_inside_probability()
 {
   auto& annot = this->get_annotations();
 
-  annot.inside_probabilities_unary_temp.array = annot.inside_probabilities.array ;
-  for(auto & prob: annot.inside_probabilities_unary_temp.array) {
-    if (prob != LorgConstants::NullProba) prob = 0;
-  }
+  annot.unary_temp.array.resize(annot.inside_probabilities.array.size());
+  std::fill(annot.unary_temp.array.begin(),annot.unary_temp.array.end(), 0.0);
 }
 
 template <class Types>
@@ -201,11 +206,8 @@ void PackedEdge<Types>::adjust_inside_probability()
 
   for (unsigned i = 0; i < annot.inside_probabilities.array.size(); ++i)
     {
-      if(annot.inside_probabilities.array[i] != LorgConstants::NullProba)
-        annot.inside_probabilities.array[i] += annot.inside_probabilities_unary_temp.array[i];
-
-      // if(annot.inside_probabilities_unary_temp.array[i] == LorgConstants::NullProba)
-      //   annot.inside_probabilities.array[i] = LorgConstants::NullProba;
+      if(not annot.invalids[i])
+        annot.inside_probabilities.array[i] += annot.unary_temp.array[i];
     }
 }
 
@@ -215,10 +217,8 @@ void PackedEdge<Types>::prepare_outside_probability()
 {
   auto& annot = this->get_annotations();
 
-  annot.outside_probabilities_unary_temp.array = annot.outside_probabilities.array ;
-  for(auto & prob: annot.outside_probabilities_unary_temp.array) {
-    if (prob != LorgConstants::NullProba) prob = 0;
-  }
+  //annot.unary_temp.array.resize(annot.outside_probabilities.array.size()) ;
+  std::fill(annot.unary_temp.array.begin(),annot.unary_temp.array.end(), 0.0);
 }
 
 template <class Types>
@@ -228,8 +228,8 @@ void PackedEdge<Types>::adjust_outside_probability()
 
   for (unsigned i = 0; i < annot.outside_probabilities.array.size(); ++i)
     {
-      if(annot.outside_probabilities.array[i] != LorgConstants::NullProba)
-        annot.outside_probabilities.array[i] += annot.outside_probabilities_unary_temp.array[i];
+      if(not annot.invalids[i])
+        annot.outside_probabilities.array[i] += annot.unary_temp.array[i];
     }
 }
 
@@ -251,16 +251,22 @@ void PackedEdge<Types>::clean_invalidated_binaries()
 //       ++it;
 //   }
 
+
+  //std::cerr << "clean_invalidated_binaries" << std::endl;
   auto removed_begin = std::remove_if(binary_daughters.begin(),
                                       binary_daughters.end(),
                                       toFunc(& BinaryDaughter::points_towards_invalid_edges));
+  //std::cerr << "after remove_if" << std::endl;
+
 
   binary_daughters . erase(removed_begin, binary_daughters.end());
+  //std::cerr << "after erase" << std::endl;
+
 
   // Reclaim memory !
   binary_daughters . shrink_to_fit() ;
 
-  assert(binary_daughters.capacity() == binary_daughters.size());
+  //assert(binary_daughters.capacity() == binary_daughters.size());
 }
 
 
@@ -367,18 +373,21 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv) const
   //  std::cout << "log prob deriv: " << best.get(ith_deriv).probability << std::endl;
 
 
+  const auto& pep = best.get(ith_deriv);
+
+
   // TODO raise exception
   // This is only to prevent wtf cases
-  if(best.get(ith_deriv).probability == - std::numeric_limits<double>::infinity()) {
+  if(pep.probability == - std::numeric_limits<double>::infinity()) {
     //std::cout << "-inf" << std::endl;
     return NULL;
   }
 
-  if(best.get(ith_deriv).dtrs == NULL) {
+  if(pep.dtrs == NULL) {
     //std::cout << "no daughters" << std::endl;
     return NULL;
   }
-  if(std::isnan(best.get(ith_deriv).probability)) {
+  if(std::isnan(pep.probability)) {
     //std::cout << "invalid prob" << std::endl ;
     return NULL;
   }
@@ -396,7 +405,7 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv) const
 
     //    std::cout << "allocation done" << std::endl;
 
-    if(best.get(ith_deriv).dtrs->is_binary()) {
+    if(pep.dtrs->is_binary()) {
 
       //       std::cout
       //           << "b rule: "
@@ -408,11 +417,11 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv) const
       //           << "\t" << best.get(ith_deriv).get_left_index()
       //           << "\t" << best.get(ith_deriv).get_right_index() << std::endl;
 
-      const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(best.get(ith_deriv).dtrs);
+      const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(pep.dtrs);
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index());
+      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, pep.get_left_index());
       int rhs1 = daughters->get_rule()->get_rhs1();
-      daughters->right_daughter().to_ptbpstree(*tree, pos, rhs1, best.get(ith_deriv).get_right_index());
+      daughters->right_daughter().to_ptbpstree(*tree, pos, rhs1, pep.get_right_index());
     }
     else {
 
@@ -425,13 +434,13 @@ PtbPsTree * PackedEdge<Types>::to_ptbpstree(int lhs, unsigned ith_deriv) const
        // std::cout << "deriv " << ith_deriv << std::endl;
        // std::cout << "\t" << best.get(ith_deriv).get_left_index() << std::endl;
 
-      const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(best.get(ith_deriv).dtrs);
+      const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(pep.dtrs);
       decode_path(*tree,pos,
                   PackedEdge<Types>::get_unary_chains(),
                   std::make_pair(lhs,0),
-                  std::make_pair(daughters->get_rule()->get_rhs0(), best.get(ith_deriv).get_left_index()));
+                  std::make_pair(daughters->get_rule()->get_rhs0(), pep.get_left_index()));
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, best.get(ith_deriv).get_left_index());
+      daughters->left_daughter().to_ptbpstree(*tree, pos, rhs0, pep.get_left_index());
     }
 
     return tree;
@@ -446,12 +455,15 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
   // default height for unary chains
   unsigned added_height = 1;
 
+  const auto& pep = best.get(index);
+
+
   // either a valid internal node or a lexical one
-  assert(best.get(index).dtrs || get_lex());
+  assert(pep.dtrs || get_lex());
 
   // if we can't find a branching (lexical node)
   // the nwe exit
-  if(!best.get(index).dtrs)
+  if(not pep.dtrs)
   {
     //std::cout << "dtrs is null" << std::endl;
     return;
@@ -460,14 +472,14 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
 
   // if the *branching* leads to a lexical node
   // the we write the preterminal *and* the word
-  if(best.get(index).dtrs->is_lexical()) {
+  if(pep.dtrs->is_lexical()) {
 
     // std::cout << "lex: " << std::endl;
     // std::cout << "lex: " << get_lhs() << std::endl;
     // std::cout << SymbolTable::instance_nt()->translate(get_lhs()) << std::endl;
     // pos = tree.add_last_daughter(pos, SymbolTable::instance_word()->translate(get_lhs()));
 
-    const LexicalDaughter * daughters =  static_cast<const LexicalDaughter*>(best.get(index).dtrs);
+    const LexicalDaughter * daughters =  static_cast<const LexicalDaughter*>(pep.dtrs);
 
      // std::cout
      //     << "l rule: "
@@ -501,9 +513,9 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
     pos = tree.add_last_daughter(pos, node_content.str());
 
     //assert(best);
-    assert(best.get(index).dtrs);
+    assert(pep.dtrs);
 
-    if(best.get(index).dtrs->is_binary()) {
+    if(pep.dtrs->is_binary()) {
 
        // std::cout
        //     << "b rule: "
@@ -517,12 +529,12 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
       //           << "\t" << best.get(index).get_left_index()
       //           << "\t" << best.get(index).get_right_index() << std::endl;
 
-      const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(best.get(index).dtrs);
+      const BinaryDaughter * daughters =  static_cast<const BinaryDaughter*>(pep.dtrs);
 
       int rhs0 = daughters->get_rule()->get_rhs0();
-      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, best.get(index).get_left_index());
+      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, pep.get_left_index());
       int rhs1 = daughters->get_rule()->get_rhs1();
-      daughters->right_daughter().to_ptbpstree(tree, pos, rhs1, best.get(index).get_right_index());
+      daughters->right_daughter().to_ptbpstree(tree, pos, rhs1, pep.get_right_index());
     } // if(best.get(index).dtrs->is_binary())
     else { //unary branching
 
@@ -536,11 +548,11 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
       //           << "\t" << best.get(index).get_left_index()
       //           << "\t" << best.get(index).get_right_index() << std::endl;
 
-      const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(best.get(index).dtrs);
+      const UnaryDaughter * daughters =  static_cast<const UnaryDaughter*>(pep.dtrs);
 
       std::pair<int,int> fro = std::make_pair(lhs, index);
       std::pair<int,int> to =  std::make_pair(daughters->get_rule()->get_rhs0(),
-                                              best.get(index).get_left_index());
+                                              pep.get_left_index());
 
       added_height += decode_path(tree,pos,
                                   PackedEdge<Types>::get_unary_chains(),
@@ -552,7 +564,7 @@ void PackedEdge<Types>::to_ptbpstree(PtbPsTree& tree,
 
       int rhs0 = daughters->get_rule()->get_rhs0();
       //      std::cout << *daughters->get_rule() << std::endl;
-      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, best.get(index).get_left_index());
+      daughters->left_daughter().to_ptbpstree(tree, pos, rhs0, pep.get_left_index());
     }
 
   }
@@ -603,9 +615,7 @@ double PackedEdge<Types>::marginalise() const
   const AnnotationInfo & a = this->get_annotations();
   for (unsigned i = 0; i < a.inside_probabilities.array.size(); ++i)
   {
-    if(a.inside_probabilities.array[i] == LorgConstants::NullProba
-       || a.outside_probabilities.array[i] == LorgConstants::NullProba
-       )
+    if(a.invalids[i])
       continue;
 
     //    std::cout << a.inside_probabilities.array[i] << " " << a.outside_probabilities.array[i] << std::endl;

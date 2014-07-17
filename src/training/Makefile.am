@@ -7,7 +7,7 @@ LIBS+= -lrt
 endif
 
 
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I$(top_srcdir)/src
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I$(top_srcdir)/src -DNDEBUG
 tb2gram_CXXFLAGS = -O3 -pipe -ffast-math -ftemplate-depth=512
 #tb2gram_CXXFLAGS = -O3 -Wall -pipe #-fdiagnostics-show-option
 

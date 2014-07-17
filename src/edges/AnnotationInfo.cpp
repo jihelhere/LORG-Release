@@ -58,20 +58,9 @@ double scaled_array::get_scaled_logvalue(unsigned i) const
   return std::log(array[i]) + LOGSCALE * scale;
 }
 
-void scaled_array::reset(double value, bool keepnullproba)
+void scaled_array::reset(double value)
 {
-  if (keepnullproba)
-  {
-    for(auto& e : array)
-    {
-      if(e != LorgConstants::NullProba)
-        e = value;
-    }
-  }
-  else
-  {
-    std::fill(array.begin(), array.end(), value);
-  }
+  std::fill(array.begin(), array.end(), value);
   scale = 0;
 }
 
@@ -117,16 +106,21 @@ double scaled_array::calculate_logscalingfactor(int previous)
 
 
 AnnotationInfo::AnnotationInfo() : inside_probabilities(), outside_probabilities(),
-                                   inside_probabilities_unary_temp(), outside_probabilities_unary_temp() {}
+                                   invalids(),
+                                   unary_temp()
+
+{}
 
 AnnotationInfo::AnnotationInfo(unsigned i, double d) : inside_probabilities(i,d), outside_probabilities(i,d),
-                                                       inside_probabilities_unary_temp(i,d), outside_probabilities_unary_temp(i,d){}
+                                                       invalids(i, false),
+                                                       unary_temp(i,d)
+{}
 
 AnnotationInfo::AnnotationInfo(const AnnotationInfo& other)
   : inside_probabilities(other.inside_probabilities),
     outside_probabilities(other.outside_probabilities),
-    inside_probabilities_unary_temp(other.inside_probabilities_unary_temp),
-    outside_probabilities_unary_temp(other.outside_probabilities_unary_temp)
+    invalids(other.invalids),
+    unary_temp(other.unary_temp)
  {}
 
 
@@ -152,12 +146,16 @@ int AnnotationInfo::get_outside_scale() const
 
 void AnnotationInfo::reset_inside_probabilities(double value, bool keepnullproba)
 {
-  inside_probabilities.reset(value, keepnullproba);
+  inside_probabilities.reset(value);
+  if (not keepnullproba)
+    std::fill(invalids.begin(),invalids.end(),false);
 }
 
 void AnnotationInfo::reset_outside_probabilities(double value, bool keepnullproba)
 {
-  outside_probabilities.reset(value, keepnullproba);
+  outside_probabilities.reset(value);
+  if (not keepnullproba)
+    std::fill(invalids.begin(),invalids.end(),false);
 }
 
 void AnnotationInfo::reset_probabilities( double value, bool keepnullproba)
@@ -175,12 +173,13 @@ void AnnotationInfo::resize(unsigned new_size)
 {
   inside_probabilities.resize(new_size);
   outside_probabilities.resize(new_size);
-  inside_probabilities_unary_temp.resize(new_size);
-  outside_probabilities_unary_temp.resize(new_size);
+  invalids.resize(new_size,false);
+  unary_temp.resize(new_size);
 }
 
-bool AnnotationInfo::valid_prob_at(unsigned i, double invalid) const
+bool AnnotationInfo::valid_prob_at(unsigned i) const
 {
-  return (inside_probabilities.array[i] != invalid &&
-	  outside_probabilities.array[i] != invalid);
+  return not invalids[i];
+  // return (inside_probabilities.array[i] != invalid &&
+  //         outside_probabilities.array[i] != invalid);
 }

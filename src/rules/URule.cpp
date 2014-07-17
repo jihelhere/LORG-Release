@@ -148,31 +148,70 @@ std::ostream& operator<<(std::ostream& out, const URule& rule)
 
 //#include <iostream>
 
-
-
-void URule::update_inside_annotations(std::vector<double>& up,
-				      const std::vector<double>& left) const
+#ifdef USE_MANUAL_SSE
+#include <xmmintrin.h>  // Need this for SSE compiler intrinsics
+#endif
+void URule::update_inside_annotations(AnnotationInfo& up_annot,
+                                      const AnnotationInfo& left_annot) const
 {
-  for(size_t i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
+
+#ifdef USE_MANUAL_SSE
+  size_t size = left_annot.inside_probabilities.array.size();
+  size_t N = size / 2;
+  bool odd = (size % 2) != 0 and not left_annot.invalids[size -1];
+
+  const auto& llast = left_annot.inside_probabilities.array[size -1];
+#endif
+
+
+  for(size_t i = 0 ; i < probabilities.size();++i)
+  {
+    if(up_annot.invalids[i]) continue;
     //if(probabilities[i].empty()) continue;
 
     const std::vector<double>& rule_probs_i = probabilities[i];
+    if (rule_probs_i.empty()) continue;
+    auto& ui = up_annot.unary_temp.array[i];
+
 
     //   std::cout << *this << std::endl;
 
-    for(size_t j = 0 ; j < rule_probs_i.size();++j) {
-      if(left[j] == LorgConstants::NullProba) continue;
-      //if(left[j] == 0) continue;
-      //if(rule_probs_i[j] == 0) continue;
-      up[i] += left[j] * rule_probs_i[j];
+#ifndef USE_MANUAL_SSE
+    for(size_t j = 0 ; j < rule_probs_i.size();++j)
+    {
+      // this test seems useless ?
+      //if(left_annot.invalids[j]) continue;
+      ui += left_annot.inside_probabilities.array[j] * rule_probs_i[j];
     }
+#else
+    __m128d * a = (__m128d*) left_annot.inside_probabilities.array.data();
+    __m128d * p = (__m128d*) rule_probs_i.data();
+    double tmp_double[2] = {0.0,0.0};
+    __m128d * tmp = (__m128d*) tmp_double;
+
+
+    for (size_t j = 0; j < N; ++j, ++a, ++p)
+    {
+      //std::cerr << "k " << k << std::endl;
+      _mm_store_pd(tmp_double,
+                   _mm_add_pd( *tmp,
+                               _mm_mul_pd(*a,*p)));
+    }
+
+
+    ui += tmp_double[0] + tmp_double[1];
+    if (odd)
+    {
+      ui += llast* rule_probs_i[size - 1];
+    }
+#endif
+
 
      // if(up[i] < 0.0 || up[i] > 1.0)
     //std::cout << *this << " " << up[i] <<std::endl;
 
-    assert(up[i] >= 0.0);
-    assert(up[i] <= 1.0);
+    assert(ui >= 0.0);
+    assert(ui <= 1.0);
   }
 }
 // {
@@ -190,8 +229,8 @@ void URule::update_inside_annotations(std::vector<double>& up,
 
 
 //inline
-void URule::update_outside_annotations(const std::vector<double>& up,
-                                       std::vector<double>& left) const
+void URule::update_outside_annotations(const AnnotationInfo& up_annot,
+                                       AnnotationInfo& left_annot) const
 // {
 //   for(unsigned short i = 0 ; i < probabilities.size();++i) {
 //     //if(up[i] == 0) continue;
@@ -206,29 +245,27 @@ void URule::update_outside_annotations(const std::vector<double>& up,
 // }
 {
   for(unsigned short i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
+    if(up_annot.invalids[i]) continue;
     const std::vector<double>& dim_i = probabilities[i];
     for(unsigned short j = 0 ; j < dim_i.size();++j) {
-      if(left[j] == LorgConstants::NullProba) continue;
-      left[j] += up[i] * dim_i[j];
+      if(left_annot.invalids[j]) continue;
+      left_annot.unary_temp.array[j] += up_annot.outside_probabilities.array[i] * dim_i[j];
     }
   }
 }
 
-double URule::update_outside_annotations_return_marginal(const std::vector< double >& up,
-                                                               const std::vector< double >& in_left,
-                                                               std::vector< double >& out_left)
-const
+double URule::update_outside_annotations_return_marginal(const AnnotationInfo& up_annot,
+                                                         AnnotationInfo& left_annot) const
 {
   double marginal = 0.0;
   for(unsigned short i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
+    if(up_annot.invalids[i]) continue;
     const std::vector<double>& dim_i = probabilities[i];
     for(unsigned short j = 0 ; j < dim_i.size();++j) {
-      if(out_left[j] == LorgConstants::NullProba) continue;
-      double delta = up[i] * dim_i[j] ;
-      out_left[j] += delta ;
-      marginal += delta * in_left[j] ;
+      if(left_annot.invalids[j]) continue;
+      double delta = up_annot.outside_probabilities.array[i] * dim_i[j] ;
+      left_annot.unary_temp.array[j] += delta ;
+      marginal += delta * left_annot.inside_probabilities.array[j] ;
     }
   }
   return marginal;

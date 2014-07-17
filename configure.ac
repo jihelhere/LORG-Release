@@ -10,6 +10,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 LT_INIT
 
 CXXFLAGS=""
+CFLAGS=""
 
 AC_PROG_CC_STDC
 
@@ -19,7 +20,7 @@ AC_LANG_CPLUSPLUS
 
 
 AX_CXX_COMPILE_STDCXX_11([noext])
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -march=native],\
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option  -march=native],\
 [CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -march=native"])
 
 
@@ -74,10 +75,24 @@ AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
 AX_BOOST_SERIALIZATION
 
+
+dnl AC_ARG_WITH(tbb, [message],
+dnl                  [
+dnl                  if test "$withval" = "no"; then
+dnl                     want_tbb="no"
+dnl                  else
+dnl                     AX_TBB([use_tbb=yes], AC_MSG_WARN([cannot find the Intel TBB library consider to give --with-tbb to link it. Will compile without thread (parser only)]))
+dnl                  fi
+dnl                  ]
+dnl                  )
+
+
 AX_TBB([use_tbb=yes], AC_MSG_WARN([cannot find the Intel TBB library consider to give --with-tbb to link it. Will compile without thread (parser only)]))
 
 
-AM_CONDITIONAL([WANT_TBB],[test "$use_tbb" = yes])
+#echo $want_tbb
+
+AM_CONDITIONAL([WANT_TBB],[test "x$use_tbb" != "xno"])
 
 AM_CONDITIONAL([WANT_TBB], [test "x$want_tbb" != "xno"])
 

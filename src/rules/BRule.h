@@ -11,6 +11,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
+#include "edges/AnnotationInfo.h"
 
 typedef std::vector< std::vector< std::vector<double> > > vector_3d;
 
@@ -127,24 +128,22 @@ void set_rhs1(short r) {rhs1 = r;}
   friend std::ostream& operator<<(std::ostream& out, const BRule& rule);
 
 
-  void update_inside_annotations(std::vector<double>& up,
-                                 const std::vector<double>& left,
-                                 const std::vector<double>& right) const;
+  void update_inside_annotations(AnnotationInfo& up_annot,
+                                 const AnnotationInfo& left_annot,
+                                 const AnnotationInfo& right_annot) const;
 
   void update_inside_annotations(std::vector<double>& up,
                                  const double& left_right_precomputation) const;
 
 
-  void update_outside_annotations(const std::vector<double>& up_out,
-                                  const std::vector<double>& left_in,
-                                  const std::vector<double>& right_in,
-                                  std::vector<double>& left_out,
-                                  std::vector<double>& right_out) const;
-  double update_outside_annotations_return_marginal(const std::vector< double >& up_out,
-                                                  const std::vector< double >& left_in,
-                                                  const std::vector< double >& right_in,
-                                                  std::vector< double >& left_out,
-                                                  std::vector< double >& right_out) const;
+  void update_outside_annotations(const AnnotationInfo& up_annot,
+                                  AnnotationInfo& left_annot,
+                                  AnnotationInfo& right_annot
+                                  ) const;
+  double update_outside_annotations_return_marginal(const AnnotationInfo& up_annot,
+                                                    AnnotationInfo& left_annot,
+                                                    AnnotationInfo& right_annot
+                                                    ) const;
   /**
      \brief removes useless zeros from probability vector
   */

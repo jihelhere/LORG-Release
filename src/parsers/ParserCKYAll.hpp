@@ -60,7 +60,15 @@ void ParserCKYAll_Impl<Types>::parse(int start_symbol) const
       chart->opencells_apply(
       [&](Cell& cell){
         if(!cell.is_empty()) {
-          this->add_unary_init(cell,cell.get_top());
+          if (cell.get_top())
+          {
+            this->add_unary_init<true>(cell);
+          }
+          else
+          {
+            this->add_unary_init<false>(cell);
+          }
+
           //           std::cout << cell << std::endl;
           cell.adjust_inside_probability();
 
@@ -210,7 +218,10 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
 
   {
     // BLOCKTIMING("process_cell unary");
-    add_unary_internal(cell, isroot);
+    if (isroot)
+      this->add_unary_internal<true>(cell);
+    else
+      this->add_unary_internal<false>(cell);
   }
   {
     // BLOCKTIMING("process_cell adjust_inside_probability");
@@ -228,29 +239,31 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
 
 
 template <class Types>
+template <bool isroot>
 inline
-void ParserCKYAll_Impl<Types>::add_unary_init(Cell& cell, bool isroot) const
+void ParserCKYAll_Impl<Types>::add_unary_init(Cell& cell) const
 {
   for(const auto& unary_rhs : unary_rhs_from_pos)
   {
     if (cell.exists_edge(unary_rhs))
     {
       //       BLOCKTIMING("ParserCKYAll_Impl<Types>::add_unary_init");
-      process_unary(cell,unary_rhs, isroot);
+      process_unary<isroot>(cell,unary_rhs);
     }
   }
 }
 
 template <class Types>
+template <bool isroot>
 inline
-void ParserCKYAll_Impl<Types>::add_unary_internal(Cell& cell, bool isroot) const
+void ParserCKYAll_Impl<Types>::add_unary_internal(Cell& cell) const
 {
   for(const auto& unary_rhs : unary_rhs_from_binary)
   {
     if (cell.exists_edge(unary_rhs))
     {
       //BLOCKTIMING("ParserCKYAll_Impl<Types>::add_unary_internal");
-      process_unary(cell,unary_rhs,isroot);
+      process_unary<isroot>(cell,unary_rhs);
     }
   }
 }
@@ -270,7 +283,8 @@ struct processunary
 
 
 template <class Types>
-void ParserCKYAll_Impl<Types>::process_unary(Cell& cell, int lhs, bool isroot) const
+template <bool isroot>
+void ParserCKYAll_Impl<Types>::process_unary(Cell& cell, int lhs) const
 {
   //BLOCKTIMING("ParserCKYAll_Impl<Types>::process_unary");
   const std::vector<const URuleC2f*>& rules = isroot ?
@@ -281,6 +295,8 @@ void ParserCKYAll_Impl<Types>::process_unary(Cell& cell, int lhs, bool isroot) c
 
   std::for_each(rules.begin(),rules.end(),processunary<Cell>(cell, L_inside));
 }
+
+
 
 
 
@@ -463,7 +479,7 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
 
 
-    //   std::cout << "before inside" << std::endl;
+    //std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
     // std::cout << std::log(get_sentence_probability()) << std::endl;
     // std::cout << get_sentence_probability() << std::endl;
@@ -481,24 +497,24 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
       break;
     }
 
-    //    std::cout << "after inside" << std::endl;
-    //    std::cout << "before beam" << std::endl;
+        // std::cout << "after inside" << std::endl;
+        // std::cout << "before beam" << std::endl;
     double sp = std::log(get_sentence_probability());
-    //    std::cout << "sentence probability: " << sp << std::endl;
+    //std::cout << "sentence probability: " << sp << std::endl;
 
     // huang beam seems to affect only the first pass
     //bool huang = i == 0;
     bool huang = false;
     if(chart->get_size() >= min_length_beam) // TODO if sentence is short skip everything but correct resizing
       beam_chart(sp, beam_threshold, huang);
-    //    std::cout << "after beam" << std::endl;
+    //std::cout << "after beam" << std::endl;
 
     // PCKYAllCell& root = chart->get_root();
     // if (!root.exists_edge(SymbolTable::instance_nt()->get_label_id(LorgConstants::tree_root_name)))
     //   std::cout << "no axiom at root" << std::endl;
 
 
-    //    std::cout << "before change" << std::endl;
+    //std::cout << "before change" << std::endl;
 
 
 

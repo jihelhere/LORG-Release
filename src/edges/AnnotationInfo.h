@@ -31,7 +31,7 @@ struct scaled_array
   double get_scaled_logvalue(unsigned i) const;
 
 
-  void reset(double value, bool keepnullproba = false);
+  void reset(double value);
 
   void resize(unsigned new_size);
 
@@ -57,8 +57,10 @@ struct AnnotationInfo
   scaled_array inside_probabilities;
   scaled_array outside_probabilities;
 
-  scaled_array inside_probabilities_unary_temp;
-  scaled_array outside_probabilities_unary_temp;
+  std::vector<bool> invalids;
+
+  scaled_array unary_temp;
+
 
 
   AnnotationInfo();
@@ -85,7 +87,7 @@ struct AnnotationInfo
 
   void resize(unsigned new_size);
 
-  bool valid_prob_at(unsigned i, double invalid) const;
+  bool valid_prob_at(unsigned i) const;
 
   bool operator==(const AnnotationInfo &other) const
   {
@@ -115,6 +117,7 @@ template<>
     //    std::cout << "called1" << std::endl;
     std::swap(a.inside_probabilities, b.inside_probabilities);
     std::swap(a.outside_probabilities, b.outside_probabilities);
+    std::swap(a.invalids, b.invalids);
   }
 }
 
