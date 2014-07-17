@@ -7,3 +7,5 @@ script: autoreconf --install && ./configure && make
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y libboost-all-dev
+  - sudo apt-get install -y libtbb-dev
+cache: apt
