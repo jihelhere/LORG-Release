@@ -238,14 +238,16 @@ public:
       \param cell the cell to fill
       \param isroot true if cell is root
   */
-  void add_unary_internal(Cell& cell, bool isroot) const;
+  template<bool isroot>
+  void add_unary_internal(Cell& cell) const;
 
   /** \brief Add unary rules at this position in the chart
       (only consider non-terminals created from pos)
       \param cell the cell to fill
       \param isroot true if cell is root
   */
-  void add_unary_init(Cell& cell, bool isroot) const;
+  template<bool isroot>
+  void add_unary_init(Cell& cell) const;
 
   /**
      \brief processes the internal rules, adding edges to the chart where appropriate
@@ -271,7 +273,8 @@ public:
      \param lhs the entry in the cell
      \param isroot true if cell is the rootcell
   */
-  void process_unary(Cell& cell, int lhs, bool isroot) const;
+  template<bool isroot>
+  void process_unary(Cell& cell, int lhs) const;
 
 
 protected:

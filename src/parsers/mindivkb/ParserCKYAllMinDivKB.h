@@ -13,7 +13,7 @@ class MinDivProbabilityKB
 
 public:
 
-  typedef std::vector<packed_edge_probability> heap_type;
+  typedef std::vector<packed_edge_probability_with_index> heap_type;
 
   typedef typename MinDivKBTypes::Edge Edge;
   typedef typename MinDivKBTypes::Cell Cell;
@@ -60,14 +60,14 @@ public:
   inline double & get_outside_unary_temp() { return outside_unary_temp; }
   inline const double & get_outside_unary_temp() const { return outside_unary_temp; }
 
-  inline const packed_edge_probability& get(unsigned idx) const {return derivations[idx];}
-  inline packed_edge_probability& get(unsigned idx) { return derivations[idx]; }
+  inline const packed_edge_probability_with_index& get(unsigned idx) const {return derivations[idx];}
+  inline packed_edge_probability_with_index& get(unsigned idx) { return derivations[idx]; }
 
   template<class TDaughter>
   inline void update_best(TDaughter& dtr);
   inline void finalize_best();
 
-  inline void find_succ(packed_edge_probability& pep, bool licence_unaries);
+  inline void find_succ(packed_edge_probability_with_index& pep, bool licence_unaries);
   void extend_derivation(unsigned, bool) ;
 
   inline unsigned n_deriv() const {return derivations.size();};
@@ -96,10 +96,10 @@ private:
 
   struct test_helper
   {
-    const packed_edge_probability& pep;
-    test_helper(const packed_edge_probability& p) : pep(p) {};
+    const packed_edge_probability_with_index& pep;
+    test_helper(const packed_edge_probability_with_index& p) : pep(p) {};
 
-    inline bool operator()(const packed_edge_probability& p)
+    inline bool operator()(const packed_edge_probability_with_index& p)
     {
       return (p.probability == pep.probability) //|| (p.dtrs == pep.dtrs)
       ;

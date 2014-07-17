@@ -5,7 +5,13 @@
 #include "PsTree.h"
 
 #include <unordered_map>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-register"
 #include <boost/regex.hpp>
+#pragma clang diagnostic pop
+
+
 #include <iostream>
 
 enum Bin_Direction {LEFT, RIGHT, NONE, RAND};

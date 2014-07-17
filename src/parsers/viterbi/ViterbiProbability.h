@@ -37,7 +37,7 @@ public:
   typedef typename ViterbiTypes::LexicalDaughter LexicalDaughter;
 
 private:
-  std::vector<packed_edge_probability> best;
+  std::vector<packed_edge_probability_with_index> best;
 public:
   ViterbiProbability() {};
   ViterbiProbability(unsigned size) : best(size) {};
@@ -48,10 +48,10 @@ public:
   }
 
 
-  const packed_edge_probability& get(unsigned index) const
+  const packed_edge_probability_with_index& get(unsigned index) const
   {return best[index];}
 
-  packed_edge_probability& get(unsigned index)
+  packed_edge_probability_with_index& get(unsigned index)
   {return best[index];}
 
   void update_lexical(Edge& e, LexicalDaughter& dtr);

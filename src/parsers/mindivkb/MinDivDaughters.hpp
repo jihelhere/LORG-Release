@@ -12,11 +12,9 @@ inline void MinDivBinaryDaughter::outside_and_marginal(AnnotationInfo & annotati
 {
   auto & leftannot = left_daughter().get_annotations();
   auto & rightannot= right_daughter().get_annotations();
-  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations.outside_probabilities.array,
-                                                              leftannot.inside_probabilities.array,
-                                                              rightannot.inside_probabilities.array,
-                                                              leftannot.outside_probabilities.array,
-                                                              rightannot.outside_probabilities.array)
+  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations,
+                                                                  leftannot,
+                                                                  rightannot)
   / MinDivProbabilityKB::get_normalisation_factor();
 //     std::cout << mp << " de " << MinDivProbabilityKB::get_normalisation_factor() << std::endl;
 }
@@ -35,9 +33,7 @@ inline double MinDivBinaryDaughter::tree_log_proba(unsigned left_idx, unsigned r
 inline void MinDivUnaryDaughter::outside_and_marginal(AnnotationInfo & annotations)
 {
   auto & leftannot = left_daughter().get_annotations();
-  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations.outside_probabilities.array,
-                                                                leftannot.inside_probabilities.array,
-                                                                leftannot.outside_probabilities_unary_temp.array)
+  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations,leftannot)
   / MinDivProbabilityKB::get_normalisation_factor();
 }
 inline double MinDivUnaryDaughter::tree_log_proba(unsigned left_idx) const {
@@ -71,7 +67,8 @@ inline double MinDivUnaryDaughter::tree_log_proba(unsigned left_idx) const {
 /***********************************************************/
 inline void MinDivLexicalDaughter::outside_and_marginal(AnnotationInfo & annotations)
 {
-  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations.outside_probabilities.array)
+  q = mp = get_rule()->update_outside_annotations_return_marginal(annotations.outside_probabilities.array,
+                                                                  annotations.invalids)
   / MinDivProbabilityKB::get_normalisation_factor();
 //     std::cout << mp << " de " << MinDivProbabilityKB::get_normalisation_factor() << std::endl;
 }

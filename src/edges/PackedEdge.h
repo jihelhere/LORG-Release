@@ -78,8 +78,10 @@ private:
   /**
      \brief Forbidden constructors
   */
-  PackedEdge() : relaxation(0) {}
-  PackedEdge(const PackedEdge<Types> &) : relaxation(0) {}
+  PackedEdge() :
+      relaxation(0) {}
+  PackedEdge(const PackedEdge<Types> &) :
+      relaxation(0) {}
 
 public:
   void reserve_binary_daughters(int size)
@@ -196,7 +198,13 @@ public:
 
   void to_set(SET<const PackedEdge*>& set) const;
 
-  void set_cell(const Cell* c) {cell = c;};
+  void set_cell(const Cell* c)
+  {
+    cell = c;
+    // binary_daughters.reserve((c->get_end() - c->get_begin())* c->get_max_size());
+    // unary_daughters.reserve(c->get_max_size());
+    // lexical_daughters.reserve(20);
+  };
 
   const Cell* get_cell() const {return cell;};
 

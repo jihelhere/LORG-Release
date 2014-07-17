@@ -10,6 +10,8 @@
 
 #include "parsers/ParserCKYAllFactory.h"
 
+#include <xmmintrin.h>  // Need this for SSE compiler intrinsics
+
 template<class ProbaModel>
 class MaxRuleTreeLogProbaComputer
 {
@@ -26,9 +28,9 @@ public:
 
 
   static double compute (const AnnotationInfo & up_annotations,
-                                            const BinaryDaughter & dtr,
-                                            double normalisation_factor,
-                                            unsigned left_idx =0, unsigned right_idx = 0)
+                         const BinaryDaughter & dtr,
+                         double normalisation_factor,
+                         unsigned left_idx =0, unsigned right_idx = 0)
   {
 
     // if (normalisation_factor == -std::numeric_limits<double>::infinity())
@@ -48,10 +50,17 @@ public:
     const scaled_array & up_outside = up_annotations.outside_probabilities;
     const auto & rule_probs = dtr.get_rule ()->get_probability ();
 
-    unsigned size = rule_probs.size ();
-    for (unsigned i = 0; i < size; ++i)
+
+    // size_t size = right_inside.array.size();
+    // size_t N = size / 2;
+    // bool odd = (size % 2) != 0  and not right.get_annotations().invalids[size-1];
+    // auto& rlast = right_inside.array[size -1];
+
+
+    unsigned rsize = rule_probs.size ();
+    for (unsigned i = 0; i < rsize; ++i)
     {
-      if (not up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       double temp = 0;
       const auto& rule_probs_i = rule_probs[i];
@@ -63,12 +72,39 @@ public:
         double inner = 0;
         const auto& rule_probs_ij = rule_probs_i[j];
         unsigned size_ij = rule_probs_ij.size ();
+
+        // if (size_ij == 0) continue;
+
+        // __m128d * a = (__m128d*) right_inside.array.data();
+        // __m128d * p = (__m128d*) rule_probs_ij.data();
+        // double tmp_double[2] = {0.0,0.0};
+        // __m128d * tmp = (__m128d*) tmp_double;
+
+        // for (size_t k = 0; k < N; ++k, ++a, ++p)
+        // {
+        //   //std::cerr << "k " << k << std::endl;
+        //   _mm_store_pd(tmp_double,
+        //                _mm_add_pd( *tmp,
+        //                            _mm_mul_pd(*a,*p)));
+        // }
+
+        // double inner = tmp_double[0] + tmp_double[1];
+        // if (odd)
+        // {
+        //   inner += rlast * rule_probs_ij[size - 1];
+        // }
+
+
+
         for (unsigned k = 0; k < size_ij; ++k)
         {
           if (right.valid_prob_at (k))
             inner += rule_probs_ij[k] * right_inside.array[k];
         }
-        temp += left_inside.array[j] * inner;
+
+
+      temp += left_inside.array[j] * inner;
+
       }
       probability += up_outside.array[i] * temp;
     }
@@ -124,7 +160,7 @@ public:
 
     for (unsigned i = 0; i < rule_probs.size (); ++i)
     {
-      if (!up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       const std::vector < std::vector < double >>&rule_probs_i =
       rule_probs[i];
@@ -181,7 +217,7 @@ public:
 
     for (unsigned i = 0; i < rule_probs.size (); ++i)
     {
-      if (!up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       double inner (0.0);
 
@@ -245,13 +281,13 @@ public:
 
     for (unsigned i = 0; i < rule_probs.size (); ++i)
     {
-      if (!up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       const std::vector < double >&rule_probs_i = rule_probs[i];
       double contrib_i = std::log (up_outside.array[i]) + base;
       for (unsigned j = 0; j < rule_probs_i.size (); ++j)
       {
-        if (!left.valid_prob_at (j))
+        if (not left.valid_prob_at (j))
           continue;
         double contrib =
         std::log (left_inside.array[j]) + std::log (rule_probs_i[j]) +
@@ -279,7 +315,7 @@ public:
 
     for (unsigned i = 0; i < probs.size (); ++i)
     {
-      if (not up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       //std::cout << up_annotations.outside_probabilities.array[i] << std::endl;
         probability +=
@@ -323,27 +359,56 @@ public:
     const scaled_array & right_inside = right_annotations.inside_probabilities;
     const scaled_array & up_outside   = up_annotations.outside_probabilities;
 
-    unsigned size = rule_probs.size ();
-    for (unsigned i = 0; i < size; ++i)
+#ifdef USE_MANUAL_SSE
+    size_t size = right_inside.array.size();
+    size_t N = size / 2;
+    bool odd = (size % 2) != 0  and not right_annotations.invalids[size-1];
+    auto& rlast = right_inside.array[size -1];
+#endif
+
+    unsigned rsize = rule_probs.size ();
+    for (unsigned i = 0; i < rsize; ++i)
     {
-      if (!up_annotations.valid_prob_at (i, LorgConstants::NullProba))
-        continue;
+      if (not up_annotations.valid_prob_at (i)) continue;
       double temp = 0;
       const auto& rule_probs_i = rule_probs[i];
       unsigned size_i = rule_probs_i.size ();
       for (unsigned j = 0; j < size_i; ++j)
       {
-        if (!left_annotations.valid_prob_at (j, LorgConstants::NullProba))
-          continue;
+        if (not left_annotations.valid_prob_at (j))  continue;
         double inner = 0;
         const auto& rule_probs_ij = rule_probs_i[j];
         unsigned size_ij = rule_probs_ij.size ();
+
+#ifdef USE_MANUAL_SSE
+        if (size_ij == 0) continue;
+
+        __m128d * a = (__m128d*) right_inside.array.data();
+        __m128d * p = (__m128d*) rule_probs_ij.data();
+        double tmp_double[2] = {0.0,0.0};
+        __m128d * tmp = (__m128d*) tmp_double;
+
+        for (size_t k = 0; k < N; ++k, ++a, ++p)
+        {
+          //std::cerr << "k " << k << std::endl;
+          _mm_store_pd(tmp_double,
+                       _mm_add_pd( *tmp,
+                                   _mm_mul_pd(*a,*p)));
+        }
+
+        double inner = tmp_double[0] + tmp_double[1];
+        if (odd)
+        {
+          inner += rlast * rule_probs_ij[size - 1];
+        }
+#else
         for (unsigned k = 0; k < size_ij; ++k)
         {
-          if (right_annotations.valid_prob_at (k, LorgConstants::NullProba))
+          if (right_annotations.valid_prob_at (k))
             inner += rule_probs_ij[k] * right_inside.array[k];
           //          std::cout << "inner " << inner << std::endl;
         }
+#endif
         temp += left_inside.array[j] * inner;
       }
       probability += up_outside.array[i] * temp;
@@ -386,13 +451,13 @@ public:
 
     for (unsigned i = 0; i < rule_probs.size (); ++i)
     {
-      if (!up_annotations.valid_prob_at (i, LorgConstants::NullProba))
+      if (not up_annotations.valid_prob_at (i))
         continue;
       double inner (0.0);
       const auto& rule_probs_i = rule_probs[i];
       for (unsigned j = 0; j < rule_probs_i.size (); ++j)
       {
-        if (not left_annotations.valid_prob_at (j, LorgConstants::NullProba))
+        if (not left_annotations.valid_prob_at (j))
           continue;
         inner += rule_probs_i[j] * left_inside.array[j];
       }

@@ -2,7 +2,11 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wredeclared-class-member"
 #include <boost/bimap/bimap.hpp>
+#pragma clang diagnostic pop
+
 #include <string>
 #include <exception>
 #include <map>
@@ -11,8 +15,11 @@
 #include <sstream>
 
 #include <unordered_map>
-#include <boost/regex.hpp>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#include <boost/regex.hpp>
+#pragma clang diagnostic pop
 
 #include <boost/serialization/map.hpp>
 

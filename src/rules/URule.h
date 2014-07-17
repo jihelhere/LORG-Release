@@ -6,6 +6,7 @@
 #include "AnnotatedRule.h"
 #include "Types4Rules.h"
 
+#include "edges/AnnotationInfo.h"
 
 #include "utils/LorgConstants.h"
 
@@ -106,15 +107,13 @@ public:
   friend std::ostream& operator<<(std::ostream& out, const URule& rule);
 
 
-  void update_inside_annotations(std::vector<double>& up,
-                                 const std::vector<double>& left) const;
+  void update_inside_annotations(AnnotationInfo& up_annot,
+                                 const AnnotationInfo& left_annot) const;
 
-  void update_outside_annotations(const std::vector<double>& up,
-                                  std::vector<double>& left) const;
-
-  double update_outside_annotations_return_marginal(const std::vector<double>& up,
-                                                    const std::vector<double>& in_left,
-                                                    std::vector<double>& out_left) const;
+  void update_outside_annotations(const AnnotationInfo& up_annot,
+                                  AnnotationInfo& left_annot) const;
+  double update_outside_annotations_return_marginal(const AnnotationInfo& up_annot,
+                                                    AnnotationInfo& left_annot) const;
   /**
      \brief removes useless zeros from probability vector
   */

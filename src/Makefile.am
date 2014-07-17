@@ -133,15 +133,23 @@ twostage_lorgparser_SOURCES += twostage_lorgparser.cpp \
 
 
 twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
+
+
 twostage_lorgparser_CXXFLAGS= -O3 -pipe -fomit-frame-pointer -ftemplate-depth=512
-twostage_lorgparser_CFLAGS= -O3 -pipe -fomit-frame-pointer
+twostage_lorgparser_CFLAGS=   -O3 -pipe -fomit-frame-pointer
+
 #twostage_lorgparser_CXXFLAGS= -Ofast -Wall -Wextra -pipe
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #twostage_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
 #flags for debugging
 #twostage_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I. $(TBB_CPPFLAGS) --std=c++0x
-#twostage_lorgparser_CXXFLAGS= -O1 -g -Wall -Wextra -pg -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls
+#twostage_lorgparser_CXXFLAGS= -O1 -g -Wall -Wextra -pg
+#-fno-inline-functions -fno-optimize-sibling-calls
+#-ftemplate-depth=512
+#twostage_lorgparser_CXXFLAGS= -O3 -g -pg -Wall -Wextra  -ftemplate-depth=512
+#twostage_lorgparser_CFLAGS= -O3 -g -pg -Wall -Wextra
+#twostage_lorgparser_LDFLAGS= -g -pg -Wl,-no_pie
 
 if WANT_TBB
 twostage_lorgparser_CPPFLAGS+=-DUSE_THREADS
@@ -149,8 +157,11 @@ endif
 
 twostage_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)
 
-#twostage_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler
+#twostage_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB) -lprofiler
 
+# if WANT_TCMALLOC
+# twostage_lorgparser_LDADD+= -ltcmalloc
+# endif
 
 wapiti_dd_SOURCES = wapiti_dd.cpp WapitiDDApp.h WapitiDDApp.cpp \
 	utils/WapitiWrapper.cpp utils/WapitiWrapper.h \
@@ -173,6 +184,7 @@ wapiti_dd_CFLAGS= -O3 -pipe -fomit-frame-pointer
 if WANT_TBB
 wapiti_dd_CPPFLAGS+=-DUSE_THREADS
 endif
+
 
 wapiti_dd_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(BOOST_SERIALIZATION_LIB)
 

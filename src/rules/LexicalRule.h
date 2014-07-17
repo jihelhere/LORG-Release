@@ -9,6 +9,9 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
+#include "edges/AnnotationInfo.h"
+
+
 class LexicalRule : public AnnotatedRule
 {
 public:
@@ -80,12 +83,16 @@ public:
   */
   friend std::ostream& operator<<(std::ostream& out, const LexicalRule& rule);
 
-  void update_inside_annotations(std::vector<double>& up) const;
+  // void update_inside_annotations(std::vector<double>& up,
+  //                                const std::vector<bool>& invalids) const;
 
-  void update_outside_annotations(const std::vector<double>& up,
+  void update_inside_annotations(AnnotationInfo& annot) const;
+
+  void update_outside_annotations(const AnnotationInfo& annot,
                                   double& left) const;
 
-  double update_outside_annotations_return_marginal(const std::vector<double>& up) const;
+  double update_outside_annotations_return_marginal(const std::vector<double>& up,
+                                                    const std::vector<bool>& invalids) const;
 
   /**
      \brief replace annotations with 0 if they're bel;ow threshold

@@ -33,43 +33,64 @@ std::ostream& operator<<(std::ostream& out, const LexicalRule& rule)
   return out;
 }
 
+#ifdef USE_MANUAL_SSE
+#include <xmmintrin.h>  // Need this for SSE compiler intrinsics
+#endif
 
-void LexicalRule::update_inside_annotations(std::vector<double>& up) const
+void LexicalRule::update_inside_annotations(AnnotationInfo& annot) const
 {
   //std::cout << "probabilities size " << probabilities.size() << std::endl;
 
-  for(unsigned i = 0 ; i < probabilities.size();++i) {
-    //    if(probabilities[i])
-    if(up[i] == LorgConstants::NullProba) continue;
-    up[i] += probabilities[i];
-
-    // if(up[i] < 0.0 || up[i] > 1.0)
-    //std::cout << i << " : " << *this << " " << up[i] <<std::endl;
-    //std::cout << i << " l : " << up[i] <<std::endl;
+#ifndef USE_MANUAL_SSE
+  size_t size = probabilities.size();
+  for(size_t i = 0 ; i < size;++i)
+  {
+    if(annot.invalids[i]) continue;
+    annot.inside_probabilities.array[i] += probabilities[i];
   }
+#else
+  size_t size = probabilities.size();
+  size_t N = size / 2;
+  bool odd = (size % 2) != 0;
+
+  __m128d * a = (__m128d*) annot.inside_probabilities.array.data();
+  __m128d * p = (__m128d*) probabilities.data();
+
+  for (size_t i = 0; i < N; ++i, ++a, ++p)
+  {
+    _mm_store_pd((double*)a, _mm_add_pd(*a,*p));
+  }
+
+  if (odd and not annot.invalids[size-1])
+  {
+    annot.inside_probabilities.array[size-1] += probabilities[size-1];
+  }
+#endif
+
 }
 
 
 #include <numeric>
 
 //inline
-void LexicalRule::update_outside_annotations(const std::vector<double>& up,
+void LexicalRule::update_outside_annotations(const AnnotationInfo& annot,
                                              double& left) const
 {
   for(unsigned i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
+    if(annot.invalids[i]) continue;
     //if( up[i] == 0 ||      probabilities[i] == 0) continue;
-    left += up[i] * probabilities[i];
+    left += annot.inside_probabilities.array[i] * probabilities[i];
   }
 
   //  left += std::inner_product(probabilities.begin(), probabilities.end(), up.begin(), 0.0);
 }
 
-double LexicalRule::update_outside_annotations_return_marginal(const std::vector< double >& up) const
+double LexicalRule::update_outside_annotations_return_marginal(const std::vector< double >& up,
+                                                               const std::vector<bool>& invalids) const
 {
   double marginal = 0;
   for(unsigned i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
+    if(invalids[i]) continue;
     //if( up[i] == 0 ||      probabilities[i] == 0) continue;
     double delta = up[i] * probabilities[i];
     marginal += delta;

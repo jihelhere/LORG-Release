@@ -63,24 +63,72 @@ std::ostream& operator<<(std::ostream& out, const BRule& rule)
   return out;
 }
 
-void BRule::update_inside_annotations(std::vector<double>& up,
-                                      const std::vector<double>& left,
-                                      const std::vector<double>& right) const
+#ifdef USE_MANUAL_SSE
+#include <xmmintrin.h>  // Need this for SSE compiler intrinsics
+#endif
+
+void BRule::update_inside_annotations(AnnotationInfo& up_annot,
+                                      const AnnotationInfo& left_annot,
+                                      const AnnotationInfo& right_annot
+                                      ) const
 {
+
+
+#ifdef USE_MANUAL_SSE
+  size_t size = right_annot.inside_probabilities.array.size();
+  size_t N = size / 2;
+  bool odd = (size % 2) != 0  and not right_annot.invalids[size-1];
+  auto& rlast = right_annot.inside_probabilities.array[size -1];
+#endif //USE_MANUAL_SSE
+
   for(size_t i = 0 ; i < probabilities.size();++i) {
-    if(up[i] == LorgConstants::NullProba) continue;
-    for(size_t j = 0 ; j < probabilities[i].size();++j) {
-      if(left[j] == LorgConstants::NullProba || left[j] == 0.0) continue;
+    if(up_annot.invalids[i]) continue;
+    auto& ui = up_annot.inside_probabilities.array[i];
+    const auto& probabilities_i = probabilities[i];
+
+    for(size_t j = 0 ; j < probabilities_i.size(); ++j)
+    {
+      if(left_annot.invalids[j] || left_annot.inside_probabilities.array[j] == 0.0) continue;
+      const auto& probabilities_ij = probabilities_i[j];
+
+#ifndef USE_MANUAL_SSE
       double inner = 0.0;
-      for(size_t k = 0 ; k < probabilities[i][j].size();++k) {
-        if(right[k] == LorgConstants::NullProba || right[k] == 0.0) continue;
-        inner += right[k] * probabilities[i][j][k];
+      for(size_t k = 0 ; k < probabilities_ij.size();++k) {
+        if(right_annot.invalids[k]) continue;
+        inner += right_annot.inside_probabilities.array[k] * probabilities_ij[k];
       }
+#else
+
+
+      // std::cerr << *this << std::endl;
+      // std::cerr << "size " << size << std::endl;
+
+      if (probabilities[i][j].empty()) continue;
+
+      __m128d * a = (__m128d*) right_annot.inside_probabilities.array.data();
+      __m128d * p = (__m128d*) probabilities[i][j].data();
+      double tmp_double[2] = {0.0,0.0};
+      __m128d * tmp = (__m128d*) tmp_double;
+
+      for (size_t k = 0; k < N; ++k, ++a, ++p)
+      {
+        //std::cerr << "k " << k << std::endl;
+        _mm_store_pd(tmp_double,
+                     _mm_add_pd( *tmp,
+                                 _mm_mul_pd(*a,*p)));
+      }
+
+      double inner = tmp_double[0] + tmp_double[1];
+      if (odd)
+      {
+        inner += rlast * probabilities[i][j][size - 1];
+      }
+#endif
       //std::cout << *this << " " << up[i] << " " << i<< std::endl;
-      up[i] += left[j] * inner;
+      ui += left_annot.inside_probabilities.array[j] * inner;
     }
-    assert(up[i] >= 0.0);
-    assert(up[i] <= 1.0);
+    assert(ui >= 0.0);
+    assert(ui <= 1.0);
   }
 
   // for(size_t i = 0; i < up.size(); ++i)
@@ -93,7 +141,6 @@ void BRule::update_inside_annotations(std::vector<double>& up,
 void BRule::update_inside_annotations(std::vector<double>& up,
                                       const double& left_right_precomputation) const
 {
-  if(up[0] == LorgConstants::NullProba) return;
   up[0] += probabilities[0][0][0] * left_right_precomputation;
 
     assert(up[0] >= 0.0);
@@ -105,39 +152,40 @@ void BRule::update_inside_annotations(std::vector<double>& up,
 #include "utils/threads.h"
 #endif
 
-void BRule::update_outside_annotations(const std::vector<double>& up_out,
-                                       const std::vector<double>& left_in,
-                                       const std::vector<double>& right_in,
-                                       std::vector<double>& left_out,
-                                       std::vector<double>& right_out) const
+void BRule::update_outside_annotations(const AnnotationInfo& up_annot,
+                                       AnnotationInfo& left_annot,
+                                       AnnotationInfo& right_annot
+                                       ) const
 {
   #ifdef USE_THREADS
-  std::vector<atomic<double>> & lo = *reinterpret_cast<std::vector<atomic<double>> *>(&left_out);
-  std::vector<atomic<double>> & ro = *reinterpret_cast<std::vector<atomic<double>> *>(&right_out);
+  std::vector<atomic<double>> & lo =
+      *reinterpret_cast<std::vector<atomic<double>> *>(&left_annot.outside_probabilities.array);
+  std::vector<atomic<double>> & ro =
+      *reinterpret_cast<std::vector<atomic<double>> *>(&right_annot.outside_probabilities.array);
   #else
-  std::vector<double> & lo = left_out ;
-  std::vector<double> & ro = right_out ;
+  std::vector<double> & lo = left_annot.outside_probabilities.array ;
+  std::vector<double> & ro = right_annot.outside_probabilities.array ;
   #endif
   for(unsigned short i = 0; i < probabilities.size(); ++i) {
-    if(up_out[i] == LorgConstants::NullProba || up_out[i] == 0.0) continue;
+    if(up_annot.invalids[i] || up_annot.outside_probabilities.array[i] == 0.0) continue;
     const std::vector<std::vector<double> >& dim_i = probabilities[i];
     for(unsigned short j = 0; j < dim_i.size(); ++j) {
       const std::vector<double>& dim_j = dim_i[j];
       double temp4left = 0.0;
       double factor4right = 0.0;
-      if(left_in[j] != LorgConstants::NullProba) factor4right = up_out[i] * left_in[j];
+      if(not left_annot.invalids[j]) factor4right = up_annot.outside_probabilities.array[i] * left_annot.inside_probabilities.array[j];
       for(unsigned short k = 0; k < dim_j.size(); ++k) {
         const double& t = dim_j[k];
         // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
         // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
 
-        // I and O are always Null at the same time
-        if(right_in[k] != LorgConstants::NullProba) {
-          temp4left += right_in[k] * t;
+        // I and O are always invalid at the same time
+        if(not right_annot.invalids[k]) {
+          temp4left += right_annot.inside_probabilities.array[k] * t;
           ro[k] += factor4right * t;
         }
       }
-      if(lo[j] != LorgConstants::NullProba) lo[j] += up_out[i] * temp4left;
+      if(not left_annot.invalids[j]) lo[j] += up_annot.outside_probabilities.array[i] * temp4left;
     }
   }
 }
@@ -146,43 +194,44 @@ void BRule::update_outside_annotations(const std::vector<double>& up_out,
 
 
 double
-BRule::update_outside_annotations_return_marginal(const std::vector< double >& up_out,
-                                                        const std::vector< double >& left_in,
-                                                        const std::vector< double >& right_in,
-                                                        std::vector< double >& left_out,
-                                                        std::vector< double >& right_out) const
+BRule::update_outside_annotations_return_marginal(const AnnotationInfo& up_annot,
+                                                  AnnotationInfo& left_annot,
+                                                  AnnotationInfo& right_annot
+                                                  ) const
 {
   double marginal = 0.;
   #ifdef USE_THREADS
-  std::vector<tbb::atomic<double>> & lo = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&left_out);
-  std::vector<tbb::atomic<double>> & ro = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&right_out);
+  std::vector<tbb::atomic<double>> & lo =
+      *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&left_annot.outside_probabilities.array);
+  std::vector<tbb::atomic<double>> & ro =
+      *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&right_annot.outside_probabilities.array);
   #else
-  std::vector<double> & lo = left_out ;
-  std::vector<double> & ro = right_out ;
+  std::vector<double> & lo = left_annot.outside_probabilities.array ;
+  std::vector<double> & ro = right_annot.outside_probabilities.array ;
   #endif
   for(unsigned short i = 0; i < probabilities.size(); ++i) {
-    if(up_out[i] == LorgConstants::NullProba || up_out[i] == 0.0) continue;
+    if(up_annot.invalids[i] || up_annot.outside_probabilities.array[i] == 0.0) continue;
     const std::vector<std::vector<double> >& dim_i = probabilities[i];
     for(unsigned short j = 0; j < dim_i.size(); ++j) {
       const std::vector<double>& dim_j = dim_i[j];
       double temp4left = 0.0;
       double factor4right = 0.0;
-      if(left_in[j] != LorgConstants::NullProba) factor4right = up_out[i] * left_in[j];
+      if(not left_annot.invalids[j]) factor4right = up_annot.outside_probabilities.array[i] * left_annot.inside_probabilities.array[j];
       for(unsigned short k = 0; k < dim_j.size(); ++k) {
         const double& t = dim_j[k];
         // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
         // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
 
         // I and O are always Null at the same time
-        if(right_in[k] != LorgConstants::NullProba) {
-          temp4left += right_in[k] * t;
+        if(not right_annot.invalids[k]) {
+          temp4left += right_annot.inside_probabilities.array[k] * t;
           ro[k] += factor4right * t;
         }
       }
-      if(lo[j] != LorgConstants::NullProba) {
-        double delta_left = up_out[i] * temp4left;
+      if(not left_annot.invalids[j]) {
+        double delta_left = up_annot.outside_probabilities.array[i] * temp4left;
         lo[j] += delta_left;
-        marginal += delta_left * left_in[j];
+        marginal += delta_left * left_annot.inside_probabilities.array[j];
       }
     }
   }

@@ -5,7 +5,8 @@ AC_DEFUN([AX_TBB], [
             [root of the TBB directory])],
         [
             case $withval in
-            "" | y | ye | yes | n | no)
+            #            "" | y | ye | yes | n | no)
+            "" | y | ye | yes)
                 AC_MSG_ERROR([Invalid --with-tbb value])
                 ;;
             *)

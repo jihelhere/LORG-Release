@@ -1,12 +1,8 @@
 // -*- mode: c++ -*-
 #pragma once
 
-#include "utils/PtbPsTree.h"
-#include "utils/LorgConstants.h"
-#include "utils/SymbolTable.h"
-
 #include <vector>
-#include <Bracketing.h>
+#include <string>
 
 #ifdef USE_THREADS
 #include <tbb/parallel_for.h>
@@ -17,6 +13,12 @@
 #include <functional>
 #include <iostream>
 
+#include "./Bracketing.h"
+#include "utils/PtbPsTree.h"
+#include "utils/LorgConstants.h"
+#include "utils/SymbolTable.h"
+
+
 /**
   \class ChartCKY
   \brief represents a chart of cells
@@ -24,12 +26,12 @@
 template<class Types>
 class ChartCKY
 {
-public:
+ public:
   typedef typename Types::Cell Cell;
   typedef typename Types::Edge Edge;
   typedef typename Types::ChartWord MyWord;
 
-private:
+ private:
   Cell * the_cells; ///< the chart itself
   Edge * the_edges; ///< the edges of the chart
   unsigned size;     ///< the size of the chart (width)
@@ -41,7 +43,7 @@ private:
   ChartCKY(const ChartCKY&);
   ChartCKY& operator=(const ChartCKY&);
 
-public:
+ public:
 #ifdef USE_THREADS
   static unsigned nbthreads;
 #endif
@@ -96,20 +98,19 @@ public:
   bool is_valid(int start_symbol) const;
 
   std::ostream & to_stream(std::ostream & s) const;
-  std::string toString() const ;
+  std::string toString() const;
 
-  void opencells_apply( std::function<void(Cell &)> f );
-  void opencells_apply_nothread( std::function<void(Cell &)> f );
-  void opencells_apply_bottom_up( std::function<void(Cell &)> f, unsigned min_span=0 );
-  void opencells_apply_bottom_up_nothread( std::function<void(Cell &)> f, unsigned min_span=0 );
-  void opencells_apply_top_down( std::function<void(Cell &)> f );
-  void opencells_apply_top_down_nothread( std::function<void(Cell &)> f );
-  void opencells_apply_top_down_nothread( std::function<void(const Cell &)> f ) const;
+  void opencells_apply(std::function<void(Cell &)> f);
+  void opencells_apply_nothread(std::function<void(Cell &)> f);
+  void opencells_apply_bottom_up(std::function<void(Cell &)> f, unsigned min_span = 0);
+  void opencells_apply_bottom_up_nothread(std::function<void(Cell &)> f, unsigned min_span = 0);
+  void opencells_apply_top_down(std::function<void(Cell &)> f);
+  void opencells_apply_top_down_nothread(std::function<void(Cell &)> f);
+  void opencells_apply_top_down_nothread(std::function<void(const Cell &)> f) const;
 
   std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([&out](Cell & cell){return out << cell << std::endl; }); return out; }
 
 
-  void update_relaxations(bool, const MAP<int,MAP<int, MAP<int,double>>>&,
-                          const std::unordered_map<int,int>&);
-
+  void update_relaxations(bool, const MAP<int, MAP<int, MAP<int, double>>>&,
+                          const std::unordered_map<int, int>&);
 };

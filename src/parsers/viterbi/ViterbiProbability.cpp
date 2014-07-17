@@ -15,9 +15,9 @@ void ViterbiProbability::update_lexical(Edge& edge, LexicalDaughter& dtr)
   const LexicalRuleC2f* rule = dtr.get_rule();
 
   for (unsigned i = 0; i < rule->get_probability().size(); ++i) {
-    if(a.valid_prob_at(i, LorgConstants::NullProba)) {
+    if(a.valid_prob_at(i)) {
       double probability = rule->get_probability(i);
-      packed_edge_probability& current_best = best[i];
+      packed_edge_probability_with_index& current_best = best[i];
       if (probability > current_best.probability) {
         current_best.probability = probability;
         current_best.dtrs = &dtr;
@@ -34,8 +34,8 @@ void ViterbiProbability::update_unary(Edge& edge, UnaryDaughter& dtr)
   const Edge& left = dtr.left_daughter();
 
   for (unsigned i = 0; i < rule_probs.size(); ++i) {
-    if(!a.valid_prob_at(i, LorgConstants::NullProba)) continue;
-    packed_edge_probability& current_best = best[i];
+    if(!a.valid_prob_at(i)) continue;
+    packed_edge_probability_with_index& current_best = best[i];
 
     const std::vector<double>& rule_probs_i = rule_probs[i];
     for (unsigned j = 0; j < rule_probs_i.size(); ++j) {
@@ -61,8 +61,8 @@ void ViterbiProbability::update_binary(Edge& edge, BinaryDaughter& dtr)
   const Edge& right = dtr.right_daughter();
 
   for (unsigned i = 0; i < rule_probs.size(); ++i) {
-    if(!a.valid_prob_at(i, LorgConstants::NullProba)) continue;
-    packed_edge_probability& current_best = best[i];
+    if(!a.valid_prob_at(i)) continue;
+    packed_edge_probability_with_index& current_best = best[i];
     const std::vector<std::vector<double> >& rule_probs_i = rule_probs[i];
     for (unsigned j=0; j < rule_probs_i.size(); ++j) {
       if(!left.valid_prob_at(j)) continue;

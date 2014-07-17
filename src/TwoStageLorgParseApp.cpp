@@ -1,5 +1,11 @@
-// -*- mode: c++ -*-
-#include "TwoStageLorgParseApp.h"
+#include "./TwoStageLorgParseApp.h"
+
+#include <thread>
+#include <utility>
+#include <vector>
+#include <map>
+#include <set>
+#include <string>
 
 #include "utils/Tagger.h"
 #include "feature_extract/Extract.h"
@@ -15,7 +21,7 @@
 
 #include "lexicon/WordSignatureFactory.h"
 
-#include <thread>
+
 
 #include "utils/WapitiWrapper.h"
 
@@ -28,8 +34,8 @@ TwoStageLorgParseApp::TwoStageLorgParseApp() : LorgParseApp(), parsers(1)
 
 TwoStageLorgParseApp::~TwoStageLorgParseApp()
 {
-  for(auto& p : this->parsers)
-    if(p) delete p;
+  for (auto& p : this->parsers)
+    if (p) delete p;
 }
 
 
@@ -37,7 +43,7 @@ int TwoStageLorgParseApp::run()
 {
   parse_solution::init_feature_extractor();
 
-  if(verbose)  std::clog << "Start parsing process.\n";
+  if (verbose)  std::clog << "Start parsing process.\n";
 
   std::string raw_sentence; // the sentence string (only for pretty print solutions)
   std::vector<Word> sentence; // the vector of words used by the parser to initialise the chart
@@ -51,8 +57,8 @@ int TwoStageLorgParseApp::run()
   tick_count parse_start = tick_count::now();
 #endif
 
-  //read input and fill raw_sentence, sentence and brackets
-  while(tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
+  // read input and fill raw_sentence, sentence and brackets
+  while (tokeniser->tokenise(*in, raw_sentence, sentence, brackets, comments)) {
 
 
     // //Extra verbose
@@ -73,69 +79,85 @@ int TwoStageLorgParseApp::run()
 
 
     std::function<void(int)> process_sentence =
-        [&](int i){
-
-      //      std::cout << i << std::endl;
-
-      //std::cerr << "tag" << std::endl;
-      taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
-      //std::cerr << "init chart" << std::endl;
-      parsers[i]->initialise_chart(sentences[i], brackets);
-      // //std::cerr << "parse" << std::endl;
-      parsers[i]->parse(start_symbol);
-      // //std::cerr << "beam" << std::endl;
-      parsers[i]->beam_c2f(start_symbol);
-      //std::cerr << "after beam" << std::endl;
-      if(parsers[i]->is_chart_valid(start_symbol))
-      {
-        //std::cerr << "extract" << std::endl;
-        parsers[i]->extract_solution();
-        //std::cerr << "after extract" << std::endl;
-      }
-    };
+        [&](int i)
+        {
+          // std::cout << i << std::endl;
+          // std::cerr << "tag" << std::endl;
+          taggers[i].tag(sentences[i], *(parsers[i]->get_word_signature()));
+          // std::cerr << "init chart" << std::endl;
+          parsers[i]->initialise_chart(sentences[i], brackets);
+          // std::cerr << "parse" << std::endl;
+          parsers[i]->parse(start_symbol);
+          // std::cerr << "beam" << std::endl;
+          parsers[i]->beam_c2f(start_symbol);
+          // std::cerr << "after beam" << std::endl;
+          if (parsers[i]->is_chart_valid(start_symbol))
+          {
+            // std::cerr << "extract" << std::endl;
+            parsers[i]->extract_solution();
+            // std::cerr << "after extract" << std::endl;
+          }
+        };
 
 
 #ifdef USE_THREADS
     tick_count sent_start = tick_count::now();
 #endif
 
-    std::vector<std::pair<PtbPsTree *,double> > best_trees; // vector of (tree,score)
 
-    if(sentence.size() <=  max_length && sentence.size() > 0) {
+    std::vector<std::thread> threads;
+
+    for (size_t i = 0; i < bi_crfs.size(); ++i)
+    {
+      threads.push_back(std::thread([&](int j) {bi_crfs[j].crf_tag();}, i));
+
+      // for(const auto& s : bi_crfs[i].best_string_sequence)
+      // {
+      //   std::cout << s << " " ;
+      // }
+      // std::cout << std::endl;
+    }
+
+    for (size_t i = 0; i < pos_crfs.size(); ++i)
+    {
+      threads.push_back(std::thread([&](int j) {pos_crfs[j].crf_tag();}, i));
+
+      // for(const auto& s : bi_crfs[i].best_string_sequence)
+      // {
+      //   std::cout << s << " " ;
+      // }
+      // std::cout << std::endl;
+    }
+
+    for (auto& thread : threads)
+    {
+      thread.join();
+    }
+
+
+
+    std::vector<std::pair<PtbPsTree *, double> > best_trees; // vector of (tree,score)
+
+    if (sentence.size() <=  max_length && sentence.size() > 0)
+    {
+
+      threads.clear();
 
       std::vector<std::thread> threads;
 
-      for(size_t i = 0; i < parsers.size(); ++i)
+      for (size_t i = 0; i < parsers.size(); ++i)
       {
-        threads.push_back(std::thread(process_sentence,i));
+        threads.push_back(std::thread(process_sentence, i));
       }
 
-      for (size_t i = 0; i < bi_crfs.size(); ++i)
+      for (auto& thread : threads)
       {
-        threads.push_back(std::thread([&](int j) {bi_crfs[j].crf_tag();}, i));
-
-        // for(const auto& s : bi_crfs[i].best_string_sequence)
-        // {
-        //   std::cout << s << " " ;
-        // }
-        // std::cout << std::endl;
+      thread.join();
       }
-
-      for (size_t i = 0; i < pos_crfs.size(); ++i)
-      {
-        threads.push_back(std::thread([&](int j) {pos_crfs[j].crf_tag();}, i));
-
-        // for(const auto& s : bi_crfs[i].best_string_sequence)
-        // {
-        //   std::cout << s << " " ;
-        // }
-        // std::cout << std::endl;
-      }
-
-      for(auto& thread : threads)
-      {
-        thread.join();
-      }
+      // for(size_t i = 0; i < parsers.size(); ++i)
+      // {
+      //   process_sentence(i);
+      //  }
 
 
       int k = 0;
@@ -147,7 +169,6 @@ int TwoStageLorgParseApp::run()
       // if(verbose)
       //   std::cerr << "k: " << k << std::endl;
 
-      ////
 
       for (size_t i = 0; i < ( 0 == bi_crfs.size() ? 0 : 1); ++i)
       {
@@ -177,13 +198,13 @@ int TwoStageLorgParseApp::run()
 
 
       for (size_t i = 0; i < 1; ++i)
-        //for (size_t i = 0; i < parsers.size(); ++i)
+        // for (size_t i = 0; i < parsers.size(); ++i)
       {
-        if(parsers[i]->is_chart_valid(start_symbol))
+        if (parsers[i]->is_chart_valid(start_symbol))
         {
-          //BLOCKTIMING("get_parses");
+          // BLOCKTIMING("get_parses");
           parsers[i]->get_parses(start_symbol, kbest, best_trees);
-          //std::cout << "getting " << i << std::endl;
+          // std::cout << "getting " << i << std::endl;
         }
         parse_solution * p_typed =
             parse_solution::factory.create_object(output_format,
@@ -198,10 +219,9 @@ int TwoStageLorgParseApp::run()
                                                   );
         p_typed->print(*out);
         delete p_typed;
-
       }
-      //sanity
-      for(unsigned l = 0; l < best_trees.size(); ++l) { // delete solutions
+      // sanity
+      for (unsigned l = 0; l < best_trees.size(); ++l) { // delete solutions
         delete best_trees[l].first;
       }
       best_trees.clear();
@@ -213,13 +233,9 @@ int TwoStageLorgParseApp::run()
 
 
 #ifdef USE_THREADS
-      ///*
-      if(verbose && count % 50 == 0)
+      if (verbose && count % 50 == 0)
         std::clog << count << " parsed sentences in " << (tick_count::now() - parse_start).seconds() << " sec" << std::endl;
-      //*/
 #endif
-
-
     }
     else
     {
@@ -248,9 +264,9 @@ int TwoStageLorgParseApp::run()
   *out << std::flush;
 
 #ifdef USE_THREADS
-  if(verbose) std::clog << "overall time: " << (tick_count::now() - parse_start).seconds() << "s" << std::endl;
+  if (verbose) std::clog << "overall time: " << (tick_count::now() - parse_start).seconds() << "s" << std::endl;
 #endif
-  return 0; //everything's fine
+  return 0; // everything's fine
 }
 
 LorgOptions TwoStageLorgParseApp::get_options() const
@@ -263,12 +279,12 @@ LorgOptions TwoStageLorgParseApp::get_options() const
 
 bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 {
-  if(LorgParseApp::read_config(configuration) == false) return false;
+  if (LorgParseApp::read_config(configuration) == false) return false;
 
-  if(verbose) { std::clog << "creating the parser... ";}
+  if (verbose) { std::clog << "creating the parser... ";}
 
   this->parsers = ParserCKYAllFactory::create_parser(configuration);
-  if(this->parsers.empty()) return false;
+  if (this->parsers.empty()) return false;
 
 #ifdef USE_THREADS
   for (const auto& p: this->parsers)
@@ -277,11 +293,11 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   }
 #endif
 
-  if(verbose) {std::clog << "ok" << std::endl;}
+  if (verbose) {std::clog << "ok" << std::endl;}
 
   kbest = configuration.get_value<unsigned>("kbest");
 
-  //creating taggers
+  // creating taggers
   taggers.resize(parsers.size());
   for (size_t i = 0; i < taggers.size(); ++i)
   {
@@ -289,7 +305,7 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
   }
 
 
-  for(const auto& p : this->parsers)
+  for (const auto& p : this->parsers)
   {
     if (p->get_word_signature() == nullptr)
     {
@@ -333,7 +349,6 @@ bool TwoStageLorgParseApp::read_config(ConfigTable& configuration)
 
       wap_pt->set_file(crf_input_names[i]);
       wap_pt->set_coefficient(crf_coefs[i]);
-
     }
   }
 
@@ -349,7 +364,7 @@ std::vector<unsigned> crf_get_mwe_beginings(const std::vector<std::string>& tag_
   std::vector<unsigned> results;
 
 
-  //std::cerr << "crf b: ";
+  // std::cerr << "crf b: ";
 
   for (size_t i = 0; i < tag_strings.size() - 1; ++i)
   {
@@ -395,10 +410,10 @@ std::vector<unsigned> crf_get_mwe_ends(const std::vector<std::string>& tag_strin
 }
 
 
-std::pair<std::vector<unsigned>,std::vector<unsigned>>
+std::pair<std::vector<unsigned>, std::vector<unsigned>>
     pcfg_get_mwe_positions(ParserCKYAll* pparser)
 {
-  std::pair<std::vector<unsigned>,std::vector<unsigned>> results;
+  std::pair<std::vector<unsigned>, std::vector<unsigned>> results;
 
   // axiom of the grammar
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
@@ -409,8 +424,8 @@ std::pair<std::vector<unsigned>,std::vector<unsigned>>
   {
     const AnnotatedRule* r = std::get<0>(triple);
     std::string s = SymbolTable::instance_nt().get_label_string(r->get_lhs());
-    //if(s[0] == 'M' and s[1] == 'W') // MWE !
-    if(s[s.size()-1] == '+')
+    // if(s[0] == 'M' and s[1] == 'W') // MWE !
+    if (s[s.size()-1] == '+')
     {
       results.first.push_back(std::get<1>(triple));
       results.second.push_back(std::get<2>(triple));
@@ -422,7 +437,7 @@ std::pair<std::vector<unsigned>,std::vector<unsigned>>
 
 
 
-int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,double> >& /*best_trees*/, size_t sent_length)
+int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *, double> >& /*best_trees*/, size_t sent_length)
 {
   struct anchored_symbol
   {
@@ -450,14 +465,14 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
 
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name); // axiom of the grammar
-  static std::unordered_map<int,int> simplification_map = SymbolTable::instance_nt().build_simplification_map();
+  static std::unordered_map<int, int> simplification_map = SymbolTable::instance_nt().build_simplification_map();
 
   double lu = 0;
   bool valid = true;
 
   for (size_t i = 0; i < parsers.size(); ++i)
   {
-    if(not parsers[i]->is_chart_valid(start_symbol))
+    if (not parsers[i]->is_chart_valid(start_symbol))
       valid = false;
     else
       lu += parsers[i]->get_best_score(start_symbol);
@@ -473,7 +488,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     lu += pos_crfs[i].score * pos_crfs[i].coefficient;
   }
 
-  if(!valid) return -1;
+  if (!valid) return -1;
 
   unsigned k = 0;
   double c = 1;
@@ -491,18 +506,18 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
   for (k = 0; k < 1000; ++k)
   {
-    //std::cout << "k = " << k << std::endl;
-    //std::cerr << "lu = " << lu << std::endl;
+    // std::cout << "k = " << k << std::endl;
+    // std::cerr << "lu = " << lu << std::endl;
     // std::cout << "t = " << t << std::endl;
     double delta_k = c / (t + 1);
     double nlu = 0;
 
-    //std::cerr << "delta_k " << delta_k << std::endl;
+    // std::cerr << "delta_k " << delta_k << std::endl;
 
 
     std::vector<std::set< anchored_symbol >> z_parser(this->parsers.size());
     std::map<anchored_symbol, int> z_average;
-    std::vector<MAP<int,MAP<int,MAP<int,double>>>> z_lambdas(parsers.size());
+    std::vector<MAP<int, MAP<int, MAP<int, double>>>> z_lambdas(parsers.size());
 
 
     // // fun
@@ -515,7 +530,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     std::vector<std::vector<unsigned>> mwe_starts(this->parsers.size() + this->bi_crfs.size());
     std::vector<std::vector<unsigned>> mwe_ends(this->parsers.size() + this->bi_crfs.size());
 
-    std::map<unsigned,double> mwe_starts_average , mwe_ends_average;
+    std::map<unsigned, double> mwe_starts_average , mwe_ends_average;
     std::vector<MAP<unsigned, double>> mwe_starts_lambdas(this->parsers.size() + this->bi_crfs.size());
     std::vector<MAP<unsigned, double>> mwe_ends_lambdas(this->parsers.size() + this->bi_crfs.size());
 
@@ -523,28 +538,28 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     // POS
     std::vector<std::set<anchored_symbol>>  sol_pos(this->parsers.size() + this->pos_crfs.size());
     std::map<anchored_symbol, int> sol_pos_average;
-    std::vector<MAP<int,MAP<int,MAP<int, double>>>> pos_lambdas(this->parsers.size() + this->pos_crfs.size());
+    std::vector<MAP<int, MAP<int, MAP<int, double>>>> pos_lambdas(this->parsers.size() + this->pos_crfs.size());
 
 
     for (size_t i = 0; i < parsers.size(); ++i)
     {
       for (auto& e: parsers[i]->get_vectorized_representation(start_symbol))
       {
-        //std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
+        // std::cout << std::get<1>(e) << " " << std::get<2>(e) << ": ";
 
         const AnnotatedRule* r = std::get<0>(e);
 
         int l;
         l  = simplification_map.at(r->get_lhs());
 
-        if(SymbolTable::instance_nt().get_label_string(l)[0] != '['
+        if (SymbolTable::instance_nt().get_label_string(l)[0] != '['
            &&
            (!r->is_lexical() || !use_pos) // dont process lexicals twice
            )
           // not an 'artificial node'
         {
           anchored_symbol vv(l, std::get<1>(e), std::get<2>(e));
-          if(z_parser[i].insert(vv).second)
+          if (z_parser[i].insert(vv).second)
           {
             z_average[vv] += 1;
           }
@@ -561,12 +576,12 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         //   }
         // }
 
-        //BI_CRFS
+        // BI_CRFS
         if (use_ftb_bi)
         {
           std::string s = SymbolTable::instance_nt().get_label_string(r->get_lhs());
-          //if(s[0] == 'M' and s[1] == 'W') // MWE !
-          if(s[s.size()-1] == '+')
+          // if(s[0] == 'M' and s[1] == 'W') // MWE !
+          if (s[s.size()-1] == '+')
           {
             // std::cerr
             //     << "parser: "
@@ -578,9 +593,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
             mwe_starts_average[std::get<1>(e)] +=1;
 
 
-            if (std::get<2>(e) >= int(sent_length) -1)
+            if (std::get<2>(e) >= static_cast<int>(sent_length) -1)
             {
-              //std::cerr << "SENT_LENGTH" << std::endl;
+              // std::cerr << "SENT_LENGTH" << std::endl;
             }
             else
             {
@@ -588,7 +603,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
               mwe_ends_average[std::get<2>(e)] +=1;
             }
 
-            //std::cout << i <<  " : " << s << " " << "(" << std::get<1>(e) << "," << std::get<2>(e) << ")" << std::endl;
+            // std::cout << i <<  " : " << s << " " << "(" << std::get<1>(e) << "," << std::get<2>(e) << ")" << std::endl;
           }
         }
 
@@ -606,7 +621,6 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
             // std::cerr << i <<  " : " << st << " " << "(" << std::get<1>(e) << "," << std::get<2>(e) << ")" << std::endl;
           }
         }
-
       }
     }
 
@@ -647,9 +661,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
     for (auto& p : z_average)
     {
-      if (p.second != int(parsers.size()))
+      if (p.second != static_cast<int>(parsers.size()))
       {
-        //std::cout << p.second << std::endl;
+        // std::cout << p.second << std::endl;
         same = false;
         break;
       }
@@ -667,8 +681,16 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     // }
 
 
-    int sum_coefficient_bi_crf = std::accumulate(bi_crfs.begin(), bi_crfs.end(), 0, [] (int acc, const wapiti_wrapper& c) {return acc + c.coefficient;});
-    int sum_coefficient_pos_crf = std::accumulate(pos_crfs.begin(), pos_crfs.end(), 0, [] (int acc, const wapiti_wrapper& c) {return acc + c.coefficient;});
+    int sum_coefficient_bi_crf = std::accumulate(bi_crfs.begin(), bi_crfs.end(), 0,
+                                                 []
+                                                 (int acc, const wapiti_wrapper& c)
+                                                 {return acc + c.coefficient;}
+                                                 );
+    int sum_coefficient_pos_crf = std::accumulate(pos_crfs.begin(), pos_crfs.end(), 0,
+                                                  []
+                                                  (int acc, const wapiti_wrapper& c)
+                                                  {return acc + c.coefficient;}
+                                                  );
     //    std::cerr << "sum_coefficient_crf " << sum_coefficient_crf << std::endl;
 
 
@@ -696,7 +718,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     {
       for (auto& p : sol_pos_average)
       {
-        if (p.second != int(this->parsers.size()) + sum_coefficient_pos_crf)
+        if (p.second != static_cast<int>(this->parsers.size()) + sum_coefficient_pos_crf)
         {
           same = false;
           break;
@@ -705,32 +727,32 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     }
 
 
-    if(same)
+    if (same)
     {
       break;
     }
 
-    for(size_t i = 0; i < z_parser.size(); ++i)
+    for (size_t i = 0; i < z_parser.size(); ++i)
     {
       z_lambdas[i].clear();
 
       // add update for spans in ith solution
-      for(const auto& v: z_parser[i])
+      for (const auto& v: z_parser[i])
       {
         z_lambdas[i][v.begin][v.end][v.symbol]
-            = delta_k * (1.0 - double(z_average[v]) / parsers.size());
+            = delta_k * (1.0 - static_cast<double>(z_average[v]) / parsers.size());
       }
 
       // add update for spans missing in ith solution
-      for(const auto& v: z_average)
+      for (const auto& v: z_average)
       {
-        if(not z_lambdas[i].count(v.first.begin)
+        if (not z_lambdas[i].count(v.first.begin)
            or not z_lambdas[i][v.first.begin].count(v.first.end)
            or not z_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
            )
         {
           z_lambdas[i][v.first.begin][v.first.end][v.first.symbol]
-              = delta_k * (- double(z_average[v.first]) / parsers.size());
+              = delta_k * (- static_cast<double>(z_average[v.first]) / parsers.size());
         }
       }
     }
@@ -773,28 +795,30 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         mwe_starts_lambdas[i].clear();
         mwe_ends_lambdas[i].clear();
 
-        for(auto& e : mwe_starts[i])
+        for (auto& e : mwe_starts[i])
         {
-          mwe_starts_lambdas[i][e] = delta_k * (1.0 - double(mwe_starts_average[e]) / (parsers.size() + sum_coefficient_bi_crf));
+          mwe_starts_lambdas[i][e] = delta_k * (1.0 - static_cast<double>(mwe_starts_average[e]) / (parsers.size() + sum_coefficient_bi_crf));
         }
-        for(auto& e : mwe_ends[i])
+        for (auto& e : mwe_ends[i])
         {
-          mwe_ends_lambdas[i][e] = delta_k * (1.0  - double(mwe_ends_average[e]) / (parsers.size() + sum_coefficient_bi_crf));
+          mwe_ends_lambdas[i][e] = delta_k * (1.0  - static_cast<double>(mwe_ends_average[e]) / (parsers.size() + sum_coefficient_bi_crf));
         }
 
         // add update for spans missing in ith solution
-        for(const auto& v: mwe_starts_average)
+        for (const auto& v: mwe_starts_average)
         {
-          if(not mwe_starts_lambdas[i].count(v.first))
+          if (not mwe_starts_lambdas[i].count(v.first))
           {
-            mwe_starts_lambdas[i][v.first] = delta_k * (- double(mwe_starts_average[v.first]) / (parsers.size() + sum_coefficient_bi_crf));
+            mwe_starts_lambdas[i][v.first] =
+                delta_k * (- static_cast<double>(mwe_starts_average[v.first]) / (parsers.size() + sum_coefficient_bi_crf));
           }
         }
-        for(const auto& v: mwe_ends_average)
+        for (const auto& v: mwe_ends_average)
         {
-          if(not mwe_ends_lambdas[i].count(v.first))
+          if (not mwe_ends_lambdas[i].count(v.first))
           {
-            mwe_ends_lambdas[i][v.first] = delta_k * (- double(mwe_ends_average[v.first]) / (parsers.size() + sum_coefficient_bi_crf));
+            mwe_ends_lambdas[i][v.first] =
+                delta_k * (- static_cast<double>(mwe_ends_average[v.first]) / (parsers.size() + sum_coefficient_bi_crf));
           }
         }
       }
@@ -809,19 +833,21 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
         for (auto& e : sol_pos[i])
         {
-          pos_lambdas[i][e.begin][e.end][e.symbol] =  delta_k * (1.0 - double(sol_pos_average[e]) / (parsers.size() + sum_coefficient_pos_crf));
+          pos_lambdas[i][e.begin][e.end][e.symbol] =
+              delta_k * (1.0 - static_cast<double>(sol_pos_average[e]) / (parsers.size() + sum_coefficient_pos_crf));
         }
 
 
         // add update for lexical spans missing in ith solution
-        for(const auto& v: sol_pos_average)
+        for (const auto& v: sol_pos_average)
         {
-          if(not pos_lambdas[i].count(v.first.begin)
+          if (not pos_lambdas[i].count(v.first.begin)
              or not pos_lambdas[i][v.first.begin].count(v.first.end)
              or not pos_lambdas[i][v.first.begin][v.first.end].count(v.first.symbol)
              )
           {
-            pos_lambdas[i][v.first.begin][v.first.end][v.first.symbol] = delta_k * (- double(sol_pos_average[v.first]) / (parsers.size() + sum_coefficient_pos_crf));
+            pos_lambdas[i][v.first.begin][v.first.end][v.first.symbol] =
+                delta_k * (- static_cast<double>(sol_pos_average[v.first]) / (parsers.size() + sum_coefficient_pos_crf));
           }
         }
       }
@@ -837,15 +863,15 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       threads.push_back(
           std::thread([&](int j)
                       {
-                        if(this->parsers[j]->is_chart_valid(start_symbol))
+                        if (this->parsers[j]->is_chart_valid(start_symbol))
                         {
                           this->parsers[j]->update_relaxations(true,  z_lambdas[j], simplification_map);
                           // if(parsers[j]->get_is_funct())
                           //   this->parsers[j]->update_relaxations(false, f_lambdas[j], simplification_map);
                         }
-                        },i));
+                      }, i));
     }
-    for(auto& thread : threads)
+    for (auto& thread : threads)
     {
       thread.join();
     }
@@ -859,13 +885,12 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         threads.push_back(
             std::thread([&](int j)
                         {
-                          if(this->parsers[j]->is_chart_valid(start_symbol))
+                          if (this->parsers[j]->is_chart_valid(start_symbol))
                           {
                             this->parsers[j]->update_relaxations_starts(mwe_starts_lambdas[j]);
                             this->parsers[j]->update_relaxations_ends(mwe_ends_lambdas[j]);
                           }
-
-                        },i));
+                        }, i));
       }
       // for(auto& thread : threads)
       // {
@@ -874,7 +899,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
 
       // MWEs
-      //threads.clear();
+      // threads.clear();
       for (size_t i = 0; i < this->bi_crfs.size(); ++i)
       {
         threads.push_back(
@@ -882,13 +907,12 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
                         {
                           bi_crfs[j].update_relaxations(mwe_starts_lambdas[this->parsers.size() + j], 'B', 'I', 1);
                           bi_crfs[j].update_relaxations(mwe_ends_lambdas[this->parsers.size() + j], 'I', 'B', 1);
-                        },i));
+                        }, i));
 
         // bi_crfs[i].update_relaxations(mwe_starts_lambdas[this->parsers.size() + i], 'B', 'I', 1);
         // bi_crfs[i].update_relaxations(mwe_ends_lambdas[this->parsers.size() + i], 'I', 'B', 1);
-
       }
-      for(auto& thread : threads)
+      for (auto& thread : threads)
       {
         thread.join();
       }
@@ -903,12 +927,11 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
         threads.push_back(
             std::thread([&](int j)
                         {
-                          if(this->parsers[j]->is_chart_valid(start_symbol))
+                          if (this->parsers[j]->is_chart_valid(start_symbol))
                           {
                             this->parsers[j]->update_relaxations(true,  pos_lambdas[j], simplification_map);
                           }
-
-                        },i));
+                        }, i));
       }
       // for(auto& thread : threads)
       // {
@@ -916,21 +939,20 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
       // }
 
 
-      //threads.clear();
+      // threads.clear();
       for (size_t i = 0; i < this->pos_crfs.size(); ++i)
       {
         threads.push_back(
             std::thread([&](int j)
                         {
                           pos_crfs[j].update_relaxations(pos_lambdas[this->parsers.size() + j]);
-                        },i));
+                        }, i));
 
         // bi_crfs[i].update_relaxations(mwe_starts_lambdas[this->parsers.size() + i], 'B', 'I', 1);
         // bi_crfs[i].update_relaxations(mwe_ends_lambdas[this->parsers.size() + i], 'I', 'B', 1);
-
       }
 
-      for(auto& thread : threads)
+      for (auto& thread : threads)
       {
         thread.join();
       }
@@ -947,7 +969,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
                         {
                           parsers[j]->simple_extract_solution();
                         }
-                      },i)
+                      }, i)
                         );
     }
 
@@ -976,7 +998,7 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
     }
 
 
-    for(auto& thread : threads)
+    for (auto& thread : threads)
     {
       thread.join();
     }
@@ -984,9 +1006,9 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
     for (size_t i = 0; i < parsers.size(); ++i)
     {
-      if(parsers[i]->is_chart_valid(start_symbol))
+      if (parsers[i]->is_chart_valid(start_symbol))
       {
-        //std::cerr << "p: " <<  parsers[i]->get_best_score(start_symbol) << std::endl;
+        // std::cerr << "p: " <<  parsers[i]->get_best_score(start_symbol) << std::endl;
         nlu += parsers[i]->get_best_score(start_symbol);
         // if (i == 0)
         // {
@@ -997,23 +1019,23 @@ int TwoStageLorgParseApp::find_consensus(std::vector<std::pair<PtbPsTree *,doubl
 
     for (size_t i = 0; i < bi_crfs.size(); ++i)
     {
-      //std::cerr << "c_bi: " <<  bi_crfs[i].score << std::endl;
+      // std::cerr << "c_bi: " <<  bi_crfs[i].score << std::endl;
       nlu += bi_crfs[i].score * bi_crfs[i].coefficient;
     }
 
     for (size_t i = 0; i < pos_crfs.size(); ++i)
     {
-      //std::cerr << "c_pos: " <<  pos_crfs[i].score << std::endl;
+      // std::cerr << "c_pos: " <<  pos_crfs[i].score << std::endl;
       nlu += pos_crfs[i].score * pos_crfs[i].coefficient;
     }
 
     //        std::cout << std::endl;
 
 
-    //update stepsize
+    // update stepsize
     // std::cerr << "nlu = " << nlu << std::endl;
     // std::cerr << "lu = " << lu << std::endl;
-    if (nlu > lu )//|| (k % 20) == 0)
+    if (nlu > lu) // || (k % 20) == 0)
     {
       ++t;
     }
