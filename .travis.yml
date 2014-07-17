@@ -24,6 +24,6 @@ script:
 
 
 cache:
-  directory:
-    - $BOOST_ROOT
+  # directory:
+  #   - $BOOST_ROOT
   - apt
