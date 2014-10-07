@@ -6,17 +6,16 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_stl.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_function.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost/phoenix/operator.hpp>
+#include <boost/phoenix/stl.hpp>
+#include <boost/phoenix/object.hpp>
+#include <boost/phoenix/bind/bind_member_function.hpp>
+#include <boost/phoenix/bind/bind_function.hpp>
 
-#include <boost/spirit/include/phoenix_fusion.hpp>
+#include <boost/phoenix/fusion.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/variant/recursive_variant.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
 
 #include <boost/config/warning_disable.hpp>
 
@@ -43,11 +42,11 @@ burule_parser() : burule_parser::base_type(rules)
   symbol %= qi::lexeme[+(qi::char_ - ' ' - '\n')];
 
   nt_symbol= symbol [_val = phoenix::bind(&SymbolTable::insert,
-					  SymbolTable::instance_nt(),
+					  phoenix::ref(SymbolTable::instance_nt()),
 					  qi::labels::_1)];
 
   t_symbol = symbol [_val = boost::phoenix::bind(&SymbolTable::insert,
-						 SymbolTable::instance_word(),
+						 phoenix::ref(SymbolTable::instance_word()),
 						 qi::labels::_1)];
 
 
@@ -146,7 +145,7 @@ struct annotation_map_parser : boost::spirit::qi::grammar<Iterator, std::pair<in
 
     kvpair %= qi::lit("ainfos")  >> nt_symbol >> ptbtree;
     nt_symbol = symbol [_val = phoenix::bind(&SymbolTable::insert,
-					     SymbolTable::instance_nt(),
+					     phoenix::ref(SymbolTable::instance_nt()),
 					     qi::labels::_1)];
     symbol %= qi::lexeme[+(qi::char_ - ' ' - '\n')];
 

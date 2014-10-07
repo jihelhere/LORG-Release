@@ -10,17 +10,15 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/home/phoenix/statement/sequence.hpp>
-#include <boost/spirit/home/phoenix/object/construct.hpp>
-#include <boost/spirit/include/phoenix_container.hpp>
-#include <boost/spirit/home/phoenix/algorithm.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost//phoenix/operator.hpp>
+#include <boost/phoenix/statement/sequence.hpp>
+#include <boost/phoenix/object/construct.hpp>
+#include <boost/phoenix/stl.hpp>
 
-#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_member_variable.hpp>
+#include <boost/phoenix/bind/bind_member_function.hpp>
+#include <boost/phoenix/bind/bind_member_variable.hpp>
 #pragma clang diagnostic pop
-
 
 #include "utils/RandomGenerator.h"
 
@@ -34,7 +32,6 @@
 
 #include <tbb/tick_count.h>
 using namespace tbb;
-
 
 
 // HELPER FUNCTIONS IN ANONYMOUS NAMESPACE

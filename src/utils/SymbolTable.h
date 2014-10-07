@@ -155,7 +155,6 @@ public:
     to it.  Otherwise it will just return the pointer to the object.
   */
   static SymbolTable& instance_word();
-
   /**
     \brief Global point of access to SymbolTable for nonterminals.
 

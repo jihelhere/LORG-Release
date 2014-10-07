@@ -3,13 +3,13 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
-#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_function.hpp>
-#include <boost/spirit/include/phoenix_container.hpp>
-#include <boost/spirit/home/phoenix/scope/local_variable.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/home/phoenix/scope/let.hpp>
+#include <boost/phoenix/bind/bind_member_function.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost/phoenix/bind/bind_function.hpp>
+#include <boost/phoenix/stl.hpp>
+#include <boost/phoenix/scope/local_variable.hpp>
+#include <boost/phoenix/operator.hpp>
+#include <boost/phoenix/scope/let.hpp>
 #pragma clang diagnostic pop
 
 

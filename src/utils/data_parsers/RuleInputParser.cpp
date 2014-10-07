@@ -7,12 +7,12 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_stl.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_member_function.hpp>
-#include <boost/spirit/home/phoenix/bind/bind_function.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost/phoenix/operator.hpp>
+#include <boost/phoenix/stl.hpp>
+#include <boost/phoenix/object.hpp>
+#include <boost/phoenix/bind/bind_member_function.hpp>
+#include <boost/phoenix/bind/bind_function.hpp>
 #pragma clang diagnostic pop
 
 namespace fusion = boost::fusion;
@@ -35,9 +35,9 @@ struct rule_parser : boost::spirit::qi::grammar<Iterator, Rule(), mychar::space_
 
     symbol %= qi::raw[qi::lexeme[((qi::char_ - '_' - ' ') >> *(qi::char_ - ' '))]];
 
-    nt_symbol = symbol [qi::labels::_val = phoenix::bind(&SymbolTable::insert, SymbolTable::instance_nt(), qi::labels::_1)];
+    nt_symbol = symbol [qi::_val = phoenix::bind(&SymbolTable::insert, phoenix::ref(SymbolTable::instance_nt()), qi::_1)];
 
-    t_symbol  = symbol [qi::labels::_val = phoenix::bind(&SymbolTable::insert, SymbolTable::instance_word(), qi::labels::_1)];
+    t_symbol  = symbol [qi::_val = phoenix::bind(&SymbolTable::insert, phoenix::ref(SymbolTable::instance_word()), qi::_1)];
 
     internal =
       qi::lit("int") [_c = false]
