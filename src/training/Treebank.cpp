@@ -30,9 +30,7 @@ const std::vector<T>&  Treebank<T>::get_trees() const
 
 
 template < class T >
-Treebank<T>::~Treebank()
-{
-}
+Treebank<T>::~Treebank() {}
 
 template < class T >
 void Treebank<T>::add_tree(T& tree)
@@ -80,10 +78,10 @@ unsigned Treebank<T>::get_size()
 template<class T>
 void Treebank<T>::productions(std::vector<Production>& internals, std::vector<Production>& lexicals) const
 {
-  typedef typename std::vector<T>::const_iterator iterator;
-
-  for(iterator t_iter(trees.begin()); t_iter != trees.end(); ++t_iter)
-    t_iter->productions(internals,lexicals);
+  for(const auto& t : trees)
+  {
+    t.productions(internals,lexicals);
+  }
 }
 
 //assumes a grammar with binary and unary rules only
@@ -92,10 +90,10 @@ void Treebank<T>::collect_internal_counts(std::map<Production, double> & binary_
 					  std::map<Production, double> & unary_counts,
 					  std::map< int, double> & LHS_counts) const
 {
-  typedef typename std::vector<T>::const_iterator iterator;
-
-  for(iterator t_iter(trees.begin()); t_iter != trees.end(); ++t_iter)
-    t_iter->collect_internal_counts(binary_counts,unary_counts,LHS_counts);
+  for(const auto& t: trees)
+  {
+    t.collect_internal_counts(binary_counts,unary_counts,LHS_counts);
+  }
 }
 
 
@@ -114,9 +112,17 @@ void Treebank<PtbPsTree>::add_tree_from_files(const std::vector<std::string>& fi
     if (verbose) std::clog << "Reading " << filenames[i] << "\r";
     std::vector<PtbPsTree> trees;
     PTBInputParser::from_file(filenames[i].c_str(),trees);
-    std::for_each(trees.begin(),trees.end(),
-     		  px::bind(&Treebank<PtbPsTree>::add_tree,*this,px::arg_names::arg1)
-     		  );
+
+
+    // std::for_each(trees.begin(),trees.end(),
+    //  		  px::bind(&Treebank<PtbPsTree>::add_tree,*this,px::arg_names::arg1)
+    //  		  );
+    for(auto& t : trees)
+    {
+      this->add_tree(t);
+    }
+
+
   }
   if(verbose)
     std::clog << std::endl;
@@ -135,8 +141,9 @@ std::ostream& operator<<(std::ostream& os, const Treebank<T>& treebank)
 template <class T>
 void Treebank<T>::output_unbinarised(std::ostream& out) const
 {
-  for(typename std::vector<T>::const_iterator i(trees.begin()) ; i != trees.end(); ++i) {
-    T copy = *i;
+  for (const auto& t : trees)
+  {
+    T copy = t;
     copy.unbinarise();
     out <<  copy << std::endl;
   }

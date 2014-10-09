@@ -13,23 +13,25 @@ BRule::BRule(short l, short rhs0_, short rhs1_, const std::vector<binary_proba_i
 {
   // the difficult thing is to extend the vectors if needed
 
-  for(std::vector<binary_proba_info>::const_iterator it = probs.begin(); it != probs.end(); ++it) {
+  for(const auto& bprob : probs)
+  {
 
-    if(it->lhs_pos >= (int) probabilities.size())
-      probabilities.resize(it->lhs_pos+1);
+    if(bprob.lhs_pos >= (int) probabilities.size())
+      probabilities.resize(bprob.lhs_pos+1);
 
-    if(it->rhs0_pos >= (int) probabilities[it->lhs_pos].size())
-      probabilities[it->lhs_pos].resize(it->rhs0_pos+1);
+    if(bprob.rhs0_pos >= (int) probabilities[bprob.lhs_pos].size())
+      probabilities[bprob.lhs_pos].resize(bprob.rhs0_pos+1);
 
-    if(it->rhs1_pos >= (int) probabilities[it->lhs_pos][it->rhs0_pos].size()) {
+    if(bprob.rhs1_pos >= (int) probabilities[bprob.lhs_pos][bprob.rhs0_pos].size())
+    {
 
-      unsigned old_size = probabilities[it->lhs_pos][it->rhs0_pos].size();
-      probabilities[it->lhs_pos][it->rhs0_pos].resize(it->rhs1_pos+1);
+      unsigned old_size = probabilities[bprob.lhs_pos][bprob.rhs0_pos].size();
+      probabilities[bprob.lhs_pos][bprob.rhs0_pos].resize(bprob.rhs1_pos+1);
 
-      for(unsigned i = old_size ; i < probabilities[it->lhs_pos][it->rhs0_pos].size(); ++i)
-	probabilities[it->lhs_pos][it->rhs0_pos][it->rhs1_pos] = 0 ;
+      for(unsigned i = old_size ; i < probabilities[bprob.lhs_pos][bprob.rhs0_pos].size(); ++i)
+	probabilities[bprob.lhs_pos][bprob.rhs0_pos][bprob.rhs1_pos] = 0.0 ;
 
-      probabilities[it->lhs_pos][it->rhs0_pos][it->rhs1_pos] = it->probability;
+      probabilities[bprob.lhs_pos][bprob.rhs0_pos][bprob.rhs1_pos] = bprob.probability;
     }
   }
 }
@@ -201,13 +203,11 @@ BRule::update_outside_annotations_return_marginal(const AnnotationInfo& up_annot
 {
   double marginal = 0.;
   #ifdef USE_THREADS
-  std::vector<tbb::atomic<double>> & lo =
-      *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&left_annot.outside_probabilities.array);
-  std::vector<tbb::atomic<double>> & ro =
-      *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&right_annot.outside_probabilities.array);
+  auto & lo = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&left_annot.outside_probabilities.array);
+  auto & ro = *reinterpret_cast<std::vector<tbb::atomic<double>> *>(&right_annot.outside_probabilities.array);
   #else
-  std::vector<double> & lo = left_annot.outside_probabilities.array ;
-  std::vector<double> & ro = right_annot.outside_probabilities.array ;
+  auto & lo = left_annot.outside_probabilities.array ;
+  auto & ro = right_annot.outside_probabilities.array ;
   #endif
   for(unsigned short i = 0; i < probabilities.size(); ++i) {
     if(up_annot.invalids[i] || up_annot.outside_probabilities.array[i] == 0.0) continue;

@@ -4,315 +4,316 @@
 namespace helpers {
 
 
-    struct split
-    {
-        unsigned split_size, randomness;
-        split(unsigned split_size_, unsigned randomness_)
-            : split_size(split_size_), randomness(randomness_) {}
+struct split
+{
+  unsigned split_size, randomness;
+  split(unsigned split_size_, unsigned randomness_)
+      : split_size(split_size_), randomness(randomness_) {}
 
-        template<class T>
-            void operator()(T& rule) const  {rule.split(split_size,randomness);}
-    };
-
-
-    struct merge
-    {
-        const Merge_map& annotation_sets_to_merge;
-        int split_size;
-        const ProportionsMap& proportions;
-        const AnnotatedLabelsInfo& ali;
-        const std::vector<std::map<int,int> >& annot_reorder;
-
-        merge(const Merge_map& annotation_sets_to_merge_, int split_size_,
-                const ProportionsMap& proportions_, const AnnotatedLabelsInfo& a_,
-                const std::vector<std::map<int,int> >& annot_reorder_)
-            :
-                annotation_sets_to_merge(annotation_sets_to_merge_), split_size(split_size_), proportions(proportions_),
-                ali(a_), annot_reorder(annot_reorder_)
-        {};
-
-        template <class T>
-            void operator()(T& rule) const {rule.merge(annotation_sets_to_merge,
-                    split_size,
-                    proportions,
-                    ali,
-                    annot_reorder);
-            }
-    };
+  template<class T>
+  void operator()(T& rule) const  {rule.split(split_size,randomness);}
+};
 
 
-    struct linear_smooth
-    {
-        double alpha;
-        linear_smooth(const double& alpha_) : alpha(alpha_) {}
+struct merge
+{
+  const Merge_map& annotation_sets_to_merge;
+  int split_size;
+  const ProportionsMap& proportions;
+  const AnnotatedLabelsInfo& ali;
+  const std::vector<std::map<int,int> >& annot_reorder;
 
-        template<class T>
-            void operator() (T& rule) const {rule.linear_smooth(alpha);}
-    };
+  merge(const Merge_map& annotation_sets_to_merge_, int split_size_,
+        const ProportionsMap& proportions_, const AnnotatedLabelsInfo& a_,
+        const std::vector<std::map<int,int> >& annot_reorder_)
+      :
+      annotation_sets_to_merge(annotation_sets_to_merge_), split_size(split_size_), proportions(proportions_),
+      ali(a_), annot_reorder(annot_reorder_)
+  {};
 
-
-    struct weighted_smooth
-    {
-        double alpha;
-        std::vector<std::vector<double> > weights;
-
-        void reset_alpha(const double& alpha_) {alpha = alpha_;}
-
-        weighted_smooth(const double& alpha_, const std::vector< Tree<unsigned> >& annot_histories) :
-            alpha(alpha_), weights(annot_histories.size())
-        {
-            for(unsigned i = 0; i < weights.size(); ++i) {
-                const Tree<unsigned>& tree = annot_histories[i];
-                unsigned height = tree.height();
-
-                weights[i].resize(tree.number_of_leaves());
-
-                for(Tree<unsigned>::const_leaf_iterator l(tree.lbegin()); l != tree.lend(); ++l) {
-                    unsigned idx = *l;
-                    unsigned branching = 1;
-
-                    Tree<unsigned>::const_depth_first_iterator m =l;
-
-                    //assume binary branching
-                    //update branching
-                    // ugly ! check that iterators to the 1st and last daughters are different
-                    while(m.up() != tree.dfend()) {
-                        // test if n-ary branching
-                        Tree<unsigned>::const_depth_first_iterator save;
-
-                        save = m;
-                        if(m.down_first()->has_right_sister() ) {++branching;}
-                        m = save;
+  template <class T>
+  void operator()(T& rule) const {rule.merge(annotation_sets_to_merge,
+                                             split_size,
+                                             proportions,
+                                             ali,
+                                             annot_reorder);
+  }
+};
 
 
-                    }
+struct linear_smooth
+{
+  double alpha;
+  linear_smooth(const double& alpha_) : alpha(alpha_) {}
 
-                    //assume binary branching
-                    // TODO remove assumption and work with n-ary
-                    weights[i][idx] = double(1 << (height - branching));
-                }
-            }
+  template<class T>
+  void operator() (T& rule) const {rule.linear_smooth(alpha);}
+};
+
+
+struct weighted_smooth
+{
+  double alpha;
+  std::vector<std::vector<double> > weights;
+
+  void reset_alpha(const double& alpha_) {alpha = alpha_;}
+
+  weighted_smooth(const double& alpha_, const std::vector< Tree<unsigned> >& annot_histories) :
+      alpha(alpha_), weights(annot_histories.size())
+  {
+    for(unsigned i = 0; i < weights.size(); ++i) {
+      const Tree<unsigned>& tree = annot_histories[i];
+      unsigned height = tree.height();
+
+      weights[i].resize(tree.number_of_leaves());
+
+      for(auto l(tree.lbegin()); l != tree.lend(); ++l)
+      {
+        unsigned idx = *l;
+        unsigned branching = 1;
+
+        Tree<unsigned>::const_depth_first_iterator m =l;
+
+        //assume binary branching
+        //update branching
+        // ugly ! check that iterators to the 1st and last daughters are different
+        while(m.up() != tree.dfend()) {
+          // test if n-ary branching
+          Tree<unsigned>::const_depth_first_iterator save;
+
+          save = m;
+          if(m.down_first()->has_right_sister() ) {++branching;}
+          m = save;
+
+
         }
 
-        template<class T> void operator() (T& rule) const {rule.weighted_smooth(alpha, weights);}
+        //assume binary branching
+        // TODO remove assumption and work with n-ary
+        weights[i][idx] = double(1 << (height - branching));
+      }
+    }
+  }
+
+  template<class T> void operator() (T& rule) const {rule.weighted_smooth(alpha, weights);}
 
     };
 
-    // template <typename T>
-    // std::vector< Tree<T> >get_at_depth(unsigned depth, const Tree<T>& tree)
-    // {
-    //   std::vector< Tree<T> > result;
-    //   unsigned target_height = tree.height() - depth;
+// template <typename T>
+// std::vector< Tree<T> >get_at_depth(unsigned depth, const Tree<T>& tree)
+// {
+//   std::vector< Tree<T> > result;
+//   unsigned target_height = tree.height() - depth;
 
-    //   for (typename Tree<T>::const_depth_first_iterator i(tree.dfbegin()); i != tree.dfend(); ++i) {
+//   for (typename Tree<T>::const_depth_first_iterator i(tree.dfbegin()); i != tree.dfend(); ++i) {
 
-    //     Tree<T> t = tree.subtree(i);
+//     Tree<T> t = tree.subtree(i);
 
-    //     if( t.height == target_height)
-    // 	result.push_back(t);
-    //   }
-
-
-    //   return result;
-    // }
+//     if( t.height == target_height)
+// 	result.push_back(t);
+//   }
 
 
-    struct generation_smooth
-    {
-        double alpha;
-        std::vector<std::vector<std::vector<double> > > weights;
-        //       std::vector< std::vector< std::map<unsigned,unsigned> > > reverse_generation_mapping;
+//   return result;
+// }
 
 
-        void compute_weight(double alpha, const Tree<unsigned>& annot_history, std::vector<std::vector<double> >& myweights)
-        {
-
-            //reset myweights
-            std::vector<std::vector<double> >().swap(myweights);
-
-            typedef std::vector< Tree<unsigned>::const_depth_first_iterator >::const_iterator iter;
-
-            unsigned tree_height = annot_history.height();
-
-            //for all layers of the tree
-            //	 std::cout << annot_history.height() << " " << annot_history << std::endl;
-            for (unsigned h = 1; h < tree_height; ++h) {
-                //	   std::cout << "h = " << h << std::endl;
-
-                // 1. calculate generation mappings
-                std::vector< Tree<unsigned>::const_depth_first_iterator > subtree_roots = annot_history.get_at_depth(h);
-                std::map<unsigned,unsigned> nod; //number of descendants
-                std::map<unsigned,unsigned> reverse_generation_mapping;
+struct generation_smooth
+{
+  double alpha;
+  std::vector<std::vector<std::vector<double> > > weights;
+  //       std::vector< std::vector< std::map<unsigned,unsigned> > > reverse_generation_mapping;
 
 
-                //	   std::cout << "size subtree_roots: " << subtree_roots.size() << std::endl;
-                for(iter j(subtree_roots.begin()); j != subtree_roots.end(); ++j) {
-                    Tree<unsigned>::const_depth_first_iterator tree_iter = *j;
-                    Tree<unsigned>::const_depth_first_iterator save = tree_iter;
+  void compute_weight(double alpha, const Tree<unsigned>& annot_history, std::vector<std::vector<double> >& myweights)
+  {
 
-                    tree_iter.up();
-                    Tree<unsigned> up_tree = annot_history.subtree(tree_iter);
-                    //	     std::cout << "\t\t" <<up_tree.height() << " " << up_tree << std::endl;
+    //reset myweights
+    std::vector<std::vector<double> >().swap(myweights);
 
-                    reverse_generation_mapping[*save] = *tree_iter;
-                    nod[*tree_iter]++;
+    typedef std::vector< Tree<unsigned>::const_depth_first_iterator >::const_iterator iter;
 
-                    // std::cout << "reverse_generation_mapping[" << *save << "]: " << reverse_generation_mapping[*save] << std::endl;
-                    // std::cout << "nod[" << *tree_iter <<"]: " << nod[*tree_iter] << std::endl;
-                }
+    unsigned tree_height = annot_history.height();
 
+    //for all layers of the tree
+    //	 std::cout << annot_history.height() << " " << annot_history << std::endl;
+    for (unsigned h = 1; h < tree_height; ++h) {
+      //	   std::cout << "h = " << h << std::endl;
 
-                std::vector<std::vector<double > > new_weights(subtree_roots.size(), std::vector<double>(subtree_roots.size()));
-
-                //std::cout << "h: " << h << " size new_weights: " << new_weights.size() << std::endl;
-                // 2. update weights
-
-                if (h == 1) {
-                    for(iter j(subtree_roots.begin()); j != subtree_roots.end(); ++j) {
-                        Tree<unsigned>::const_depth_first_iterator tree_iter = *j;
-                        tree_iter.up();
-
-                        if(nod[*tree_iter] == 1) {
-                            //		 std::cout << "nod is 1" << std::endl;
-                            new_weights[0][0]=1.0;
-                        }
-                        else {
-                            //		 std::cout << "nod is > 1" << std::endl;
-                            double alphabar = 1 - alpha;
-                            double other = alpha / (subtree_roots.size() - 1);
-
-                            // std::cout << "alpha: " << alpha << std::endl;
-                            // std::cout << "alphabar: " << alphabar << std::endl;
-                            // std::cout << "other: " << other << std::endl;
-
-                            for (unsigned a = 0; a < subtree_roots.size(); ++a) {
-                                for (unsigned b = 0; b < subtree_roots.size(); ++b) {
-                                    if(a == b)
-                                        new_weights[a][b] = alphabar;
-                                    else
-                                        new_weights[a][b] = other;
-                                }
-                            }
-                            // for (unsigned a = 0; a < subtree_roots.size(); ++a)
-                            //   for (unsigned b = 0; b < subtree_roots.size(); ++b)
-                            //	     std::cout << "new_weights[" << a << "][" << b << "]: " << new_weights[a][b] << std::endl;
+      // 1. calculate generation mappings
+      std::vector< Tree<unsigned>::const_depth_first_iterator > subtree_roots = annot_history.get_at_depth(h);
+      std::map<unsigned,unsigned> nod; //number of descendants
+      std::map<unsigned,unsigned> reverse_generation_mapping;
 
 
-                        }
+      //	   std::cout << "size subtree_roots: " << subtree_roots.size() << std::endl;
+      for(iter j(subtree_roots.begin()); j != subtree_roots.end(); ++j) {
+        Tree<unsigned>::const_depth_first_iterator tree_iter = *j;
+        Tree<unsigned>::const_depth_first_iterator save = tree_iter;
 
-                    }
-                }
+        tree_iter.up();
+        Tree<unsigned> up_tree = annot_history.subtree(tree_iter);
+        //	     std::cout << "\t\t" <<up_tree.height() << " " << up_tree << std::endl;
+
+        reverse_generation_mapping[*save] = *tree_iter;
+        nod[*tree_iter]++;
+
+        // std::cout << "reverse_generation_mapping[" << *save << "]: " << reverse_generation_mapping[*save] << std::endl;
+        // std::cout << "nod[" << *tree_iter <<"]: " << nod[*tree_iter] << std::endl;
+      }
+
+
+      std::vector<std::vector<double > > new_weights(subtree_roots.size(), std::vector<double>(subtree_roots.size()));
+
+      //std::cout << "h: " << h << " size new_weights: " << new_weights.size() << std::endl;
+      // 2. update weights
+
+      if (h == 1) {
+        for(iter j(subtree_roots.begin()); j != subtree_roots.end(); ++j) {
+          Tree<unsigned>::const_depth_first_iterator tree_iter = *j;
+          tree_iter.up();
+
+          if(nod[*tree_iter] == 1) {
+            //		 std::cout << "nod is 1" << std::endl;
+            new_weights[0][0]=1.0;
+          }
+          else {
+            //		 std::cout << "nod is > 1" << std::endl;
+            double alphabar = 1 - alpha;
+            double other = alpha / (subtree_roots.size() - 1);
+
+            // std::cout << "alpha: " << alpha << std::endl;
+            // std::cout << "alphabar: " << alphabar << std::endl;
+            // std::cout << "other: " << other << std::endl;
+
+            for (unsigned a = 0; a < subtree_roots.size(); ++a) {
+              for (unsigned b = 0; b < subtree_roots.size(); ++b) {
+                if(a == b)
+                  new_weights[a][b] = alphabar;
                 else
-                {
-                    // if(subtree_roots.size() == 1)
-                    // 	 new_weights[0][0] = 1.0;
-                    // else
-                    // 	 {
-
-                    std::vector<double> total(subtree_roots.size());
-
-                    for(unsigned s1 = 0 ; s1 < subtree_roots.size(); ++s1)
-                    {
-                        for(unsigned s2 = 0; s2 < subtree_roots.size(); ++s2)
-                        {
-                            unsigned s1_mother = reverse_generation_mapping[s1];
-                            unsigned s2_mother = reverse_generation_mapping[s2];
-                            new_weights[s1][s2] += myweights[s1_mother][s2_mother];
-                            total[s1] += myweights[s1_mother][s2_mother];
-                        }
-                    }
-                    for(unsigned s1 = 0 ; s1 < subtree_roots.size(); ++s1)
-                    {
-                        for(unsigned s2 = 0; s2 < subtree_roots.size(); ++s2)
-                        {
-                            new_weights[s1][s2] /= total[s1];
-                        }
-                    }
-                }
-                // }
-                myweights = new_weights;
+                  new_weights[a][b] = other;
+              }
             }
-        }
+            // for (unsigned a = 0; a < subtree_roots.size(); ++a)
+            //   for (unsigned b = 0; b < subtree_roots.size(); ++b)
+            //	     std::cout << "new_weights[" << a << "][" << b << "]: " << new_weights[a][b] << std::endl;
 
-        generation_smooth(const double& alpha_, const std::vector< Tree<unsigned> >& annot_histories)
-            : alpha(alpha_), weights(annot_histories.size())
+
+          }
+
+        }
+      }
+      else
+      {
+        // if(subtree_roots.size() == 1)
+        // 	 new_weights[0][0] = 1.0;
+        // else
+        // 	 {
+
+        std::vector<double> total(subtree_roots.size());
+
+        for(unsigned s1 = 0 ; s1 < subtree_roots.size(); ++s1)
         {
-            // for each symbol
-            for (unsigned i = 0; i < annot_histories.size(); ++i) {
-
-                compute_weight(alpha,annot_histories[i],weights[i]);
-            }
+          for(unsigned s2 = 0; s2 < subtree_roots.size(); ++s2)
+          {
+            unsigned s1_mother = reverse_generation_mapping[s1];
+            unsigned s2_mother = reverse_generation_mapping[s2];
+            new_weights[s1][s2] += myweights[s1_mother][s2_mother];
+                            total[s1] += myweights[s1_mother][s2_mother];
+          }
         }
+        for(unsigned s1 = 0 ; s1 < subtree_roots.size(); ++s1)
+        {
+          for(unsigned s2 = 0; s2 < subtree_roots.size(); ++s2)
+          {
+            new_weights[s1][s2] /= total[s1];
+          }
+        }
+      }
+      // }
+      myweights = new_weights;
+    }
+  }
 
-        template<class T> void operator() (T& rule) const {rule.generation_smooth(weights);}
+  generation_smooth(const double& alpha_, const std::vector< Tree<unsigned> >& annot_histories)
+      : alpha(alpha_), weights(annot_histories.size())
+  {
+    // for each symbol
+    for (unsigned i = 0; i < annot_histories.size(); ++i) {
 
+      compute_weight(alpha,annot_histories[i],weights[i]);
+    }
+  }
 
-    };
-
-
-
-
-
-    struct remove_unlikely
-    {
-        double threshold;
-        remove_unlikely(const double& threshold_) : threshold(threshold_) {}
-
-        template<class T>
-            void operator() (T& rule) const {rule.remove_unlikely_annotations(threshold);}
-    };
-
-
-    struct compact { template<class T> void operator()(T& rule) const {rule.compact();}};
-
-
-    struct out
-    {
-        std::ostream& os;
-        out(std::ostream& os_) : os(os_) {}
-
-        template<class T>
-            void operator()(const T& rule) {os << rule << '\n';}
-    };
+  template<class T> void operator() (T& rule) const {rule.generation_smooth(weights);}
 
 
-    // we don't want to copy the vectors of rules,
-    // but rather copy the rules inside them, pointwise,
-    // because we don't want to mess with pointers pointing
-    // on the rules contained in these vectors
-
-    struct copy
-    {
-        template<typename T>
-            const T& operator()(const T& rule) const {return rule;}
-    };
+};
 
 
 
-    template <typename T>
-    void perform_on_lexicon(Lexicon * lex, T& action)
-    {
-        std::vector<LexicalRuleTraining>& lr = lex->get_lexical_rules();
-        std::vector<LexicalRuleTraining>& ar = lex->get_additional_rules();
-
-        // std::cout << "perform_on_lexicon in" << std::endl;
-
-        // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(lr.begin(), lr.end()),
-        //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
-        //                   {
-        //                     std::for_each(range.begin(),range.end(), action);
-        //                   }
-        //                   );
 
 
-        // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(ar.begin(), ar.end()),
-        //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
-        //                   {
-        //                     std::for_each(range.begin(),range.end(), action);
-        //                   }
-        //                   );
+struct remove_unlikely
+{
+  double threshold;
+  remove_unlikely(const double& threshold_) : threshold(threshold_) {}
 
-        // std::cout << "perform_on_lexicon out" << std::endl;
+  template<class T>
+  void operator() (T& rule) const {rule.remove_unlikely_annotations(threshold);}
+};
+
+
+struct compact { template<class T> void operator()(T& rule) const {rule.compact();}};
+
+
+struct out
+{
+  std::ostream& os;
+  out(std::ostream& os_) : os(os_) {}
+
+  template<class T>
+  void operator()(const T& rule) {os << rule << '\n';}
+};
+
+
+// we don't want to copy the vectors of rules,
+// but rather copy the rules inside them, pointwise,
+// because we don't want to mess with pointers pointing
+// on the rules contained in these vectors
+
+struct copy
+{
+  template<typename T>
+  const T& operator()(const T& rule) const {return rule;}
+};
+
+
+
+template <typename T>
+void perform_on_lexicon(Lexicon * lex, T& action)
+{
+  std::vector<LexicalRuleTraining>& lr = lex->get_lexical_rules();
+  std::vector<LexicalRuleTraining>& ar = lex->get_additional_rules();
+
+  // std::cout << "perform_on_lexicon in" << std::endl;
+
+  // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(lr.begin(), lr.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+  //                   }
+  //                   );
+
+
+  // tbb::parallel_for(tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>(ar.begin(), ar.end()),
+  //                   [&action](const tbb::blocked_range<std::vector<LexicalRuleTraining>::iterator>& range)
+  //                   {
+  //                     std::for_each(range.begin(),range.end(), action);
+  //                   }
+  //                   );
+
+  // std::cout << "perform_on_lexicon out" << std::endl;
 
 
         std::for_each(lr.begin(),lr.end(),action);
@@ -340,16 +341,18 @@ namespace helpers {
 
 
     //normalise counts
-    for(production_counts_map::const_iterator it(binary_counts.begin()); it != binary_counts.end(); ++it) {
-        const Production& production = it->first;
-        double prob = double(it->second)/ double(LHS_counts[production.get_lhs()]);
-        binary_rules.push_back(BRuleTraining(production.get_lhs(), production.get_rhs0(), production.get_rhs1(),prob));
+    for(const auto& assoc : binary_counts)
+    {
+      const Production& production = assoc.first;
+      double prob = double(assoc.second)/ double(LHS_counts[production.get_lhs()]);
+      binary_rules.push_back(BRuleTraining(production.get_lhs(), production.get_rhs0(), production.get_rhs1(),prob));
     }
 
-    for(production_counts_map::const_iterator it(unary_counts.begin()); it != unary_counts.end(); ++it) {
-        const Production& production = it->first;
-        double prob = double(it->second) / double(LHS_counts[production.get_lhs()]);
-        unary_rules.push_back(URuleTraining(production.get_lhs(), production.get_rhs0(), prob));
+    for(const auto& assoc : unary_counts)
+    {
+      const Production& production = assoc.first;
+      double prob = double(assoc.second) / double(LHS_counts[production.get_lhs()]);
+      unary_rules.push_back(URuleTraining(production.get_lhs(), production.get_rhs0(), prob));
     }
 
     initialise_annotations_map();
@@ -418,47 +421,50 @@ void TrainingGrammar::merge_rules(const AnnotatedLabelsInfo& old_ali,
         const ProportionsMap& proportions,
         const std::map<int,std::set<int> > & full_sets_to_merge_lookup)
 {
-    std::vector<std::map<int,int> > annot_reorder = compute_annotation_reorder(split_size,
-            old_ali,
-            full_sets_to_merge_lookup);
+  //std::vector<std::map<int,int> >
+  auto annot_reorder = compute_annotation_reorder(split_size, old_ali,
+                                                  full_sets_to_merge_lookup);
+  //modify annot_histories trees
+  // TODO make a method
+  for(unsigned i = 0; i < annot_reorder.size() ; ++i)
+  {
+    Tree<unsigned>& tree = annot_histories[i];
 
-    //modify annot_histories trees
-    // TODO make a method
-    for(unsigned i = 0; i < annot_reorder.size() ; ++i) {
-        Tree<unsigned>& tree = annot_histories[i];
+    //std::cout << SymbolTable::instance_nt()->translate(i) << ":" << "\n\t" << tree << std::endl;
 
-        //std::cout << SymbolTable::instance_nt()->translate(i) << ":" << "\n\t" << tree << std::endl;
-
-        //remove annotations
-        for(Tree<unsigned>::depth_first_iterator t = tree.dfbegin(); t != tree.dfend(); ++t) {
-            if(t->leaf()) {
-                if(!annot_reorder[i].count(*t)) {
-                    Tree<unsigned>::depth_first_iterator u = t;
-                    u.up();
-                    tree.erase(t);
-                    t=u;
-                }
-            }
+    //remove annotations
+    for(auto t = tree.dfbegin(); t != tree.dfend(); ++t)
+    {
+      if(t->leaf()) {
+        if(!annot_reorder[i].count(*t))
+        {
+          Tree<unsigned>::depth_first_iterator u = t;
+          u.up();
+          tree.erase(t);
+          t=u;
         }
-
-        //    std::cout << "\t"  << tree << std::endl;
-
-        // rename annotations
-        // for some reasons we can't do these 2 operations at the same time or iterators
-        // get messed up ?
-        for(Tree<unsigned>::leaf_iterator l(tree.lbegin()); l != tree.lend(); ++l) {
-            *l = annot_reorder[i].find(*l)->second;
-        }
-
-        //    std::cout << "\t"  << tree << std::endl;
+      }
     }
 
+    //    std::cout << "\t"  << tree << std::endl;
 
-    helpers::merge merger(annotation_sets_to_merge, split_size, proportions,
-            get_annotations_info(), annot_reorder);
+    // rename annotations
+    // for some reasons we can't do these 2 operations at the same time or iterators
+    // get messed up ?
+    for(auto l(tree.lbegin()); l != tree.lend(); ++l)
+    {
+      *l = annot_reorder[i].find(*l)->second;
+    }
 
-    perform_action_all_internal_rules(merger);
-    helpers::perform_on_lexicon(lexicon,merger);
+    //    std::cout << "\t"  << tree << std::endl;
+  }
+
+
+  helpers::merge merger(annotation_sets_to_merge, split_size, proportions,
+                        get_annotations_info(), annot_reorder);
+
+  perform_action_all_internal_rules(merger);
+  helpers::perform_on_lexicon(lexicon,merger);
 }
 
 
@@ -641,35 +647,35 @@ std::ostream& operator<<(std::ostream& os, const TrainingGrammar& gram)
 //inline
 TrainingGrammar& TrainingGrammar::operator=(const TrainingGrammar& other)
 {
-    if(this != &other) {
-        label_annotations = other.label_annotations;
+  if(this != &other)
+  {
+    label_annotations = other.label_annotations;
 
-        // TODO find a way to compute these priors not in the constructor
-        // so the map needs not be an attribute
-        // They're useless in the split/merge cycle
-        //    unannotated_node_priors = other.unannotated_node_priors;
+    // TODO find a way to compute these priors not in the constructor
+    // so the map needs not be an attribute
+    // They're useless in the split/merge cycle
+    //    unannotated_node_priors = other.unannotated_node_priors;
 
-        helpers::copy copy;
-        binary_rules.resize(other.binary_rules.size());
-        unary_rules.resize(other.unary_rules.size());
-        std::transform(other.binary_rules.begin(), other.binary_rules.end(), binary_rules.begin(), copy);
-        std::transform(other.unary_rules.begin(), other.unary_rules.end(), unary_rules.begin(), copy);
+    helpers::copy copy;
+    binary_rules.resize(other.binary_rules.size());
+    unary_rules.resize(other.unary_rules.size());
+    std::transform(other.binary_rules.begin(), other.binary_rules.end(), binary_rules.begin(), copy);
+    std::transform(other.unary_rules.begin(), other.unary_rules.end(), unary_rules.begin(), copy);
 
-        //    delete lexicon.release();
-        //    lexicon = other.lexicon->copy();
-        assert(other.lexicon);
-        other.lexicon->copy(lexicon);
+    //    delete lexicon.release();
+    //    lexicon = other.lexicon->copy();
+    assert(other.lexicon);
+    other.lexicon->copy(lexicon);
 
-        annot_histories = other.annot_histories;
+    annot_histories = other.annot_histories;
 
-    }
+  }
 
-    return *this;
-
+  return *this;
 }
 
 
 void TrainingGrammar::reset_unannotated_priors()
 {
-    unannotated_node_count_map().swap(unannotated_node_priors);
+  unannotated_node_count_map().swap(unannotated_node_priors);
 }

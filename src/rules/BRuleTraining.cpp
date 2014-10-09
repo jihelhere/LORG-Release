@@ -387,7 +387,7 @@ void BRuleTraining::update_rule_frequencies(const scaled_array& left_in,
 					    const scaled_array& root_insides)
 {
   double new_scale = scaled_array::calculate_scalingfactor(left_in.scale + right_in.scale + up_out.scale -
-							       root_insides.scale) / root_insides.array[0];
+                                                           root_insides.scale) / root_insides.array[0];
   for(unsigned short i = 0; i < probabilities.size(); ++i) {
     if(up_out.array[i] == 0.0) continue;
     double up_tree = up_out.array[i] * new_scale;

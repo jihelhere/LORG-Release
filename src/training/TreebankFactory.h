@@ -74,27 +74,27 @@ Treebank<Tree> * TreebankFactory::BuildEmptyTreebank(ConfigTable& conf)
   std::unordered_set<std::string> labels_to_remove;
   std::string labels = conf.get_value<std::string>("nodes-to-remove");
   boost::tokenizer<boost::char_separator<char> > tokeniser(labels,boost::char_separator<char>(" "));
-  for(boost::tokenizer<boost::char_separator<char> >::const_iterator i=tokeniser.begin(); i != tokeniser.end(); ++i) {
-    if(verbose)
-      std::clog << "Will remove label: " << *i << " from trees\n";
-    labels_to_remove.insert(*i);
+  for(const auto& c : tokeniser)
+  {
+    if(verbose) std::clog << "Will remove label: " << c << " from trees\n";
+    labels_to_remove.insert(c);
   }
 
   //reading regex to recognize numbers
   boost::regex num_regex(conf.get_value<std::string>("number-regex"));
 
   // read treebank processing options
-  treebank_options tb_options = treebank_options(labels_to_remove,
-						 conf.get_value<bool>("remove-functions"),
-						 conf.get_value<bool>("replace-numbers"),
-						 num_regex,
-						 conf.get_value<unsigned>("vm")== 0 ? 0 :conf.get_value<unsigned>("vm") -1,
-						 //difference vm/additional layer : vm = 2 correponds to adding 1 layer
-						 conf.get_value<bool>("pos-vm"),
-						 conf.get_value<bool>("remove-same-unary"),
-						 bindir,
-						 binmark,
-						 conf.get_value<unsigned>("sentence-max-length"));
+  treebank_options tb_options(labels_to_remove,
+                              conf.get_value<bool>("remove-functions"),
+                              conf.get_value<bool>("replace-numbers"),
+                              num_regex,
+                              conf.get_value<unsigned>("vm")== 0 ? 0 :conf.get_value<unsigned>("vm") -1,
+                              //difference vm/additional layer : vm = 2 correponds to adding 1 layer
+                              conf.get_value<bool>("pos-vm"),
+                              conf.get_value<bool>("remove-same-unary"),
+                              bindir,
+                              binmark,
+                              conf.get_value<unsigned>("sentence-max-length"));
 
   return  new Treebank<Tree>(tb_options,verbose);
 

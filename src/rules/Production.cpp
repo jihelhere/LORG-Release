@@ -25,14 +25,13 @@ std::ostream& operator<<(std::ostream& os, const Production& prod)
 
   os << SymbolTable::instance_nt().translate(prod.lhs);
 
-  for(std::vector<int>::const_iterator it=prod.rhs.begin();
-      it != prod.rhs.end(); ++it)
-    {
-      if (prod.lexical)
-	os <<" " << SymbolTable::instance_word().translate(*it);
-      else
-	os <<" " << SymbolTable::instance_nt().translate(*it);
-    };
+  for(const auto& p : prod.rhs)
+  {
+    if (prod.lexical)
+      os <<" " << SymbolTable::instance_word().translate(p);
+    else
+      os <<" " << SymbolTable::instance_nt().translate(p);
+  };
 
   return os;
 }
@@ -82,78 +81,3 @@ std::string create_name(std::vector<int> rhs, bool right)
   return new_name.str();
 
 }
-
-// //not used anymore
-// std::pair<Production,Production> Production::binarize_simple(bool right) const
-// {
-//   std::vector<int> rhs = get_rhs();
-//   std::vector<int> rhsprime(2,0);
-//   std::vector<int> rhssecond;
-
-// #ifndef DEBUG
-//   std::string new_name = create_name(rhs,right);
-// #else
-//   std::string new_name = create_debug_name(rhs,right);
-// #endif
-//   int new_id = SymbolTable::instance_nt()->insert(new_name);
-
-
-//   if(right) {
-//     rhsprime[0] = new_id;
-//     rhsprime[1] = rhs[rhs.size()-1];
-//   }
-//   else{
-//     rhsprime[0] = rhs.front();
-//     rhsprime[1] = new_id;
-//   }
-
-//   Production rprime(get_lhs(),rhsprime,false);
-
-//   if(right)
-//     rhssecond.insert(rhssecond.end(),rhs.begin(),rhs.end()-1);
-//   else
-//     rhssecond.insert(rhssecond.end(),rhs.begin()+1,rhs.end());
-
-
-//   Production rsecond(new_id,rhssecond,false);
-
-//   std::pair<Production,Production> result(rprime,rsecond);
-//   return result;
-// };
-
-
-// std::pair<Production,Production> Production::binarize_right_simple() const
-// {
-//   return binarize_simple(true);
-// }
-
-// std::pair<Production,Production> Production::binarize_left_simple() const
-// {
-//   return binarize_simple(false);
-// }
-
-
-// std::list<Production> Production::binarize(std::pair<Production,Production> (Production::*funct)() const) const
-// {
-//   std::list<Production> accumulator;
-//   Production p = *this;
-
-//   while(p.get_rhs().size() > 2) {
-//     std::pair<Production,Production> pp = (p.*funct)();
-//     accumulator.push_back(pp.first);
-//     p = pp.second;
-//   }
-//   accumulator.push_back(p);
-
-//   return accumulator;
-// }
-
-// std::list<Production> Production::binarize_right() const
-// {
-//   return binarize(&Production::binarize_right_simple);
-// }
-
-// std::list<Production> Production::binarize_left() const
-// {
-//   return binarize(&Production::binarize_left_simple);
-// }

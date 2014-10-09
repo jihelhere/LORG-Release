@@ -17,22 +17,22 @@ using namespace tbb;
 
 namespace {
 
-  void calculate_occurrences(const TrainingNode* n,
-                             bumap<BRuleTraining*,std::vector<brule_occurrence> >& bmap,
-                             bumap<URuleTraining*,std::vector<urule_occurrence> >& umap,
-                             bumap<LexicalRuleTraining*,std::vector<lrule_occurrence> >& lmap)
-  {
-    n->add_occurrences(bmap,umap,lmap, n);
-  }
+void calculate_occurrences(const TrainingNode* n,
+                           bumap<BRuleTraining*,std::vector<brule_occurrence> >& bmap,
+                           bumap<URuleTraining*,std::vector<urule_occurrence> >& umap,
+                           bumap<LexicalRuleTraining*,std::vector<lrule_occurrence> >& lmap)
+{
+  n->add_occurrences(bmap,umap,lmap, n);
+}
 
-  void calculate_occurrences(const std::vector<BinaryTrainingTree>& trees,
-                             bumap<BRuleTraining*,std::vector<brule_occurrence> >& bmap,
-                             bumap<URuleTraining*,std::vector<urule_occurrence> >& umap,
-                             bumap<LexicalRuleTraining*,std::vector<lrule_occurrence> >& lmap)
-  {
-    for(std::vector<BinaryTrainingTree>::const_iterator i(trees.begin()); i != trees.end(); ++i)
-      calculate_occurrences(i->get_root(), bmap,umap, lmap);
-  }
+void calculate_occurrences(const std::vector<BinaryTrainingTree>& trees,
+                           bumap<BRuleTraining*,std::vector<brule_occurrence> >& bmap,
+                           bumap<URuleTraining*,std::vector<urule_occurrence> >& umap,
+                           bumap<LexicalRuleTraining*,std::vector<lrule_occurrence> >& lmap)
+{
+  for (const auto&i : trees)
+    calculate_occurrences(i.get_root(), bmap,umap, lmap);
+}
 }
 
 
@@ -42,120 +42,92 @@ namespace multithread {
 // also computing the log likelihood of this portion
 class inout_thread
 {
-    unsigned ignored;
+  unsigned ignored;
+  double logprob;
+ public:
 
-public:
-    double logprob;
+  inline
+  const double& get_logprob() const {return logprob;}
 
-    inout_thread(): ignored(0), logprob(0.0) {}
+
+  inout_thread(): ignored(0), logprob(0.0) {}
 
 
   // why this ?
   inout_thread( inout_thread&, split ) : ignored(0), logprob(0.0) {}
 
-    void operator()(const blocked_range<std::vector<BinaryTrainingTree>::iterator>& r)
+  void operator()(const blocked_range<std::vector<BinaryTrainingTree>::iterator>& r)
+  {
+    for(auto& t : r)
     {
-        for(std::vector<BinaryTrainingTree>::iterator i = r.begin(); i != r.end(); ++i) {
+      // calculate the inside probability of all nodes in the tree
+      t.compute_inside_probability();
 
-            // calculate the inside probability of all nodes in the tree
-            BinaryTrainingTree& t = *i;
+      // update the likelihood with the inside probability of the tree
+      // (this will be the inside probability of the root node which has no annotations)
+      double log_tree_prob =t.get_log_probability();
 
-            t.compute_inside_probability();
 
-            // update the likelihood with the inside probability of the tree
-            // (this will be the inside probability of the root node which has no annotations)
-
-            double log_tree_prob =t.get_log_probability();
-
-            if(std::isnan(log_tree_prob) || log_tree_prob == - std::numeric_limits<double>::infinity())
-                ++ignored;
-            else {
-                logprob +=  log_tree_prob;
-                t.compute_outside_probability();
-            }
-        }
+      if(std::isnan(log_tree_prob) || log_tree_prob == - std::numeric_limits<double>::infinity())
+        ++ignored;
+      else {
+        logprob +=  log_tree_prob;
+        t.compute_outside_probability();
+      }
     }
+  }
 
     void join( const inout_thread& y ) {logprob += y.logprob;}
 };
+
 
 // updating rule count/prob in the multithreaded implementation
 // for a portion of rules whose occurrences in the treebank have been calculated
 template <typename T, typename U>
 struct update_thread_tbb
 {
-    typedef T rule_type;
-    typedef U occurrence_type;
-    typedef std::vector< std::pair<rule_type*, std::vector<occurrence_type> > > vector_type;
+  typedef T rule_type;
+  typedef U occurrence_type;
+  typedef std::vector< std::pair<rule_type*, std::vector<occurrence_type> > > vector_type;
 
-    update_thread_tbb() {}
+  update_thread_tbb() {}
 
-    void operator()(const blocked_range<typename vector_type::iterator>& r) const
+  void operator()(const blocked_range<typename vector_type::iterator>& r) const
+  {
+    for(auto& i : r)
     {
-        for(typename vector_type::iterator i = r.begin(); i < r.end(); ++i) {
+      rule_type * rule = i.first;
+      const auto& occurrences = i.second;
 
-          rule_type * rule = i->first;
-          const std::vector<occurrence_type>& occurrences = i->second;
+      for(const auto& occurrence : occurrences)
+      {
+        double logprob = occurrence.root->get_annotations().get_inside(0);
 
-          for(typename std::vector<occurrence_type>::const_iterator it(occurrences.begin()); it != occurrences.end(); ++it) {
-
-            double logprob = it->root->get_annotations().get_inside(0);
-
-            if(std::isnan(logprob) || logprob == - std::numeric_limits<double>::infinity())
-              break;
-            update_count_in_occurrences(rule, *it);
-          }
-        }
+        if(std::isnan(logprob) || logprob == - std::numeric_limits<double>::infinity())
+          break;
+        update_count_in_occurrences(rule, occurrence);
+      }
     }
+  }
 
   inline
-    void update_count_in_occurrences(BRuleTraining* r, const brule_occurrence& bo) const
-    {
-        r->update_rule_frequencies(bo.left->get_annotations().inside_probabilities,
-                                   bo.right->get_annotations().inside_probabilities,
-                                   bo.up->get_annotations().outside_probabilities,
-                                   bo.root->get_annotations().inside_probabilities);
-    }
+  void update_count_in_occurrences(BRuleTraining* r, const brule_occurrence& bo) const
+  {
+    r->update_rule_frequencies(bo.left->get_annotations().inside_probabilities,
+                               bo.right->get_annotations().inside_probabilities,
+                               bo.up->get_annotations().outside_probabilities,
+                               bo.root->get_annotations().inside_probabilities);
+  }
 
   inline
-    void update_count_in_occurrences(URuleTraining* r, const urule_occurrence& o) const
-    {
-        r->update_rule_frequencies(o.left->get_annotations().inside_probabilities,
-                                   o.up->get_annotations().outside_probabilities,
-                                   o.root->get_annotations().inside_probabilities);
-    }
+  void update_count_in_occurrences(URuleTraining* r, const urule_occurrence& o) const
+  {
+    r->update_rule_frequencies(o.left->get_annotations().inside_probabilities,
+                               o.up->get_annotations().outside_probabilities,
+                               o.root->get_annotations().inside_probabilities);
+  }
 };
 
-// struct update_counts_unary
-// {
-//     std::vector< std::pair<URuleTraining*,std::vector<urule_occurrence> > >&vu;
-//     update_counts_unary(std::vector< std::pair<URuleTraining*,
-//                         std::vector<urule_occurrence> > >& _vu)
-//         :vu(_vu){}
-
-//     void operator()()const
-//     {
-//         typedef std::vector< std::pair<URuleTraining*, std::vector<urule_occurrence> > > VectorPairsURules;
-//         multithread::update_thread_tbb<URuleTraining, urule_occurrence> uut;
-//         parallel_for(blocked_range<VectorPairsURules::iterator>(vu.begin(), vu.end()), uut);
-//     }
-// };
-
-// struct update_counts_binary
-// {
-//     std::vector< std::pair<BRuleTraining*,std::vector<brule_occurrence> > >&vb;
-//     update_counts_binary(std::vector< std::pair<BRuleTraining*,
-//                          std::vector<brule_occurrence> > >& _vb)
-//         :vb(_vb){}
-
-//     void operator()()const
-//     {
-//         typedef std::vector< std::pair<BRuleTraining*, std::vector<brule_occurrence> > > VectorPairsBRules;
-//         //std::random_shuffle(vb.begin(),vb.end());
-//         multithread::update_thread_tbb<BRuleTraining, brule_occurrence> but;
-//         parallel_for(blocked_range<VectorPairsBRules::iterator>(vb.begin(), vb.end()), but);
-//     }
-// };
 }
 
 
@@ -234,11 +206,10 @@ void EMTrainer::do_em(std::vector<BinaryTrainingTree>& trees,
 void EMTrainer::smooth_grammar_rules( TrainingGrammar& em_grammar, double smooth_grammar, double smooth_lexicon,
                                       TrainingGrammar::SmoothType type)
 {
-    if(verbose)
-        std::clog << "smoothing rules" << std::endl;
-    em_grammar.uncompact_all_rules();
-    em_grammar.smooth_all_rules(smooth_grammar, smooth_lexicon, type);
-    em_grammar.compact_all_rules();
+  if(verbose) std::clog << "smoothing rules" << std::endl;
+  em_grammar.uncompact_all_rules();
+  em_grammar.smooth_all_rules(smooth_grammar, smooth_lexicon, type);
+  em_grammar.compact_all_rules();
 }
 
 void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGrammar& em_grammar,
@@ -248,87 +219,78 @@ void EMTrainer::expectation(std::vector<BinaryTrainingTree>& trees, TrainingGram
                             std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& vl
                             )
 {
+  log_likelihood = 0;
 
-    log_likelihood = 0;
+  if(verbose)
+    std::clog << "Before in/out" << std::endl;
 
-    if(verbose)
-      std::clog << "Before in/out" << std::endl;
-
-    // TODO make  a separate function
-    {
-        multithread::inout_thread io;
-        parallel_reduce(blocked_range<std::vector<BinaryTrainingTree>::iterator>(trees.begin(), trees.end()), io);
-        log_likelihood += io.logprob;
-    }
+  // TODO make  a separate function
+  {
+    multithread::inout_thread io;
+    parallel_reduce(blocked_range<std::vector<BinaryTrainingTree>::iterator>(trees.begin(), trees.end()), io);
+    log_likelihood += io.get_logprob();
+  }
 
 
-    if(verbose)
-      std::clog << "Before update counts" << std::endl;
+  if(verbose)
+    std::clog << "Before update counts" << std::endl;
 
-    {
-      if(verbose)
-        std::clog << "unaries ";
-        typedef std::vector< std::pair<URuleTraining*, std::vector<urule_occurrence> > > VectorPairsURules;
-        multithread::update_thread_tbb<URuleTraining, urule_occurrence> uut;
-        parallel_for(blocked_range<VectorPairsURules::iterator>(vu.begin(), vu.end()), uut);
+  {
+    if(verbose) std::clog << "unaries ";
+    typedef std::vector< std::pair<URuleTraining*, std::vector<urule_occurrence> > > VectorPairsURules;
+    multithread::update_thread_tbb<URuleTraining, urule_occurrence> uut;
+    parallel_for(blocked_range<VectorPairsURules::iterator>(vu.begin(), vu.end()), uut);
 
-      if(verbose)
-        std::clog << "and binaries" << std::endl;
-        typedef std::vector< std::pair<BRuleTraining*, std::vector<brule_occurrence> > > VectorPairsBRules;
-        //std::random_shuffle(vb.begin(),vb.end());
-        multithread::update_thread_tbb<BRuleTraining, brule_occurrence> but;
-        parallel_for(blocked_range<VectorPairsBRules::iterator>(vb.begin(), vb.end()), but);
+    if(verbose)std::clog << "and binaries" << std::endl;
+    typedef std::vector< std::pair<BRuleTraining*, std::vector<brule_occurrence> > > VectorPairsBRules;
+    //std::random_shuffle(vb.begin(),vb.end());
+    multithread::update_thread_tbb<BRuleTraining, brule_occurrence> but;
+    parallel_for(blocked_range<VectorPairsBRules::iterator>(vb.begin(), vb.end()), but);
+  }
 
-        //Parallel_invoke
-        //parallel_invoke(multithread::update_counts_binary(vb), multithread::update_counts_unary(vu));
-    }
+  if(verbose) std::clog << "Before lexical" << std::endl;
 
-    if(verbose)
-      std::clog << "Before lexical" << std::endl;
+  em_grammar.update_lexical_counts(trees, last_iteration, vl);
 
-    em_grammar.update_lexical_counts(trees, last_iteration, vl);
-
-    if (verbose)
-      {
-        std::clog << "tree: " << trees.size() << std::endl;
-        //    std::clog << "ignored: " << tree_ignored << " tree(s)" << std::endl;
-      }
+  if (verbose)
+  {
+    std::clog << "tree: " << trees.size() << std::endl;
+    //    std::clog << "ignored: " << tree_ignored << " tree(s)" << std::endl;
+  }
 }
 
 
 //grammar (as opposed to lexicon).
 void EMTrainer::calculate_grammar_node_counts(const TrainingGrammar& grammar)
 {
+  for (const auto& brule : grammar.get_binary_rules())
+  {
+    const auto& rule_counts = brule.get_counts();
+    auto& current_label_counts = annotated_node_counts[brule.get_lhs()];
+    current_label_counts.resize(rule_counts.size(), 0.0);
 
-    for (std::vector<BRuleTraining>::const_iterator iter(grammar.get_binary_rules().begin());
-         iter != grammar.get_binary_rules().end(); ++iter) {
+    for(unsigned i = 0; i < rule_counts.size(); ++i)
+    {
+      double& current_count = current_label_counts[i];
 
-        const std::vector< std::vector< std::vector<double> > >& rule_counts = iter->get_counts();
-
-        std::vector<double>& current_label_counts = annotated_node_counts[iter->get_lhs()];
-        current_label_counts.resize(rule_counts.size(),0.0);
-
-        for(unsigned i = 0; i < rule_counts.size(); ++i) {
-            double& current_count = current_label_counts[i];
-
-            for(unsigned j = 0; j < rule_counts[i].size(); ++j)
-
-                current_count += std::accumulate(rule_counts[i][j].begin(), rule_counts[i][j].end(), 0.0);
-        }
+      for(unsigned j = 0; j < rule_counts[i].size(); ++j)
+      {
+        auto& rc = rule_counts[i][j];
+        current_count += std::accumulate(rc.begin(), rc.end(), 0.0);
+      }
     }
+  }
 
-    for (std::vector<URuleTraining>::const_iterator iter(grammar.get_unary_rules().begin());
-         iter != grammar.get_unary_rules().end(); ++iter) {
-
-        const std::vector< std::vector<double> >& rule_counts = iter->get_counts();
-        std::vector<double>& current_label_counts = annotated_node_counts[iter->get_lhs()];
-        current_label_counts.resize(rule_counts.size(),0.0);
-        for(unsigned i = 0; i < rule_counts.size(); ++i) {
-
-            current_label_counts[i] += std::accumulate(rule_counts[i].begin(), rule_counts[i].end(),0.0);
-        }
+  for (const auto& urule : grammar.get_unary_rules())
+  {
+    const auto& rule_counts = urule.get_counts();
+    auto& current_label_counts = annotated_node_counts[urule.get_lhs()];
+    current_label_counts.resize(rule_counts.size(),0.0);
+    for(unsigned i = 0; i < rule_counts.size(); ++i)
+    {
+      current_label_counts[i] += std::accumulate(rule_counts[i].begin(), rule_counts[i].end(),0.0);
     }
-
+  }
 }
 
 struct update_probability_helper
@@ -421,10 +383,11 @@ void EMTrainer::calculate_proportions(const AnnotatedLabelsInfo& annotation_info
 void EMTrainer::calculate_delta_scores(const std::vector<BinaryTrainingTree> & trees, DeltaMap& delta_scores,
                                        const AnnotatedNodeCountMap& proportions)
 {
-    for(std::vector<BinaryTrainingTree>::const_iterator tree_iter(trees.begin()); tree_iter != trees.end(); ++tree_iter) {
-        tree_iter->update_delta_scores(delta_scores,split_number,proportions,
-                                       tree_iter->get_root()->get_annotations().inside_probabilities);
-    }
+  for(const auto& tree : trees)
+  {
+    tree.update_delta_scores(delta_scores,split_number,proportions,
+                             tree.get_root()->get_annotations().inside_probabilities);
+  }
 }
 
 ///what's this?  comments would be nice!!
@@ -637,12 +600,10 @@ void EMTrainer::resize_annotations_in_treebank(std::vector<BinaryTrainingTree> &
                       [&]
                       (const tbb::blocked_range<std::vector<BinaryTrainingTree>::iterator>& range)
                       {
-                        std::for_each(range.begin(),range.end(),
-                                      [&](BinaryTrainingTree& t)
-                                      {
-                                        t.resize_annotations(a_infos);
-                                      }
-                                      );
+                        for(auto& t : range)
+                        {
+                          t.resize_annotations(a_infos);
+                        }
                       }
                       );
 
@@ -699,46 +660,46 @@ void EMTrainer::reset_counts_soft(TrainingGrammar& grammar)
 
 double EMTrainer::calculate_likelihood(std::vector<BinaryTrainingTree>& trees) const
 {
-    unsigned tree = 0;
-    double llikelihood = 0;
+  unsigned tree_count = 0;
+  double llikelihood = 0;
 
-    unsigned tree_ignored = 0;
+  unsigned tree_ignored = 0;
 
-    for(std::vector<BinaryTrainingTree>::iterator tree_iter(trees.begin()); tree_iter != trees.end(); ++tree_iter) {
-
-        ++tree;
-        if(verbose){
-            if( tree % 100 == 0)
-                std::cout << "tree: " << tree << '\r';
-        }
-        // don't forget to reset probabilities !
-        tree_iter->reset_inside_probabilities(0);
-
-        //calculate the inside probability of all nodes in the tree
-        tree_iter->compute_inside_probability();
-
-        //update the likelihood with the inside probability of the tree
-        //(this will be the inside probability of the root node which has no annotations)
-        double log_tree_prob = tree_iter->get_log_probability();
-
-        // std::cout << "Tree " << tree << " " << tree_iter->get_log_probability() << std::endl;
-        // std::cout << "\t" << *tree_iter << std::endl;
-        if(std::isnan(log_tree_prob)  || log_tree_prob == - std::numeric_limits<double>::infinity()) {
-            ++tree_ignored;
-            //      std::cout << "ignoring tree with logprob:" << log_tree_prob << std::endl;
-            //    std::cout << tree_prob << std::endl << std::endl;
-        }
-        else {
-            llikelihood +=  log_tree_prob;
-        }
+  for(auto& tree : trees)
+  {
+    ++tree_count;
+    if(verbose){
+      if( tree_count % 100 == 0)
+        std::cout << "tree: " << tree_count << '\r';
     }
+    // don't forget to reset probabilities !
+    tree.reset_inside_probabilities(0);
 
-    if(verbose) {
-        std::cout << "tree: " << tree << std::endl;
-        std::cout << "ignored: " << tree_ignored << " tree(s)" << std::endl;
+    //calculate the inside probability of all nodes in the tree
+    tree.compute_inside_probability();
+
+    //update the likelihood with the inside probability of the tree
+    //(this will be the inside probability of the root node which has no annotations)
+    double log_tree_prob = tree.get_log_probability();
+
+    // std::cout << "Tree " << tree << " " << tree_iter->get_log_probability() << std::endl;
+    // std::cout << "\t" << *tree_iter << std::endl;
+    if(std::isnan(log_tree_prob)  || log_tree_prob == - std::numeric_limits<double>::infinity()) {
+      ++tree_ignored;
+      //      std::cout << "ignoring tree with logprob:" << log_tree_prob << std::endl;
+      //    std::cout << tree_prob << std::endl << std::endl;
     }
+    else {
+      llikelihood +=  log_tree_prob;
+    }
+  }
 
-    return llikelihood;
+  if(verbose) {
+    std::cout << "tree: " << tree_count << std::endl;
+    std::cout << "ignored: " << tree_ignored << " tree(s)" << std::endl;
+  }
+
+  return llikelihood;
 }
 
 

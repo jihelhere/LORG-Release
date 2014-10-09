@@ -33,11 +33,12 @@
 
 *** Dependencies
 
-    1. You need boost -- >= 1.46 -- available at [[http://www.boost.org][boost page]] or from your favorite package manager.
-    2. You may use [[http://code.google.com/p/google-perftools/][Google malloc]] instead of your system implementation. It might speed up memory
+    1. A C++11-aware compiler tested with (like gcc 4.7.0 and clang 3.4)
+    2. You need boost -- >= 1.56 -- available at [[http://www.boost.org][boost page]] or from your favorite package manager.
+    3. You may use [[http://code.google.com/p/google-perftools/][Google malloc]] instead of your system implementation. It might speed up memory
        allocation. Autotools will automatically try to detect the availability of this library and use it,
-       provided it is usable.
-    3. Intel Threading Building Blocks available at [[http://threadingbuildingblocks.org][tbb page]] or from your favorite package manager
+       provided it is usable (deprecated)
+    4. Intel Threading Building Blocks available at [[http://threadingbuildingblocks.org][tbb page]] or from your favorite package manager
 
 *** Compilation
 

@@ -67,7 +67,7 @@ AC_ARG_WITH(tcmalloc, [message],
 AM_CONDITIONAL([WANT_TCMALLOC], [test "x$want_tcmalloc" != "xno"])
 
 
-AX_BOOST_BASE([1.46])
+AX_BOOST_BASE([1.56])
 AX_BOOST_REGEX
 AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_SYSTEM
