@@ -14,7 +14,7 @@ public:
   LorgOptions get_options() const;
   ExtractApp();
 private:
-  Extract extractor;
+  std::shared_ptr<Extract> extractor;
 };
 
 

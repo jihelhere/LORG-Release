@@ -25,9 +25,9 @@ public:
   */
 
   BinaryTrainingTree(const PtbPsTree& tree,
-		     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> * brulemap,
-		     MAP<std::pair<int,int>,URuleTraining*> * urulemap,
-		     MAP<std::pair<int,int>,LexicalRuleTraining*> * lrulemap);
+		     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*>& brulemap,
+		     MAP<std::pair<int,int>,URuleTraining*>& urulemap,
+		     MAP<std::pair<int,int>,LexicalRuleTraining*>& lrulemap);
 
   const TrainingNode * get_root() const {return root;}
 
@@ -70,27 +70,28 @@ public:
 
   static TrainingNode * create_training_node(const PtbPsTree& tree,
 					     PtbPsTree::const_depth_first_iterator current,
-					     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> * brulemap,
-					     MAP<std::pair<int,int>,URuleTraining*> * urulemap,
-					     MAP<std::pair<int,int>,LexicalRuleTraining*> * lrulemap);
+					     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> & brulemap,
+					     MAP<std::pair<int,int>,URuleTraining*> & urulemap,
+					     MAP<std::pair<int,int>,LexicalRuleTraining*> & lrulemap);
 
   void print_leaf_node_probs();
 
-
+  void free_nodes();
   // to make the compiler happy ...
-  BinaryTrainingTree& operator=(const BinaryTrainingTree&);
-  BinaryTrainingTree(const BinaryTrainingTree& other) : root(other.root) {}
+  BinaryTrainingTree(BinaryTrainingTree&& o) : root(std::move(o.root)) {};
+  //BinaryTrainingTree& operator=(const BinaryTrainingTree&);
+  //BinaryTrainingTree(const BinaryTrainingTree& other) : root(other.root) {}
 private:
-
+  BinaryTrainingTree(const BinaryTrainingTree& o);
 
 
   /**
      \brief create a bttree from a ptbpstree
   */
   BinaryTrainingTree(const PtbPsTree& tree, PtbPsTree::const_depth_first_iterator current,
-		     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> * brulemap,
-		     MAP<std::pair<int,int>,URuleTraining*> * urulemap,
-		     MAP<std::pair<int,int>,LexicalRuleTraining*> * lrulemap);
+		     MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*>& brulemap,
+		     MAP<std::pair<int,int>,URuleTraining*>& urulemap,
+		     MAP<std::pair<int,int>,LexicalRuleTraining*>& lrulemap);
 
   void resize_annotations(unsigned size);
   void calculate_delta_score(DeltaMap &  delta_scores_map, int split_size,
@@ -184,12 +185,12 @@ bool BinaryTrainingTree::contains_empty_rules() const
   return root->contains_empty_rules();
 }
 
-inline
-BinaryTrainingTree& BinaryTrainingTree::operator=(const BinaryTrainingTree& other)
-{
-  root= other.root;
-  return *this;
-}
+// inline
+// BinaryTrainingTree& BinaryTrainingTree::operator=(const BinaryTrainingTree& other)
+// {
+//   root= other.root;
+//   return *this;
+// }
 
 
 #endif /* _BINARYTRAININGTREE_H_ */

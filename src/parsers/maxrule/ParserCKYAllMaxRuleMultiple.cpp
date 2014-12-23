@@ -8,7 +8,7 @@
 
 
 ParserCKYAllMaxRuleMultiple::ParserCKYAllMaxRuleMultiple(ParserCKYAllFactory::MaxParsing_Calculation c,
-                                                         std::vector<AGrammar*>& cgs,
+                                                         const std::vector<AGrammar*>& cgs,
                                                          const std::vector<double>& p, double b_t,
                                                          const std::vector< std::vector<AGrammar*> >& fgs,
                                                          const std::vector< annot_descendants_type >& all_annot_descendants_,

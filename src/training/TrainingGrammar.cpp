@@ -290,8 +290,8 @@ struct copy
 
 
 
-template <typename T>
-void perform_on_lexicon(Lexicon * lex, T& action)
+template <typename LexPtr,typename T>
+void perform_on_lexicon(LexPtr lex, T& action)
 {
   std::vector<LexicalRuleTraining>& lr = lex->get_lexical_rules();
   std::vector<LexicalRuleTraining>& ar = lex->get_additional_rules();
@@ -322,8 +322,8 @@ void perform_on_lexicon(Lexicon * lex, T& action)
 }
 
 
-    TrainingGrammar::TrainingGrammar(Treebank<PtbPsTree> & tb, Lexicon* lex)
-: Grammar<BRuleTraining, URuleTraining, LexicalRuleTraining>(),
+TrainingGrammar::TrainingGrammar(Treebank<PtbPsTree> & tb, std::shared_ptr<Lexicon> lex)
+    : Grammar<BRuleTraining, URuleTraining, LexicalRuleTraining>(),
     unannotated_node_priors(), lexicon(lex)
 {
     //collect basic rule counts and normalise to get probabilities for base grammar
@@ -665,7 +665,7 @@ TrainingGrammar& TrainingGrammar::operator=(const TrainingGrammar& other)
     //    delete lexicon.release();
     //    lexicon = other.lexicon->copy();
     assert(other.lexicon);
-    other.lexicon->copy(lexicon);
+    lexicon = std::shared_ptr<Lexicon>(other.lexicon->copy());
 
     annot_histories = other.annot_histories;
 

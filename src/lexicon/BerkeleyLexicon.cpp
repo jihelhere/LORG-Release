@@ -6,7 +6,8 @@
 
 BerkeleyLexicon::~BerkeleyLexicon() {}
 
-BerkeleyLexicon::BerkeleyLexicon(const WordSignature& unknown_word_mapping_, double unknown_treebank_proportion_, int smoothing_threshold_):
+BerkeleyLexicon::BerkeleyLexicon(const std::shared_ptr<WordSignature> unknown_word_mapping_,
+                                 double unknown_treebank_proportion_, int smoothing_threshold_):
   Lexicon(),
   unknown_word_map(unknown_word_mapping_),
   unknown_treebank_proportion(unknown_treebank_proportion_),
@@ -477,7 +478,7 @@ void BerkeleyLexicon::lexical_smoothing()
 
 std::string BerkeleyLexicon::get_word_class(const std::string& word, int position) const
 {
-  return unknown_word_map.get_unknown_mapping(word,position);
+  return unknown_word_map->get_unknown_mapping(word,position);
 }
 
 void BerkeleyLexicon::reset_counts()
@@ -842,5 +843,5 @@ std::string BerkeleyLexicon::header_string() const
   return
       "// lexicon_header: " +
       LexiconFactory::lex_type_2_string(LexiconFactory::Basic) + '\t' +
-      WordSignature::lex_unknown_map_2_string(unknown_word_map.get_type());
+      WordSignature::lex_unknown_map_2_string(unknown_word_map->get_type());
 }

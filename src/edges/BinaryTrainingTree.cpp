@@ -6,11 +6,10 @@
 
 
 
-BinaryTrainingTree::BinaryTrainingTree() : root(NULL) {}
+BinaryTrainingTree::BinaryTrainingTree() : root(nullptr) {}
 
 //need to fix that somehow
-BinaryTrainingTree::~BinaryTrainingTree()
-{}
+BinaryTrainingTree::~BinaryTrainingTree(){}
 
 inline unsigned nb_subtrees(const PtbPsTree& tree, const PtbPsTree::const_depth_first_iterator& position)
 {
@@ -21,11 +20,12 @@ inline unsigned nb_subtrees(const PtbPsTree& tree, const PtbPsTree::const_depth_
   return res;
 }
 
-TrainingNode * BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
-							PtbPsTree::const_depth_first_iterator current,
-							MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> * brulemap,
-							MAP<std::pair<int,int>,URuleTraining*> * urulemap,
-							MAP<std::pair<int,int>,LexicalRuleTraining*> * lrulemap)
+TrainingNode *
+BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
+                                         PtbPsTree::const_depth_first_iterator current,
+                                         MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> & brulemap,
+                                         MAP<std::pair<int,int>,URuleTraining*> & urulemap,
+                                         MAP<std::pair<int,int>,LexicalRuleTraining*> &lrulemap)
 {
   switch(nb_subtrees(tree,current)) {
 
@@ -41,19 +41,20 @@ TrainingNode * BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
     last_daughter_iter.down_last();
     new_node->right = create_training_node(tree,last_daughter_iter,brulemap,urulemap,lrulemap);
 
-    new_node->rule = NULL;
-    if (brulemap)  {
+    new_node->rule = nullptr;
+    //    if (brulemap)  {
       //std::cout << "binary" << std::endl;
 
       MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*>::iterator it;
 
-      if((it = brulemap->find(std::make_pair(new_node->lhs,
-					     std::make_pair(new_node->left->get_lhs(),new_node->right->get_lhs())))) != brulemap->end()) {
-    	  	new_node->rule = it->second;
+      if ((it = brulemap.find(std::make_pair(new_node->lhs,
+                                             std::make_pair(new_node->left->get_lhs(),new_node->right->get_lhs())))) != brulemap.end())
+      {
+        new_node->rule = it->second;
       }
 
       return new_node;
-    }
+      //    }
     break;
   }
 
@@ -67,15 +68,15 @@ TrainingNode * BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
       //      int word_id = SymbolTable::instance_word()->insert(*first_daughter_iter);
 
 
-      new_node->rule = NULL;
+      // new_node->rule = nullptr;
       int word_id = SymbolTable::instance_word().get_label_id(*first_daughter_iter);
       MAP<std::pair<int,int>,LexicalRuleTraining*>::iterator it;
-      if((it = lrulemap->find(std::make_pair(new_node->lhs,word_id))) != lrulemap->end()) {
+      if((it = lrulemap.find(std::make_pair(new_node->lhs,word_id))) != lrulemap.end()) {
 	new_node->rule = it->second;
       }
       //assert(new_node->rule !=0);
       // doesn't work with validation trees ?
-      if(new_node->rule == NULL)
+      if(new_node->rule == nullptr)
 	std::cout << "No rule for " << *current << " -> " <<
 	  *first_daughter_iter << std::endl;
 
@@ -83,15 +84,14 @@ TrainingNode * BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
     }
 
     else {
-
       UnaryTrainingNode * new_node = new UnaryTrainingNode();
       new_node->lhs = SymbolTable::instance_nt().insert(*current);
 
       new_node->left = create_training_node(tree,first_daughter_iter,brulemap,urulemap,lrulemap);
 
-      new_node->rule = NULL;
+      new_node->rule = nullptr;
       MAP<std::pair<int,int>,URuleTraining*>::iterator it;
-      if((it = urulemap->find(std::make_pair(new_node->lhs,new_node->left->get_lhs()))) != urulemap->end()) {
+      if((it = urulemap.find(std::make_pair(new_node->lhs,new_node->left->get_lhs()))) != urulemap.end()) {
     	  new_node->rule = it->second;
       }
 
@@ -101,13 +101,13 @@ TrainingNode * BinaryTrainingTree::create_training_node(const PtbPsTree& tree,
   }
   default: std::cout << "pb in tree" << std::endl;
   }
-  return NULL;
+  return nullptr;
 }
 
 BinaryTrainingTree::BinaryTrainingTree(const PtbPsTree& tree,
-				       MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> * brulemap,
-				       MAP<std::pair<int,int>,URuleTraining*> * urulemap,
-				       MAP<std::pair<int,int>,LexicalRuleTraining*> * lrulemap)
+				       MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> & brulemap,
+				       MAP<std::pair<int,int>,URuleTraining*> & urulemap,
+				       MAP<std::pair<int,int>,LexicalRuleTraining*> & lrulemap)
   :
   root(create_training_node(tree, tree.dfbegin(),brulemap,urulemap,lrulemap))
 {
@@ -136,4 +136,9 @@ void BinaryTrainingTree::print_leaf_node_probs()
   }
   std::cout <<std::endl;
 
+}
+
+void BinaryTrainingTree::free_nodes()
+{
+  delete root;
 }

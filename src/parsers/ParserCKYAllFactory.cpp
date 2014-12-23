@@ -65,7 +65,7 @@ ParserCKYAllFactory::string_to_mpc(const std::string& s)
 }
 
 
-ParserCKYAll * create_parser(std::vector<ParserCKYAll::AGrammar*> cgs,
+ParserCKYAll * create_parser(const std::vector<ParserCKYAll::AGrammar*>& cgs,
                              ParserCKYAllFactory::Parsing_Algorithm pt,
                              ParserCKYAllFactory::MaxParsing_Calculation c,
                              const std::vector<double>& p, double b_t,
@@ -131,11 +131,15 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
 
   ///////
 
+  // create binary grammar file
+  // TODO: this should be set by users
   if(verbose)
   {
     std::tuple<decltype(grammars)&,
                decltype(SymbolTable::instance_nt())&,
-               decltype(SymbolTable::instance_word())&> triple(grammars, SymbolTable::instance_nt(), SymbolTable::instance_word());
+               decltype(SymbolTable::instance_word())&>
+        triple(grammars, SymbolTable::instance_nt(), SymbolTable::instance_word());
+
     std::ofstream ofs(filename + ".bin");
     oarchive oa(ofs);
     oa << triple;
@@ -145,6 +149,224 @@ std::vector<ParserCKYAll::AGrammar*> create_grammars(const std::string& filename
 
   return grammars;
 }
+
+
+
+void align_grammar(const std::vector<ParserCKYAll::AGrammar*>& gs, const SymbolTable& words, const SymbolTable& nts)
+{
+  for (auto& g : gs)
+  {
+    for (auto& br: g->binary_rules)
+    {
+      int l = br.get_lhs();
+      std::string ls = nts.get_label_string(l);
+      int l2 = SymbolTable::instance_nt().insert(ls);
+      br.set_lhs(l2);
+
+      int r0 = br.get_rhs0();
+      std::string r0s = nts.get_label_string(r0);
+      int r02 = SymbolTable::instance_nt().insert(r0s);
+      br.set_rhs0(r02);
+
+      int r1 = br.get_rhs1();
+      std::string r1s = nts.get_label_string(r1);
+      int r12 = SymbolTable::instance_nt().insert(r1s);
+      br.set_rhs1(r12);
+    }
+
+    for (auto& ur: g->unary_rules)
+    {
+      int l = ur.get_lhs();
+      std::string ls = nts.get_label_string(l);
+      int l2 = SymbolTable::instance_nt().insert(ls);
+      ur.set_lhs(l2);
+
+      int r0 = ur.get_rhs0();
+      std::string r0s = nts.get_label_string(r0);
+      int r02 = SymbolTable::instance_nt().insert(r0s);
+      ur.set_rhs0(r02);
+    }
+
+    for (auto& lr: g->lexical_rules)
+    {
+      int l = lr.get_lhs();
+      std::string ls = nts.get_label_string(l);
+      int l2 = SymbolTable::instance_nt().insert(ls);
+      lr.set_lhs(l2);
+
+      int r0 = lr.get_rhs0();
+      std::string r0s = words.get_label_string(r0);
+      int r02 = SymbolTable::instance_word().insert(r0s);
+      lr.set_rhs0(r02);
+    }
+
+
+    // align history trees and num_annotations
+    auto& h = g->get_history_trees();
+    //use decltype(h) :  how to remove & ??
+    std::map< short, Tree<unsigned> > h2;
+    for(const auto& p: h)
+    {
+      auto pfs = nts.get_label_string(p.first);
+      auto pf2 = SymbolTable::instance_nt().get_label_id(pfs);
+      h2[pf2] = p.second;
+    }
+    h = h2;
+
+    //
+    auto& ai = g->get_annotations_info();
+    std::vector<short unsigned> v(SymbolTable::instance_nt().get_size(),0);
+    for (size_t i = 0; i < ai.get_number_of_unannotated_labels(); ++i)
+    {
+      auto is = nts.get_label_string(i);
+      auto i2 = SymbolTable::instance_nt().get_label_id(is);
+      v[i2] = ai[i];
+    }
+
+    g->get_annotations_info().set_num_annotations_map(v);
+
+
+    //unary chains
+    PathMatrix& old = g->get_unary_decoding_paths();
+    PathMatrix new_path;
+    for(auto i : old)
+    {
+      auto is = nts.get_label_string(i.first.first);
+      auto i2 = SymbolTable::instance_nt().get_label_id(is);
+      for(auto j : i.second)
+      {
+
+        auto js = nts.get_label_string(j.first.first);
+        auto j2 = SymbolTable::instance_nt().get_label_id(js);
+
+        auto ks = nts.get_label_string(j.second.first);
+        auto k2 = SymbolTable::instance_nt().get_label_id(ks);
+
+        new_path[{i2,i.first.second}][{j2,j.first.second}] = {k2,j.second.second};
+      }
+    }
+
+    old = new_path;
+  }
+}
+
+
+std::vector<ParserCKYAll::AGrammar*>
+build_grammar(ConfigTable& config, bool verbose,
+              std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
+{
+  std::vector<ParserCKYAll::AGrammar*> my_grammars;
+  // get my_grammars
+
+  // hackish
+  std::string str_idx("1");
+  str_idx[0] += parser_idx;
+
+  if(config.exists("grammar" + str_idx))
+  {
+    const std::string& filename = config.get_value< std::string >("grammar" + str_idx);
+    my_grammars = create_grammars(filename, verbose);
+  }
+  else
+  {
+    if(config.exists("archive-grammar"+str_idx))
+    {
+      if(verbose) std::cerr << "loading binary file" << std::endl;
+      std::tuple<decltype(my_grammars), SymbolTable, SymbolTable> triple;
+      std::ifstream ifs(config.get_value<std::string>("archive-grammar" + str_idx));
+      iarchive(ifs) >> triple;
+      my_grammars = std::get<0>(triple);
+
+      if(parser_idx == 0)
+      {// grammars for first parser
+        SymbolTable::instance_nt().load(std::get<1>(triple));
+        SymbolTable::instance_word().load(std::get<2>(triple));
+      }
+      else // parser_idx != 0
+      {
+        align_grammar(my_grammars, std::get<2>(triple), std::get<1>(triple));
+      }
+    }
+  }
+  if(my_grammars.size() == 0)
+  {
+    std::cerr << "Grammar wasn't set. Exit program." << std::endl;
+    throw std::runtime_error("Grammar not set");
+  }
+
+  annot_descendants_type annot_descendants = create_annot_descendants(my_grammars.back()->get_history_trees());
+  my_all_annot_descendants.push_back(annot_descendants);
+
+  return my_grammars;
+};
+
+
+std::vector<std::vector<ParserCKYAll::AGrammar*>>
+build_alternate(ConfigTable& config, bool verbose,
+                std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
+{
+  std::vector<std::vector<ParserCKYAll::AGrammar*>> my_alts;
+
+  // hackish
+  std::string str_idx("1");
+  str_idx[0] += parser_idx;
+
+  const auto& filenames = config.exists("alternate-grammar" + str_idx) ?
+                          config.get_value<std::vector<std::string> >("alternate-grammar" + str_idx) :
+                          config.get_value<std::vector<std::string> >("archive-alternategrammars" + str_idx);
+
+  if(ParserCKYAllFactory::string_to_pa(config.get_value<std::string>("parser-type")) != ParserCKYAllFactory::MaxN && filenames.size() > 0)
+  {
+    throw std::runtime_error("incorrect parsing algorithm");
+  }
+
+  if(config.exists("alternate-grammar" + str_idx))
+  {
+    for(const auto& f : filenames)
+    {
+      if(verbose) std::cerr << "Setting alternate grammar to " << f << ".\n";
+      my_alts.emplace_back(create_grammars(f, verbose));
+      my_all_annot_descendants.emplace_back(create_annot_descendants(my_alts.back().back()->get_history_trees()));
+    }
+  }
+  if(config.exists("archive-alternategrammars" + str_idx)) {
+
+    std::vector<std::thread> threads;
+    std::vector<std::tuple<std::vector<ParserCKYAll::AGrammar*>, SymbolTable, SymbolTable>> triples(filenames.size());
+
+    for(size_t i = 0; i < filenames.size(); ++i)
+    {
+      threads.push_back( std::thread(
+          [&triples, &filenames](int j)
+          {
+            std::ifstream ifs(filenames[j]);
+            iarchive(ifs) >> triples[j];
+          }, i));
+    }
+
+    for(auto& thread : threads)
+    {
+      thread.join();
+    }
+
+    for(const auto& triple : triples)
+    {
+      auto grammars = std::get<0>(triple);
+
+      if(parser_idx != 0)
+      {
+        align_grammar(grammars, std::get<2>(triple), std::get<1>(triple));
+      }
+
+      my_alts.push_back(grammars);
+      annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
+      my_all_annot_descendants.push_back(annot_descendants);
+    }
+  }
+
+  return my_alts;
+}
+
 
 std::vector<ParserCKYAll *>
 ParserCKYAllFactory::create_parser(ConfigTable& config)
@@ -185,224 +407,6 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
     unsigned min = config.get_value<unsigned>("min-length-beam");
 
-    /// utils functions
-    std::function<void(std::vector<ParserCKYAll::AGrammar*>&, const SymbolTable&, const SymbolTable&)> align_grammar
-        =[](std::vector<ParserCKYAll::AGrammar*>& gs, const SymbolTable& words, const SymbolTable& nts)
-        {
-          for (auto& g : gs)
-          {
-            for (auto& br: g->binary_rules)
-            {
-              int l = br.get_lhs();
-              std::string ls = nts.get_label_string(l);
-              int l2 = SymbolTable::instance_nt().insert(ls);
-              br.set_lhs(l2);
-
-              int r0 = br.get_rhs0();
-              std::string r0s = nts.get_label_string(r0);
-              int r02 = SymbolTable::instance_nt().insert(r0s);
-              br.set_rhs0(r02);
-
-              int r1 = br.get_rhs1();
-              std::string r1s = nts.get_label_string(r1);
-              int r12 = SymbolTable::instance_nt().insert(r1s);
-              br.set_rhs1(r12);
-            }
-
-            for (auto& ur: g->unary_rules)
-            {
-              int l = ur.get_lhs();
-              std::string ls = nts.get_label_string(l);
-              int l2 = SymbolTable::instance_nt().insert(ls);
-              ur.set_lhs(l2);
-
-              int r0 = ur.get_rhs0();
-              std::string r0s = nts.get_label_string(r0);
-              int r02 = SymbolTable::instance_nt().insert(r0s);
-              ur.set_rhs0(r02);
-            }
-
-            for (auto& lr: g->lexical_rules)
-            {
-              int l = lr.get_lhs();
-              std::string ls = nts.get_label_string(l);
-              int l2 = SymbolTable::instance_nt().insert(ls);
-              lr.set_lhs(l2);
-
-              int r0 = lr.get_rhs0();
-              std::string r0s = words.get_label_string(r0);
-              int r02 = SymbolTable::instance_word().insert(r0s);
-              lr.set_rhs0(r02);
-            }
-
-
-            // align history trees and num_annotations
-            auto& h = g->get_history_trees();
-            //use decltype(h) :  how to remove & ??
-            std::map< short, Tree<unsigned> > h2;
-            for(const auto& p: h)
-            {
-              auto pfs = nts.get_label_string(p.first);
-              auto pf2 = SymbolTable::instance_nt().get_label_id(pfs);
-              h2[pf2] = p.second;
-            }
-            h = h2;
-
-            //
-            auto& ai = g->get_annotations_info();
-            std::vector<short unsigned> v(SymbolTable::instance_nt().get_size(),0);
-            for (size_t i = 0; i < ai.get_number_of_unannotated_labels(); ++i)
-            {
-              auto is = nts.get_label_string(i);
-              auto i2 = SymbolTable::instance_nt().get_label_id(is);
-              v[i2] = ai[i];
-            }
-
-            g->get_annotations_info().set_num_annotations_map(v);
-
-
-            //unary chains
-            PathMatrix& old = g->get_unary_decoding_paths();
-            PathMatrix new_path;
-            for(auto i : old)
-            {
-              auto is = nts.get_label_string(i.first.first);
-              auto i2 = SymbolTable::instance_nt().get_label_id(is);
-              for(auto j : i.second)
-              {
-
-                auto js = nts.get_label_string(j.first.first);
-                auto j2 = SymbolTable::instance_nt().get_label_id(js);
-
-                auto ks = nts.get_label_string(j.second.first);
-                auto k2 = SymbolTable::instance_nt().get_label_id(ks);
-
-                new_path[{i2,i.first.second}][{j2,j.first.second}] = {k2,j.second.second};
-              }
-            }
-
-            old = new_path;
-          }
-        };
-
-
-    std::function<std::vector<ParserCKYAll::AGrammar*>(std::vector<annot_descendants_type>&, int)>
-        build_grammar =
-        [&config, &verbose,&align_grammar](std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
-        {
-          std::vector<ParserCKYAll::AGrammar*> my_grammars;
-          // get my_grammars
-
-          // hackish
-          std::string str_idx("1");
-          str_idx[0] += parser_idx;
-
-          if(config.exists("grammar" + str_idx))
-          {
-            const std::string& filename = config.get_value< std::string >("grammar" + str_idx);
-            my_grammars = create_grammars(filename, verbose);
-          }
-          else
-          {
-            if(config.exists("archive-grammar"+str_idx))
-            {
-                if(verbose) std::cerr << "loading binary file" << std::endl;
-                std::tuple<decltype(my_grammars), SymbolTable, SymbolTable> triple;
-                std::ifstream ifs(config.get_value<std::string>("archive-grammar" + str_idx));
-                iarchive(ifs) >> triple;
-                my_grammars = std::get<0>(triple);
-
-                if(parser_idx == 0)
-                {// grammars for first parser
-                  SymbolTable::instance_nt().load(std::get<1>(triple));
-                  SymbolTable::instance_word().load(std::get<2>(triple));
-                }
-                else // parser_idx != 0
-                {
-                  align_grammar(my_grammars, std::get<2>(triple), std::get<1>(triple));
-                }
-            }
-          }
-          if(my_grammars.size() == 0)
-          {
-            std::cerr << "Grammar wasn't set. Exit program." << std::endl;
-            throw std::runtime_error("Grammar not set");
-          }
-
-          annot_descendants_type annot_descendants = create_annot_descendants(my_grammars.back()->get_history_trees());
-          my_all_annot_descendants.push_back(annot_descendants);
-
-          return my_grammars;
-        };
-
-    std::function<std::vector<std::vector<ParserCKYAll::AGrammar*>>(std::vector<annot_descendants_type>&, int)>
-        build_alternate =
-        [&config,&verbose,&align_grammar](std::vector<annot_descendants_type>& my_all_annot_descendants, int parser_idx)
-        {
-          std::vector<std::vector<ParserCKYAll::AGrammar*>> my_alts;
-
-          // hackish
-          std::string str_idx("1");
-          str_idx[0] += parser_idx;
-
-          // if(config.exists("alternate-grammar" + str_idx) or config.exists("archive-alternategrammars" + str_idx))
-          // {
-          const std::vector<std::string>& filenames = config.exists("alternate-grammar" + str_idx) ?
-          config.get_value<std::vector<std::string> >("alternate-grammar" + str_idx) :
-          config.get_value<std::vector<std::string> >("archive-alternategrammars" + str_idx);
-          if(string_to_pa(config.get_value<std::string>("parser-type")) != MaxN && filenames.size() > 0)
-          {
-            throw std::runtime_error("incorrect parsing algorithm");
-          }
-
-          if(config.exists("alternate-grammar" + str_idx))
-          {
-            for(size_t i = 0; i < filenames.size(); ++i)
-            {
-              if(verbose) std::cerr << "Setting alternate grammar to " << filenames[i] << ".\n";
-              my_alts.push_back(create_grammars(filenames[i], verbose));
-              annot_descendants_type annot_descendants = create_annot_descendants(my_alts.back().back()->get_history_trees());
-              my_all_annot_descendants.push_back(annot_descendants);
-            }
-          }
-          if(config.exists("archive-alternategrammars" + str_idx)) {
-
-            std::vector<std::thread> threads;
-            std::vector<std::tuple<std::vector<ParserCKYAll::AGrammar*>, SymbolTable, SymbolTable>> triples(filenames.size());
-
-            for(size_t i = 0; i < filenames.size(); ++i)
-            {
-              threads.push_back( std::thread(
-                  [&triples, &filenames](int j)
-                  {
-                    std::ifstream ifs(filenames[j]);
-                    iarchive(ifs) >> triples[j];
-                  }, i));
-            }
-
-            for(auto& thread : threads)
-            {
-              thread.join();
-            }
-
-            for(size_t i = 0; i < filenames.size(); ++i)
-            {
-              std::vector<ParserCKYAll::AGrammar*> grammars;
-              grammars = std::get<0>(triples[i]);
-
-              if(parser_idx != 0)
-              {
-                align_grammar(grammars, std::get<2>(triples[i]), std::get<1>(triples[i]));
-              }
-
-              my_alts.push_back(grammars);
-              annot_descendants_type annot_descendants = create_annot_descendants(grammars.back()->get_history_trees());
-              my_all_annot_descendants.push_back(annot_descendants);
-            }
-          }
-
-          return my_alts;
-        };
 
     ////
     {
@@ -410,7 +414,7 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       std::vector<annot_descendants_type> all_annot_descendants;
       std::vector<ParserCKYAll::AGrammar*> grammars;
 
-      grammars = build_grammar(all_annot_descendants, 0);
+      grammars = build_grammar(config, verbose, all_annot_descendants, 0);
       // compute priors for base grammar
       if(verbose) std::cerr << "computing priors" << std::endl;
       priors = grammars[0]->compute_priors();
@@ -419,12 +423,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
 
       if(config.exists("alternate-grammar1") or config.exists("archive-alternategrammars1"))
       {
-        alt_gs = build_alternate(all_annot_descendants, 0);
+        alt_gs = build_alternate(config, verbose, all_annot_descendants, 0);
       }
 
       results.push_back( create_parser(grammars, string_to_pa(config.get_value<std::string>("parser-type")),
-                                       string_to_mpc(config.get_value<std::string>("max-type")), priors, beam_threshold,
-                                       alt_gs, all_annot_descendants, accurate, min, config.get_value<int>("stubbornness"),
+                                       string_to_mpc(config.get_value<std::string>("max-type")), priors,
+                                       beam_threshold,
+                                       alt_gs, all_annot_descendants, accurate, min,
+                                       config.get_value<int>("stubbornness"),
                                        config.get_value<unsigned>("kbest")));
 
       if (grammars.back()->gram_conf.count("lex_unknown_map"))
@@ -456,14 +462,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar2") or config.exists("archive-grammar2"))
       {
-        grammars2 = build_grammar(all_annot_descendants2, 1);
+        grammars2 = build_grammar(config, verbose, all_annot_descendants2, 1);
         // compute priors for base grammar
         priors2 = grammars2[0]->compute_priors();
 
         ///////////////////
         if(config.exists("alternate-grammar2") or config.exists("archive-alternategrammars2"))
         {
-          alt_gs2 = build_alternate(all_annot_descendants2,1);
+          alt_gs2 = build_alternate(config, verbose, all_annot_descendants2,1);
         }
 
         ///////////////////
@@ -505,14 +511,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar3") or config.exists("archive-grammar3")) {
 
-        grammars3 = build_grammar(all_annot_descendants3, 2);
+        grammars3 = build_grammar(config, verbose, all_annot_descendants3, 2);
         // compute priors for base grammar
         priors3 = grammars3[0]->compute_priors();
 
         ///////////////////
         if(config.exists("alternate-grammar3") or config.exists("archive-alternategrammars3"))
         {
-          alt_gs3 = build_alternate(all_annot_descendants3,2);
+          alt_gs3 = build_alternate(config, verbose, all_annot_descendants3,2);
         }
 
         ///////////////////
@@ -552,14 +558,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar4") or config.exists("archive-grammar4")) {
 
-        grammars4 = build_grammar(all_annot_descendants4, 3);
+        grammars4 = build_grammar(config, verbose, all_annot_descendants4, 3);
         // compute priors for base grammar
         priors4 = grammars4[0]->compute_priors();
 
         ///////////////////
         if(config.exists("alternate-grammar4") or config.exists("archive-alternategrammars4"))
         {
-          alt_gs4 = build_alternate(all_annot_descendants4,3);
+          alt_gs4 = build_alternate(config,verbose, all_annot_descendants4,3);
         }
 
         ///////////////////
@@ -599,14 +605,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar5") or config.exists("archive-grammar5")) {
 
-        grammars5 = build_grammar(all_annot_descendants5, 4);
+        grammars5 = build_grammar(config, verbose,all_annot_descendants5, 4);
         // compute priors for base grammar
         priors5 = grammars5[0]->compute_priors();
 
         ///////////////////
         if(config.exists("alternate-grammar5") or config.exists("archive-alternategrammars5"))
         {
-          alt_gs5 = build_alternate(all_annot_descendants5,4);
+          alt_gs5 = build_alternate(config, verbose, all_annot_descendants5,4);
         }
 
         ///////////////////
@@ -646,14 +652,14 @@ ParserCKYAllFactory::create_parser(ConfigTable& config)
       // get grammars
       if(config.exists("grammar6") or config.exists("archive-grammar6")) {
 
-        grammars6 = build_grammar(all_annot_descendants6, 5);
+        grammars6 = build_grammar(config, verbose, all_annot_descendants6, 5);
         // compute priors for base grammar
         priors6 = grammars6[0]->compute_priors();
 
         ///////////////////
         if(config.exists("alternate-grammar6") or config.exists("archive-alternategrammars6"))
         {
-          alt_gs6 = build_alternate(all_annot_descendants6,5);
+          alt_gs6 = build_alternate(config, verbose, all_annot_descendants6,5);
         }
 
         ///////////////////
@@ -772,10 +778,10 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
   //     std::cout << expected_counts[i][j] << std::endl;
 
 #ifndef USE_THREADS
-  for (unsigned i = 0; i < annot_descendants.size() - 1; ++i) {
+  for (auto i = 0; i < annot_descendants.size() - 1; ++i) {
 
     //      std::clog << "before mapping " << i << std::endl;
-    std::vector<std::vector<std::vector<unsigned> > > annotation_mapping = compute_mapping(i, annot_descendants.size() - 1, annot_descendants);
+    const auto& annotation_mapping = compute_mapping(i, annot_descendants.size() - 1, annot_descendants);
     //      std::clog << "after mapping " << i << std::endl;
 
     //      std::clog << "before create_projection" << std::endl;
@@ -802,9 +808,9 @@ create_intermediates(ParserCKYAll::AGrammar& grammar, const annot_descendants_ty
                     [&]
                     (tbb::blocked_range<unsigned>& r)
                     {
-                      for(unsigned i = r.begin(); i < r.end(); ++i) {
+                      for(auto i = r.begin(); i < r.end(); ++i) {
                         //      std::clog << "before mapping " << i << std::endl;
-                        std::vector<std::vector<std::vector<unsigned> > > annotation_mapping = compute_mapping(i, annot_descendants.size() - 1, annot_descendants);
+                        const auto&  annotation_mapping = compute_mapping(i, annot_descendants.size() - 1, annot_descendants);
                         //      std::clog << "after mapping " << i << std::endl;
 
                         //      std::clog << "before create_projection" << std::endl;

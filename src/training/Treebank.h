@@ -15,9 +15,9 @@
 #include "utils/data_parsers/PTBInputParser.h"
 
 
-
-
-struct treebank_options {
+struct treebank_options
+{
+  std::vector<std::string> treebank_filenames;
   std::unordered_set<std::string> labels_to_remove; // labels to remove
   bool func;            //remove functional annotations
   bool num;             // replace numbers by |NUMBER|
@@ -29,20 +29,22 @@ struct treebank_options {
   HorizMarkov   mark;    // horizontal precision of the binarisation
   unsigned int max_size;// maximum size for the input sentences to be added to the treebank (0 means no limit)
 
-treebank_options(const std::unordered_set<std::string>& labels_to_remove_ = std::unordered_set<std::string>(),
-		 bool func_ = true,
-		 bool num_ =  false,
-		 const boost::regex & num_regex_ = boost::regex(),
-		 bool pannotate_ = 0,
-		 bool pannotate_extra_ = false,
-		 bool remove_same_unary_= false,
-		 Bin_Direction dir_ = LEFT,
-		 HorizMarkov mark_ = -1, //infinite -> "exact" binarization
-		 unsigned max_size_ = 0) :
-  labels_to_remove(labels_to_remove_),func(func_),num(num_), num_regex(num_regex_),
-    pannotate(pannotate_), pannotate_extra(pannotate_extra_),
-    remove_same_unary(remove_same_unary_), dir(dir_),mark(mark_),
-    max_size(max_size_)
+  treebank_options(const std::vector<std::string>& tfs = std::vector<std::string>(),
+                   const std::unordered_set<std::string>& labels_to_remove_ = std::unordered_set<std::string>(),
+                   bool func_ = true,
+                   bool num_ =  false,
+                   const boost::regex & num_regex_ = boost::regex(),
+                   bool pannotate_ = 0,
+                   bool pannotate_extra_ = false,
+                   bool remove_same_unary_= false,
+                   Bin_Direction dir_ = LEFT,
+                   HorizMarkov mark_ = -1, //infinite -> "exact" binarization
+                   unsigned max_size_ = 0) :
+      treebank_filenames(tfs),
+      labels_to_remove(labels_to_remove_),func(func_),num(num_), num_regex(num_regex_),
+      pannotate(pannotate_), pannotate_extra(pannotate_extra_),
+      remove_same_unary(remove_same_unary_), dir(dir_),mark(mark_),
+      max_size(max_size_)
   {}
 };
 
@@ -67,7 +69,9 @@ public:
 
   Treebank(const treebank_options& tb_options, bool verb = false)
     : trees(), options(tb_options) , verbose(verb)
-  {};
+  {
+    this->add_tree_from_files(options.treebank_filenames);
+  };
 
   /**
      \brief Destructor
@@ -128,8 +132,6 @@ public:
   void output_unbinarised(std::ostream& out) const;
 
   const treebank_options& get_options() const {return options;}
-
-
 };
 
 

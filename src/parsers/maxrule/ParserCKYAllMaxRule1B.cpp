@@ -6,7 +6,7 @@
 #include "parsers/ParserCKYAll.hpp"
 
 ParserCKYAllMaxRule1B::ParserCKYAllMaxRule1B(ParserCKYAllFactory::MaxParsing_Calculation c,
-                                             std::vector<AGrammar*>& cgs,
+                                             const std::vector<AGrammar*>& cgs,
                                              const std::vector<double>& p, double b_t,
                                              const annot_descendants_type& annot_descendants_,
                                              bool accurate_, unsigned min_beam, int stubborn)

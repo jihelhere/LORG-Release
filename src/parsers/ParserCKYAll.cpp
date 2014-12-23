@@ -69,7 +69,7 @@ GrammarAnnotated<BRuleC2f, URuleC2f, LexicalRuleC2f>::GrammarAnnotated(const std
 
 
 
-ParserCKYAll::ParserCKYAll(std::vector<AGrammar*>& cgs,
+ParserCKYAll::ParserCKYAll(const std::vector<AGrammar*>& cgs,
                            const std::vector<double>& p,
                            double prior_threshold,
                            const annot_descendants_type& annot_descendants_,

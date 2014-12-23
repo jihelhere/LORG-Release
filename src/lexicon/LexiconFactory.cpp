@@ -3,7 +3,6 @@
 
 LexiconFactory::lex_type LexiconFactory::string_2_lex_type(const std::string& s)
 {
-
   if(s == "berkeley_sophisticated")
     return Bsophisticated;
 
@@ -14,15 +13,14 @@ LexiconFactory::lex_type LexiconFactory::string_2_lex_type(const std::string& s)
 std::string LexiconFactory::lex_type_2_string(const lex_type& l)
 {
   if (l == Bsophisticated)
-  {
     return "berkeley_sophisticated";
-  }
 
   return "basic";
 }
 
 
-Lexicon * LexiconFactory::create_lexicon(lex_type type, WordSignature& ws, unsigned cutoff, bool verbose)
+Lexicon * LexiconFactory::create_lexicon(lex_type type, const std::shared_ptr<WordSignature>& ws,
+                                         unsigned cutoff, bool verbose)
 {
   if (type == Bsophisticated){
     if(verbose) std::clog << "Setting lexicon to Berkeley lexicon type (sophisticated) " << std::endl ;
@@ -32,9 +30,7 @@ Lexicon * LexiconFactory::create_lexicon(lex_type type, WordSignature& ws, unsig
     if(verbose) std::clog << "Setting lexicon type to Basic " << std::endl ;
     return new BasicLexicon(ws,cutoff);
   }
-
 }
-
 
 Lexicon * LexiconFactory::create_lexicon(ConfigTable& conf)
 {
@@ -47,10 +43,9 @@ Lexicon * LexiconFactory::create_lexicon(ConfigTable& conf)
   if (verbose)
     std::clog << "Unknown word cutoff set to " << unknown_word_cutoff << "\n";
 
-
   lex_type type = string_2_lex_type(conf.get_value<std::string>("lexicon-type"));
 
-  WordSignature& ws = *WordSignatureFactory::create_wordsignature(conf);
+  const auto& ws = std::shared_ptr<WordSignature>(WordSignatureFactory::create_wordsignature(conf));
 
   return create_lexicon(type,ws,unknown_word_cutoff, verbose);
 }

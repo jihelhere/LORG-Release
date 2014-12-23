@@ -13,7 +13,7 @@ class ParserCKYAllVariational : public ParserCKYAllMaxRule<VariationalTypes>
   unsigned k;
 
  public:
-  ParserCKYAllVariational(std::vector<AGrammar*>& cgs,
+  ParserCKYAllVariational(const std::vector<AGrammar*>& cgs,
                           const std::vector<double>& p, double b_t,
                           const annot_descendants_type& annot_descendants_,
                           bool accurate_, unsigned min_beam, int stubborn, unsigned k_);

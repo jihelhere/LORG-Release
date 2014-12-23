@@ -11,7 +11,7 @@
 class ParserCKYAllViterbi : public ParserCKYAll_Impl<ViterbiTypes>
 {
 public:
-  ParserCKYAllViterbi(std::vector<AGrammar*>& cgs,
+  ParserCKYAllViterbi(const std::vector<AGrammar*>& cgs,
                       const std::vector<double>& p, double b_t,
                       const std::vector< std::vector<std::vector< std::vector<unsigned> > > >& annot_descendants_, bool accurate_, unsigned min_beam, int stubborn);
 

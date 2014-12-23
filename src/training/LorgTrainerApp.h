@@ -28,11 +28,10 @@ private:
   void write_grammar(const TrainingGrammar& grammar, const std::string & suffix, int num = -1);
   void create_terminal_grammar(const Treebank<PtbPsTree>& original_tb);
 
-  Lexicon * lexicon;
+  std::shared_ptr<Lexicon> lexicon;
   LexiconFactory::lex_type lexicon_type;
 
-
-  Treebank<PtbPsTree> * tb;
+  treebank_options tb_options;
 
   int filter_level;
   std::string baseoutputname;

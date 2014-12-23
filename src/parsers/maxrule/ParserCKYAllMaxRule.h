@@ -17,7 +17,7 @@ class ParserCKYAllMaxRule : public ParserCKYAll_Impl<Types>
   typedef typename Types::EdgeProbability ProbaModel;
 
     ParserCKYAllMaxRule(ParserCKYAllFactory::MaxParsing_Calculation c,
-                        std::vector<AGrammar*>& cgs,
+                        const std::vector<AGrammar*>& cgs,
                         const std::vector<double>& priors,
                         double beam_threshold,
                         const annot_descendants_type& annot_descendants_,

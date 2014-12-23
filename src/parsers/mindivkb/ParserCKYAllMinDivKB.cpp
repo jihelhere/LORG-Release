@@ -10,10 +10,10 @@
 
 
 
-ParserCKYAllMinDivKB::ParserCKYAllMinDivKB(std::vector<AGrammar*>& cgs,
-                                             const std::vector<double>& p, double b_t,
-                                             const annot_descendants_type& annot_descendants_,
-                                             bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
+ParserCKYAllMinDivKB::ParserCKYAllMinDivKB(const std::vector<AGrammar*>& cgs,
+                                           const std::vector<double>& p, double b_t,
+                                           const annot_descendants_type& annot_descendants_,
+                                           bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
 : ParserCKYAll_Impl<MinDivKBTypes>(cgs, p, b_t, annot_descendants_, accurate_, min_beam, stubborn) , k(k_)
 {
   // this is not in the super class because maxn parsing uses a

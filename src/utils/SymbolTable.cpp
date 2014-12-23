@@ -8,22 +8,24 @@
 
 #include <fstream>
 
-
-SymbolTable * SymbolTable::NT_instancePtr = nullptr;//initialize singlton pointer
-SymbolTable * SymbolTable::word_instancePtr = nullptr;//initialize singlton pointer
+//initialize singleton pointer
+std::shared_ptr<SymbolTable> SymbolTable::NT_instancePtr = nullptr;
+std::shared_ptr<SymbolTable> SymbolTable::word_instancePtr = nullptr;
 std::string const SymbolTable::unknown_string  = "UNK"; // TODO: give a more generic unknown string
 
 SymbolTable& SymbolTable::instance_word()
 {
   if (word_instancePtr == nullptr)  // is it the first call?
-    word_instancePtr = new SymbolTable(); // create sole instance
+    // create sole instance
+    word_instancePtr = std::make_shared<SymbolTable>(SymbolTable());
   return *word_instancePtr; // address of sole instance
 }
 
 SymbolTable& SymbolTable::instance_nt()
 {
   if (NT_instancePtr == nullptr)  // is it the first call?
-    NT_instancePtr = new SymbolTable(); // create sole instance
+    // create sole instance
+    NT_instancePtr = std::make_shared<SymbolTable>(SymbolTable());
   return *NT_instancePtr; // address of sole instance
 }
 

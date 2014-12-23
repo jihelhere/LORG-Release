@@ -57,7 +57,7 @@ public:
 
   AbstractProduct* create_object(const IdentifierType& id, const DataIn& data)
   {
-    typename AssocMap::const_iterator i = assoc.find(id);
+    auto i = assoc.find(id);
     if(i != assoc.end())
       {
         return (i->second)(data);
@@ -95,7 +95,7 @@ struct parse_solution
 
   static parse_solution_format format_from_string(const std::string&);
 
-  static Extract extractor;
+  static std::shared_ptr<Extract> extractor;
   static void init_feature_extractor();
   static ParseSolutionFactory factory;
 

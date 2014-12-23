@@ -2,7 +2,7 @@
 #include "ParserCKYAllViterbi.h"
 #include "grammars/GrammarAnnotated.hpp"
 
-ParserCKYAllViterbi::ParserCKYAllViterbi(std::vector<AGrammar *>& cgs,
+ParserCKYAllViterbi::ParserCKYAllViterbi(const std::vector<AGrammar *>& cgs,
                                          const std::vector<double>& p, double b_t,
                                          const std::vector< std::vector<std::vector< std::vector<unsigned> > > >& annot_descendants_,
                                          bool accurate_, unsigned min_beam, int stubborn)

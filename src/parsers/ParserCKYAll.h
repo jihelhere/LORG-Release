@@ -40,7 +40,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
   /**
      \brief ParserCKYAll destructor
      */
-  virtual ~ParserCKYAll() {};
+  virtual ~ParserCKYAll() {delete word_signature;};
 
   /**
      \brief ParserCKYAll constructor
@@ -52,7 +52,7 @@ class ParserCKYAll : public ParserCKY< GrammarAnnotated<BRuleC2f,URuleC2f, Lexic
      \param min_beam, minimum length for sentences to apply pruning
      \param stubborn, number of retries
   */
-  ParserCKYAll(std::vector<AGrammar*>& cgs, const std::vector<double>& prior_map, double beam_threshold,
+  ParserCKYAll(const std::vector<AGrammar*>& cgs, const std::vector<double>& prior_map, double beam_threshold,
                const annot_descendants_type& annot_descendants,
                bool accurate, unsigned min_beam, int stubborn,
                WordSignature * ws = nullptr);
@@ -163,7 +163,7 @@ public:
      \param min_beam, minimum length for sentences to apply pruning
      \param stubborn, number of retries
   */
-  ParserCKYAll_Impl(std::vector<AGrammar*>& cgs, const std::vector<double>& prior_map, double beam_threshold,
+  ParserCKYAll_Impl(const std::vector<AGrammar*>& cgs, const std::vector<double>& prior_map, double beam_threshold,
                     const annot_descendants_type& annot_descendants,
                     bool accurate, unsigned min_beam, int stubborn);
 

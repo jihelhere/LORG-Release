@@ -11,7 +11,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #include <boost/phoenix/core.hpp>
-#include <boost//phoenix/operator.hpp>
+#include <boost/phoenix/operator.hpp>
 #include <boost/phoenix/statement/sequence.hpp>
 #include <boost/phoenix/object/construct.hpp>
 #include <boost/phoenix/stl.hpp>
@@ -21,7 +21,6 @@
 #pragma clang diagnostic pop
 
 #include "utils/RandomGenerator.h"
-
 
 #include "utils/hash_impl.h"
 
@@ -36,36 +35,8 @@ using namespace tbb;
 
 // HELPER FUNCTIONS IN ANONYMOUS NAMESPACE
 namespace {
-    namespace px = boost::phoenix;
-    namespace px_args = px::arg_names;
-    namespace fs = boost::filesystem;
-
-    //helper function: gets all the files in path, recursively
-    void collect_files(const fs::path& path, std::vector<std::string>& files)
-    {
-        if(fs::exists(path)) {
-            if(fs::is_directory(path)) {
-                fs::directory_iterator end_iter;
-                for (fs::directory_iterator dir_itr(path); dir_itr != end_iter; ++dir_itr )
-                    collect_files(*dir_itr,files);
-            }
-            else files.push_back(path.string());
-        }
-    }
-
-    //helper function: gets all the files in a collection of paths
-    void collect_files_from_vector(const std::vector<std::string>& vector_names, std::vector<std::string>& filenames,bool verbose)
-    {
-        for(std::vector<std::string>::const_iterator iter = vector_names.begin(); iter != vector_names.end(); ++iter) {
-            if(verbose) {std::clog << "\"" << *iter << "\" ";}
-            fs::path original_path = fs::system_complete(fs::path(iter->c_str()));
-            collect_files(original_path,filenames);
-        }
-        if(verbose) {std::clog << "\n";}
-    }
-
     void ptbpstrees_to_bttrees(const std::vector<PtbPsTree>& input,
-            TrainingGrammar& grammar, std::vector<BinaryTrainingTree>& result)
+                               TrainingGrammar& grammar, std::vector<BinaryTrainingTree>& result)
     {
         MAP<std::pair<int,std::pair<int,int> >,BRuleTraining*> brulemap;
         MAP<std::pair<int,int>,URuleTraining*> urulemap;
@@ -79,26 +50,33 @@ namespace {
         rulevect2map<std::pair<int,int>,LexicalRuleTraining> vect2lmap(lrulemap, grammar.get_lexical_rules());
 
         //building training trees from ptbpstrees and maps
-        std::transform(input.begin(),input.end(), std::back_inserter(result),
-                px::construct<BinaryTrainingTree>(px_args::arg1, &brulemap, &urulemap, &lrulemap)
-                );
+        for(const auto& p : input)
+        {
+          result.emplace_back(p,brulemap,urulemap,lrulemap);
+        }
+
+
+
+
     }
 }
 
 LorgTrainerApp::LorgTrainerApp()
-    : lexicon(NULL), tb(NULL),
-
-    filter_level(0), baseoutputname(), split_size(0), n_iterations(0),
-    merge_em(0), split_em(0), turn_off_merge(false), base_grammar_only(false),
-    smooth_grammar(0), smooth_lexicon(0),
-    split_randomness(0), merge_percentage(0), prob_threshold(0.0),
-    modified_treebank_name()
+    : lexicon(nullptr),
+      filter_level(0), baseoutputname(), split_size(0), n_iterations(0),
+      merge_em(0), split_em(0), turn_off_merge(false), base_grammar_only(false),
+      smooth_grammar(0), smooth_lexicon(0),
+      split_randomness(0), merge_percentage(0), prob_threshold(0.0),
+      modified_treebank_name(), keep_fun(false)
 {}
 
 LorgTrainerApp::~LorgTrainerApp()
 {
-    delete tb;
-    delete lexicon;
+  LorgApp::~LorgApp();
+
+  // if (lexicon != nullptr)
+  //   delete lexicon;
+  // lexicon = nullptr;
 }
 
 
@@ -131,7 +109,7 @@ void LorgTrainerApp::test_grammar(const std::string & suffix, int num)
 //create a new file baseoutputname+suffix, and open it for writing
 void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::string & suffix, int num)
 {
-    if(baseoutputname != "")
+    if(this->baseoutputname != "")
     {
         std::ostringstream op;
         op << baseoutputname << suffix ;
@@ -149,7 +127,7 @@ void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::st
         file_out << grammar.get_lexicon()->header_string() ;
 
         // TODO find a proper way to do that
-        if (keep_fun)
+        if (this->keep_fun)
         {
           file_out << std::string("// conf: remove_functions 0") << std::endl;
         }
@@ -171,230 +149,227 @@ void LorgTrainerApp::write_grammar(const TrainingGrammar& grammar, const std::st
 
 int LorgTrainerApp::run()
 {
-    //initialise training grammar from treebank (treebank intialised when reading configuration)
-    Lexicon * copy = NULL;
-    lexicon->copy(copy);
-    TrainingGrammar em_grammar(*tb, copy);
-    delete lexicon;
-    lexicon = NULL;
+  // initialise treebank from configuration
+  //initialise training grammar from treebank
 
-    //output treebank trees modified by the lexicon -- if requested
-    if(modified_treebank_name != "") {
+  Treebank<PtbPsTree> tb(tb_options, verbose);
+  if(verbose)
+    std::clog << "Treebank is ready ("
+              << tb.get_trees().size()
+              << " trees)"  << "\n";
 
-        fs::ofstream file_out(modified_treebank_name, std::ios_base::out | std::ios_base::trunc);
-        if(!file_out) { std::cerr << "Could not open file " << modified_treebank_name << std::endl; }
+  TrainingGrammar em_grammar(tb, lexicon);
 
-        tb->output_unbinarised(file_out);
-        file_out.close();
-    }
-
-    if (verbose)
+  //output treebank trees modified by the lexicon -- if requested
+  if(modified_treebank_name != "")
+  {
+    fs::ofstream file_out(modified_treebank_name, std::ios_base::out | std::ios_base::trunc);
+    if(!file_out)
     {
-      test_grammar("_base");
+      std::cerr << "Could not open file " << modified_treebank_name << std::endl;
     }
 
+    tb.output_unbinarised(file_out);
+    file_out.close();
+  }
 
+  //output base grammar
+  if (verbose)
+  {
+    test_grammar("_base");
 
-
-
-
-    //output base grammar
-    if(verbose) {
-        std::clog << "outputting baseline grammar " << std::endl;
-        //    write_grammar(em_grammar,"_base");
-        {
-            TrainingGrammar gout;
-            assert(em_grammar.get_lexicon() != NULL);
-            gout = em_grammar;
-            assert(em_grammar.get_lexicon() != NULL);
-
-            //      std::cout << "creating additional rules" << std::endl;
-            gout.create_additional_rules();
-            //      std::cout << "created " << gout.additional_rules.size() << " additional rules" << std::endl;
-
-            gout.lexical_smoothing();
-            write_grammar(gout,"_base");
-            assert(gout.get_lexicon() != em_grammar.get_lexicon());
-        }
-    }
-
-
-    if (base_grammar_only){ return 0;}
-
-
-    if (verbose)
+    std::clog << "outputting baseline grammar " << std::endl;
+    //    write_grammar(em_grammar,"_base");
     {
-      for(unsigned iter = 1; iter <= n_iterations; ++iter)
-        test_grammar("_smoothed",iter);
+      TrainingGrammar gout;
+      assert(em_grammar.get_lexicon() != NULL);
+      gout = em_grammar;
+      assert(em_grammar.get_lexicon() != NULL);
+
+      //      std::cout << "creating additional rules" << std::endl;
+      gout.create_additional_rules();
+      //      std::cout << "created " << gout.additional_rules.size() << " additional rules" << std::endl;
+
+      gout.lexical_smoothing();
+      write_grammar(gout,"_base");
+      assert(gout.get_lexicon() != em_grammar.get_lexicon());
     }
-    test_grammar("_final",-1);
+  }
 
 
-    // SPLIT/EM starts here !
-
-    //transform ptb trees into edges for faster access
-    std::clog << "converting ptbpstrees to binary training trees" << std::endl;
-
-    // the collection representing the trees for inside/outside computations
-    std::vector<BinaryTrainingTree> training_trees;
-    ptbpstrees_to_bttrees(tb->get_trees(), em_grammar, training_trees);
-
-    //hack for now -- needs to be rewritten
-
-    keep_fun = not(tb->get_options().func);
-    delete tb;
-    tb = NULL;
+  if (base_grammar_only){ return 0;}
 
 
+  if (verbose)
+  {
+    for(unsigned iter = 1; iter <= n_iterations; ++iter)
+      test_grammar("_smoothed",iter);
+  }
+  test_grammar("_final",-1);
 
 
-    // create the trainer object
-    EMTrainer em_trainer(split_size,prob_threshold,verbose);
+  // SPLIT/EM starts here !
 
-    if(verbose) {
-        std::clog.precision(22);
-        std::clog << "\n" <<"baseline training set log-likelihood is: "
-            << em_trainer.calculate_likelihood(training_trees) << std::endl;
+  //transform ptb trees into edges for faster access
+  std::clog << "converting ptbpstrees to binary training trees" << std::endl;
+
+  // the collection representing the trees for inside/outside computations
+  std::vector<BinaryTrainingTree> training_trees;
+  ptbpstrees_to_bttrees(tb.get_trees(), em_grammar, training_trees);
+
+  //hack for now -- needs to be rewritten
+  keep_fun = not(tb.get_options().func);
+
+  // create the trainer object
+  EMTrainer em_trainer(split_size,prob_threshold,verbose);
+
+  if(verbose) {
+    std::clog.precision(22);
+    std::clog << "\n" <<"baseline training set log-likelihood is: "
+              << em_trainer.calculate_likelihood(training_trees) << std::endl;
+  }
+
+  unsigned size = 1;
+  tick_count t0 = tick_count::now();
+  for(unsigned iter = 1; iter <= n_iterations; ++iter) {
+    //tick_count itersm_start = tick_count::now();
+    std::clog << "Split/Merge cycle number " << iter << std::endl;
+
+
+    if(verbose){
+      size *= split_size;
+      std::clog << "maximum training tree node  annotation size: " << size << std::endl;
+      std::clog << "splitting rules annotations in " << split_size << std::endl;
     }
 
-    unsigned size = 1;
-    tick_count t0 = tick_count::now();
-    for(unsigned iter = 1; iter <= n_iterations; ++iter) {
-        //tick_count itersm_start = tick_count::now();
-        std::clog << "Split/Merge cycle number " << iter << std::endl;
-
-
-        if(verbose){
-            size *= split_size;
-            std::clog << "maximum training tree node  annotation size: " << size << std::endl;
-            std::clog << "splitting rules annotations in " << split_size << std::endl;
-        }
-
-        ///////////////////////////////////////
-        //split edges
+    ///////////////////////////////////////
+    //split edges
         ////////////////////////////////////////
 
-        em_trainer.split(training_trees, em_grammar, split_randomness);
+    em_trainer.split(training_trees, em_grammar, split_randomness);
 
-        // if(verbose) {
-        //   std::clog << "outputting split grammar " << std::endl;
-        //   write_grammar(em_grammar,"_split",iter);
+    // if(verbose) {
+    //   std::clog << "outputting split grammar " << std::endl;
+    //   write_grammar(em_grammar,"_split",iter);
 
-        // }
+    // }
 
-        if(verbose)  std::clog << "Starting EM iterations for SPLIT GRAMMAR " << iter << std::endl;
+    if(verbose)  std::clog << "Starting EM iterations for SPLIT GRAMMAR " << iter << std::endl;
 
-        em_trainer.do_em(training_trees, em_grammar, split_em, 0.0, 0.0, true, smooth_method);
+    em_trainer.do_em(training_trees, em_grammar, split_em, 0.0, 0.0, true, smooth_method);
 
-        assert(em_grammar.get_lexicon() != NULL);
-
-
-        // if(verbose) {
-        //   std::clog << "outputting grammar after split +EM" << std::endl;
-        //   write_grammar(em_grammar,"_splitEM",iter);
-        //   {
-        // 	assert(em_grammar.get_lexicon() != NULL);
-        // 	TrainingGrammar gout;
-        // 	gout = em_grammar;
-        // 	assert(em_grammar.get_lexicon() != NULL);
-        // 	gout.lexical_smoothing();
-        // 	em_trainer.smooth_grammar_rules(gout, 0, smooth_lexicon, smooth_method);
-        // 	write_grammar(gout,"_splitEM_ls",iter);
-        // 	assert(gout.get_lexicon() != em_grammar.get_lexicon());
-        //   }
-        // }
-
-        ///////////////////////////////
-        //Merging step
-        ////////////////////////////////
-        if (!turn_off_merge && merge_percentage > 0) {
+    assert(em_grammar.get_lexicon() != NULL);
 
 
-            assert(em_grammar.get_lexicon() != NULL);
+    // if(verbose) {
+    //   std::clog << "outputting grammar after split +EM" << std::endl;
+    //   write_grammar(em_grammar,"_splitEM",iter);
+    //   {
+    // 	assert(em_grammar.get_lexicon() != NULL);
+    // 	TrainingGrammar gout;
+    // 	gout = em_grammar;
+    // 	assert(em_grammar.get_lexicon() != NULL);
+    // 	gout.lexical_smoothing();
+    // 	em_trainer.smooth_grammar_rules(gout, 0, smooth_lexicon, smooth_method);
+    // 	write_grammar(gout,"_splitEM_ls",iter);
+    // 	assert(gout.get_lexicon() != em_grammar.get_lexicon());
+    //   }
+    // }
+
+    ///////////////////////////////
+    //Merging step
+    ////////////////////////////////
+    if (!turn_off_merge && merge_percentage > 0) {
 
 
-            std::clog << "Merging grammar..." << std::endl;
-            em_trainer.merge(training_trees, em_grammar, merge_percentage, final_lex_em);
+      assert(em_grammar.get_lexicon() != NULL);
 
-            std::clog << "Starting EM iterations for MERGED GRAMMAR " << iter <<  std::endl;
-            em_trainer.do_em(training_trees, em_grammar,
-                    merge_em, 0.0, 0.0, true, smooth_method);
 
-            // if(verbose) {
-            // 	std::clog << "outputting grammar after merge + EM" << std::endl;
-            // 	write_grammar(em_grammar, "_mergedEM", iter);
-            // 	{
-            // 	  TrainingGrammar gout;
-            // 	  gout = em_grammar;
-            // 	  gout.lexical_smoothing();
-            // 	  em_trainer.smooth_grammar_rules(gout, 0, smooth_lexicon, smooth_method);
-            // 	  write_grammar(gout,"_mergedEM_ls",iter);
-            // 	}
-            // }
+      std::clog << "Merging grammar..." << std::endl;
+      em_trainer.merge(training_trees, em_grammar, merge_percentage, final_lex_em);
+
+      std::clog << "Starting EM iterations for MERGED GRAMMAR " << iter <<  std::endl;
+      em_trainer.do_em(training_trees, em_grammar,
+                       merge_em, 0.0, 0.0, true, smooth_method);
+
+      // if(verbose) {
+      // 	std::clog << "outputting grammar after merge + EM" << std::endl;
+      // 	write_grammar(em_grammar, "_mergedEM", iter);
+      // 	{
+      // 	  TrainingGrammar gout;
+      // 	  gout = em_grammar;
+      // 	  gout.lexical_smoothing();
+      // 	  em_trainer.smooth_grammar_rules(gout, 0, smooth_lexicon, smooth_method);
+      // 	  write_grammar(gout,"_mergedEM_ls",iter);
+      // 	}
+      // }
+    }
+
+
+
+    ///////////////////////////////
+    //Smoothing step
+    ////////////////////////////////
+    if(smooth_grammar > 0.0 || smooth_lexicon > 0.0) {
+
+      if(verbose) std::clog << "Smoothing grammar" << std::endl;
+
+      if(verbose) std::clog << "Starting EM iterations for SMOOTHED GRAMMAR " << iter << std::endl;
+
+      em_trainer.smooth_grammar_rules(em_grammar, 0, smooth_lexicon, smooth_method);
+      //	std::cout << em_trainer.calculate_likelihood(training_trees) << std::endl;
+
+      em_trainer.do_em(training_trees, em_grammar, 10,
+                       smooth_grammar, smooth_lexicon, true, smooth_method);
+
+      if(verbose){
+        std::clog << "outputting grammar after smooth + EM" << std::endl;
+
+
+        if(lexicon_type == LexiconFactory::Basic)
+          write_grammar(em_grammar, "_smoothed", iter);
+        else
+        {
+          TrainingGrammar gout;
+          gout = em_grammar;
+
+          //std::cout << "creating additional rules" << std::endl;
+          gout.create_additional_rules();
+          //std::cout << "created " << gout.additional_rules.size() << " additional rules" << std::endl;
+
+          gout.lexical_smoothing();
+          //	  em_trainer.smooth_grammar_rules(gout, smooth_grammar, smooth_lexicon, smooth_method);
+          write_grammar(gout,"_smoothed",iter);
         }
-
-
-
-        ///////////////////////////////
-        //Smoothing step
-        ////////////////////////////////
-        if(smooth_grammar > 0.0 || smooth_lexicon > 0.0) {
-
-            if(verbose) std::clog << "Smoothing grammar" << std::endl;
-
-            if(verbose) std::clog << "Starting EM iterations for SMOOTHED GRAMMAR " << iter << std::endl;
-
-            em_trainer.smooth_grammar_rules(em_grammar, 0, smooth_lexicon, smooth_method);
-            //	std::cout << em_trainer.calculate_likelihood(training_trees) << std::endl;
-
-            em_trainer.do_em(training_trees, em_grammar, 10,
-                    smooth_grammar, smooth_lexicon, true, smooth_method);
-
-            if(verbose){
-                std::clog << "outputting grammar after smooth + EM" << std::endl;
-
-
-                if(lexicon_type == LexiconFactory::Basic)
-                    write_grammar(em_grammar, "_smoothed", iter);
-                else
-                {
-                    TrainingGrammar gout;
-                    gout = em_grammar;
-
-                    //std::cout << "creating additional rules" << std::endl;
-                    gout.create_additional_rules();
-                    //std::cout << "created " << gout.additional_rules.size() << " additional rules" << std::endl;
-
-                    gout.lexical_smoothing();
-                    //	  em_trainer.smooth_grammar_rules(gout, smooth_grammar, smooth_lexicon, smooth_method);
-                    write_grammar(gout,"_smoothed",iter);
-                }
-            }
-        }
-        //std::cout << "### itersm:\t" << iter << "\t" << (tick_count::now() - itersm_start).seconds() << std::endl;
-    } //End of for split-merge cycles
-
-
-    if (lexicon_type != LexiconFactory::Basic)
-      {
-        //one iteration with lexical rule smoothing turned on, relevant for berkeley sophisticated lexicon
-        em_trainer.do_em(training_trees, em_grammar, 2, 0.0, 0.0, true, smooth_method);
-
-        //  std::cout << "creating additional rules" << std::endl;
-        em_grammar.create_additional_rules();
-        //  std::cout << "created " << em_grammar.additional_rules.size() << " additional rules" << std::endl;
-
-        em_grammar.lexical_smoothing();
-        em_trainer.smooth_grammar_rules(em_grammar, smooth_grammar, smooth_lexicon,smooth_method);
       }
-        std::clog << "outputting final grammar" << std::endl;
-        write_grammar(em_grammar, "_final");
+    }
+    //std::cout << "### itersm:\t" << iter << "\t" << (tick_count::now() - itersm_start).seconds() << std::endl;
+  } //End of for split-merge cycles
 
 
-    if(verbose)
-        std::cerr << "overall time: " << (tick_count::now() - t0).seconds() << std::endl;
+  if (lexicon_type != LexiconFactory::Basic)
+  {
+    //one iteration with lexical rule smoothing turned on, relevant for berkeley sophisticated lexicon
+    em_trainer.do_em(training_trees, em_grammar, 2, 0.0, 0.0, true, smooth_method);
 
-    return 0;
+    //  std::cout << "creating additional rules" << std::endl;
+    em_grammar.create_additional_rules();
+    //  std::cout << "created " << em_grammar.additional_rules.size() << " additional rules" << std::endl;
+
+    em_grammar.lexical_smoothing();
+    em_trainer.smooth_grammar_rules(em_grammar, smooth_grammar, smooth_lexicon,smooth_method);
+  }
+  std::clog << "outputting final grammar" << std::endl;
+  write_grammar(em_grammar, "_final");
+
+
+  for (auto& t: training_trees)
+    t.free_nodes();
+
+  if(verbose)
+    std::cerr << "overall time: " << (tick_count::now() - t0).seconds() << std::endl;
+
+  return 0;
 }
 
 
@@ -414,12 +389,8 @@ bool LorgTrainerApp::read_config(ConfigTable& conf)
     if(LorgApp::read_config(conf) == false)
         return false;
 
-    filter_level = 1;
-    if (conf.exists("filter-level"))
-        filter_level = conf.get_value<int>("filter-level");
-
-    if (verbose)
-        std::clog << "Filter level set to " << filter_level << "\n";
+    filter_level = conf.get_value<int>("filter-level");
+    if (verbose) std::clog << "Filter level set to " << filter_level << "\n";
 
 
     // output grammar
@@ -454,24 +425,16 @@ bool LorgTrainerApp::read_config(ConfigTable& conf)
 
     //sub modules can read configuration too
 
-    tb = TreebankFactory::BuildEmptyTreebank<PtbPsTree>(conf);
-
+    //tb = TreebankFactory::BuildEmptyTreebank<PtbPsTree>(conf);
     if (conf.exists("treebank")) {
-        std::vector<std::string> treebank_args = conf.get_value< std::vector<std::string> >("treebank");
-        std::vector<std::string> treebank_filenames;
-        if(verbose) std::clog << "treebank set to: ";
-        collect_files_from_vector(treebank_args,  treebank_filenames,verbose);
-        tb->add_tree_from_files(treebank_filenames);
-        if(verbose)
-            std::clog << "Treebank is ready (" << tb->get_trees().size()
-                << " trees)"  << "\n";
+      tb_options = TreebankFactory::read_config(conf);
     }
     else {
         std::cerr << "treebank was not set. Exiting...\n";
         return false;
     }
 
-    lexicon = LexiconFactory::create_lexicon(conf);
+    lexicon = std::shared_ptr<Lexicon>(LexiconFactory::create_lexicon(conf));
 
     lexicon_type = LexiconFactory::string_2_lex_type(conf.get_value<std::string>("lexicon-type"));
 

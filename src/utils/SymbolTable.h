@@ -77,8 +77,8 @@ private:
   unsigned int cpt;       ///< numbers of strings inserted so far
 
 
-  static SymbolTable* NT_instancePtr;   ///< pointer to the one instance of SymbolTable for non terminals
-  static SymbolTable* word_instancePtr; ///< pointer to the one instance of SymbolTable for terminals
+  static std::shared_ptr<SymbolTable> NT_instancePtr;   ///< pointer to the one instance of SymbolTable for non terminals
+  static std::shared_ptr<SymbolTable> word_instancePtr; ///< pointer to the one instance of SymbolTable for terminals
 
 
 private:
@@ -101,13 +101,14 @@ private:
       ar & table;
       ar & cpt;
     }
-
 public:
+  //should not be public
   SymbolTable();
+
   /**
-    \brief Destructor
-  */
-  ~SymbolTable() {}
+       \brief Destructor
+    */
+  ~SymbolTable() {};
 
   int insert(const std::string& str) throw();
   /**
@@ -162,6 +163,10 @@ public:
     to it.  Otherwise it will just return the pointer to the object.
   */
   static SymbolTable& instance_nt();
+
+  //move constructor
+  SymbolTable(SymbolTable&& o) : table(std::move(o.table)), cpt(std::move(o.cpt)) {};
+
 
   /**
      \brief Returns the number of distinct symbols in the table

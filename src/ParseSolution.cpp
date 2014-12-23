@@ -22,24 +22,23 @@ parse_solution::format_from_string(const std::string& s)
 }
 
 
-Extract parse_solution::extractor;
+std::shared_ptr<Extract> parse_solution::extractor = nullptr;
 
 void parse_solution::init_feature_extractor()
 {
-  std::vector<Feature> v;
-  v.push_back(RuleFeature());
-  v.push_back(RuleParentFeature());
-  v.push_back(RuleGrandParentFeature());
-  v.push_back(BiGramNodeFeature());
-  v.push_back(HeavyFeature());
-  v.push_back(NeighboursFeature());
-  v.push_back(NeighboursExtFeature());
-  v.push_back(WordFeature2());
-  v.push_back(WordFeature3());
-  v.push_back(WordFeatureGen2());
-  v.push_back(WordFeatureGen3());
-
-  extractor = Extract(v);
+  extractor = std::make_shared<Extract>
+              (Extract({
+                  RuleFeature(),
+                      RuleParentFeature(),
+                      RuleGrandParentFeature(),
+                      BiGramNodeFeature(),
+                      HeavyFeature(),
+                      NeighboursFeature(),
+                      NeighboursExtFeature(),
+                      WordFeature2(),
+                      WordFeature3(),
+                      WordFeatureGen2(),
+                      WordFeatureGen3()}));
 }
 
 
@@ -78,7 +77,7 @@ std::ostream& operator<<(std::ostream& out, const unix_parse_solution& ps)
       out << *(ps.trees[i].first) << '\n' ;
       if(ps.extract_features) {
         std::string s;
-        parse_solution::extractor.extract(*(ps.trees[i].first),s);
+        parse_solution::extractor->extract(*(ps.trees[i].first),s);
         out << "### features: " << s << '\n' ;
       }
     }
@@ -154,7 +153,7 @@ std::ostream& operator<<(std::ostream& out, const json_parse_solution& ps)
 
       std::string s = "";
       if(ps.extract_features)
-        parse_solution::extractor.extract(*(ps.trees[i].first),s);
+        parse_solution::extractor->extract(*(ps.trees[i].first),s);
 
       out << "      \"tree\": \"" << encode_for_json(stream.str()) << "\"\n"
           << "      \"score\": " << ps.trees[i].second << "\n"

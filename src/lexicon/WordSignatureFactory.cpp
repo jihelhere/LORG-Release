@@ -36,7 +36,6 @@ WordSignature *  WordSignatureFactory::create_wordsignature(unknown_word_map unk
     return new FrenchIGMapping();
     break; //useless
 
-
   case Arabic:
     if(verbose) std::clog << "Setting unknown mapping type to Arabic mapping " << std::endl;
     return new ArabicUMapping();

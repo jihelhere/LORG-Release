@@ -89,8 +89,9 @@ class LorgOptions
         ("smooth-grammar",po::value<double>()->default_value(0.01),"smoothing factor for internal rules (between 0 and 1). 0 means no smoothing")
         ("smooth-lexicon",po::value<double>()->default_value(0.1),"smoothing factor for lexical rules(between 0 and 1). 0 means no smoothing")
         ("split-random",po::value<unsigned>()->default_value(1),"deviation used in splits")
-        ("random-seed", po::value<unsigned>()->default_value(29),"random seed")
-        ("prob-threshold",po::value<double>()->default_value(1e-30),"Rule pruning: get rid of rules that have a probability lower than this threshold.  If the default value of 0.0 is set, no rule pruning will occur.")
+        ("random-seed", po::value<unsigned>()->default_value(29U),"random seed")
+        // valgrind detects a mem leak in boost when following value < 0.001 :(
+        ("prob-threshold",po::value<double>()->default_value(1E-30),"Rule pruning: get rid of rules that have a probability lower than this threshold.  If the default value of 0.0 is set, no rule pruning will occur.")
         ("base-grammar-only",po::value<bool>()->default_value(false),"no split/merge cycles - just output base grammar")
         ("lexical-smoothing", "performs lexical smoothing (sophisticated lexicon)")
         ("final-lex-em" ,po::value<bool>()->default_value(false), "do one extra em iteration on lexicon after merge")
@@ -185,7 +186,7 @@ class LorgOptions
          "mind for minimal divergence, var for Matsuzaki's variational")
 
         ("max-type,m", po::value<std::string>()->default_value("product"), "type of calculation for the max algorithms: product, sum or prodsum")
-        ("beam-threshold,b",po::value<double>()->default_value(0.0001), "sets the ratio for beaming")
+        ("beam-threshold,b",po::value<double>()->default_value(double(0.0001)), "sets the ratio for beaming")
         ("accurate", "set thresholds for accurate parsing")
         ("min-length-beam",po::value<unsigned>()->default_value(1), "minimum length of sentences to use beam")
         ("kbest,k",po::value<unsigned>()->default_value(1), "numbers of parses to return for each sentence (only used in kmax)")

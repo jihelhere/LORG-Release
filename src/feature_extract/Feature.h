@@ -10,7 +10,6 @@
 #include <iostream>
 #include <sstream>
 
-
 #include "utils/PtbPsTree.h"
 
 
@@ -19,45 +18,31 @@ struct function_feature : std::binary_function<PtbPsTree::const_depth_first_iter
                                               std::string>
 {
   virtual std::string operator()(PtbPsTree::const_depth_first_iterator&, const PtbPsTree&) const =0;
-  // { std::cout << "HERE" << std::endl; return "";};
+  virtual ~function_feature() {};
 };
-
 
 class Feature
 {
 public:
-  Feature(const std::string& id_, const function_feature* ff_) :
-    id(id_), ff(ff_) {};
-  virtual ~Feature() {};
+  Feature(const std::string& id_, const std::shared_ptr<function_feature> ff_);
+  virtual ~Feature();
 
   std::string get_id() const;
-  std::string extract(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const
-  {
-    return (*ff)(i,t);
-  }
+  std::string extract(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const;
+  std::string extract_with_name(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const;
 
-
-  std::string extract_with_name(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const
-  {
-    //    std::cout << "1" << std::endl;
-    std::string s = (*ff)(i,t);
-    //    std::cout << "2" << std::endl;
-    if(s != "") {
-      std::stringstream ss(std::stringstream::in |std::stringstream::out);
-      //      std::cout << "3" << std::endl;
-      ss << id << "=" << s;
-      return  ss.str();
-    }
-    else
-      return "";
-  }
 
 
 private:
   std::string id;
-  const function_feature* ff;
+
 
   static std::map<std::string, Feature> id2feature_map;
+
+ protected:
+  const std::shared_ptr<function_feature> ff;
+
+
 
 };
 

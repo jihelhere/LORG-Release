@@ -9,10 +9,10 @@
 #include "utils/tick_count.h"
 #endif
 
-ParserCKYAllVariational::ParserCKYAllVariational(std::vector<AGrammar*>& cgs,
-                                                   const std::vector<double>& p, double b_t,
-                                                   const annot_descendants_type& annot_descendants_,
-                                                   bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
+ParserCKYAllVariational::ParserCKYAllVariational(const std::vector<AGrammar*>& cgs,
+                                                 const std::vector<double>& p, double b_t,
+                                                 const annot_descendants_type& annot_descendants_,
+                                                 bool accurate_, unsigned min_beam, int stubborn, unsigned k_)
     : ParserCKYAllMaxRule<VariationalTypes>(ParserCKYAllFactory::Product,
                                             cgs, p, b_t, annot_descendants_, accurate_, min_beam, stubborn) , k(k_)
 {

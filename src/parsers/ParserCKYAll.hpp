@@ -8,14 +8,14 @@
 #endif
 
 template <class Types>
-ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(std::vector<AGrammar*>& cgs,
+ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(const std::vector<AGrammar*>& cgs,
                                             const std::vector<double>& p,
                                             double prior_threshold,
                                             const annot_descendants_type& annot_descendants_,
                                             bool accurate_,
                                             unsigned min_beam, int stubborn) :
     ParserCKYAll(cgs, p, prior_threshold, annot_descendants_, accurate_, min_beam, stubborn),
-    chart(NULL)
+    chart(nullptr)
 {};
 
 
@@ -27,7 +27,7 @@ ParserCKYAll_Impl<Types>::~ParserCKYAll_Impl()
     if(i != grammars.begin()) // the first grammar is deleted by super class
     {
       delete *i;
-      *i = NULL;
+      *i = nullptr;
     }
 }
 
@@ -172,7 +172,7 @@ void ParserCKYAll_Impl<Types>::process_internal_rules(double beam_threshold) con
     {
       this->process_cell(cell, beam_threshold);
     },
-    1 // start from span = 1 (i.e. 2 words !)
+    1 // start from span = 1 (i.e. 2 words)
   );
 }
 

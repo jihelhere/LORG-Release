@@ -1,8 +1,38 @@
 #include "Feature.h"
 
+Feature::Feature(const std::string& id_, const std::shared_ptr<function_feature> ff_) :
+    id(id_), ff(ff_)
+{}
+
+Feature::~Feature()
+{}
+
+
+std::string Feature::extract(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const
+{
+  return (*ff)(i,t);
+}
+
+
+std::string Feature::extract_with_name(PtbPsTree::const_depth_first_iterator& i, const PtbPsTree& t) const
+{
+  const std::string& s = (*ff)(i,t);
+  if(s != "")
+  {
+    std::stringstream ss(std::stringstream::in |std::stringstream::out);
+    ss << id << "=" << s;
+    return  ss.str();
+  }
+  else
+    return "";
+}
+
+
+
 template<unsigned n>
 struct rule_feature : public function_feature
 {
+  ~rule_feature() {};
   virtual std::string operator()(PtbPsTree::const_depth_first_iterator& cdfi, const PtbPsTree&) const
   {
     //    std::cout << "entering" << std::endl;
@@ -48,13 +78,13 @@ struct rule_feature : public function_feature
 
 };
 
-RuleFeature::RuleFeature() : Feature("Rule0", new rule_feature<0>()) {};
+RuleFeature::RuleFeature() : Feature("Rule0", std::make_shared<rule_feature<0>>(rule_feature<0>())) {};
 RuleFeature::~RuleFeature() {};
 
-RuleParentFeature::RuleParentFeature() : Feature("Rule1", new rule_feature<1>()) {};
+RuleParentFeature::RuleParentFeature() : Feature("Rule1", std::make_shared<rule_feature<1>>(rule_feature<1>())) {};
 RuleParentFeature::~RuleParentFeature() {};
 
-RuleGrandParentFeature::RuleGrandParentFeature() : Feature("Rule2", new rule_feature<2>()) {};
+RuleGrandParentFeature::RuleGrandParentFeature() : Feature("Rule2", std::make_shared<rule_feature<2>>(rule_feature<2>())) {};
 RuleGrandParentFeature::~RuleGrandParentFeature() {};
 
 
@@ -99,7 +129,7 @@ struct ngram_feature : public function_feature
   }
 };
 
-BiGramNodeFeature::BiGramNodeFeature() : Feature("BN", new ngram_feature<2>()) {};
+BiGramNodeFeature::BiGramNodeFeature() : Feature("BN", std::make_shared<ngram_feature<2>>(ngram_feature<2>())) {};
 BiGramNodeFeature::~BiGramNodeFeature() {};
 
 
@@ -158,7 +188,7 @@ struct heavy_function : function_feature
   }
 };
 
-HeavyFeature::HeavyFeature() : Feature("H", new heavy_function()) {};
+HeavyFeature::HeavyFeature() : Feature("H", std::make_shared<heavy_function>(heavy_function())) {};
 HeavyFeature::~HeavyFeature() {};
 
 
@@ -242,16 +272,17 @@ struct neighbours_function : function_feature
   }
 };
 
-NeighboursFeature::NeighboursFeature() : Feature("N10", new neighbours_function<1,0>()) {};
+NeighboursFeature::NeighboursFeature() : Feature("N10", std::make_shared<neighbours_function<1,0>>(neighbours_function<1,0>())) {};
 NeighboursFeature::~NeighboursFeature() {};
 
-NeighboursExtFeature::NeighboursExtFeature() : Feature("N21", new neighbours_function<2,1>()) {};
+NeighboursExtFeature::NeighboursExtFeature() : Feature("N21", std::make_shared<neighbours_function<2,1>>(neighbours_function<2,1>())){};
 NeighboursExtFeature::~NeighboursExtFeature() {};
 
 
 template<unsigned nancestors, bool word>
 struct word_function : function_feature
 {
+  virtual ~word_function() {};
   virtual std::string operator()(PtbPsTree::const_depth_first_iterator& cdfi,
                                  const PtbPsTree&) const
   {
@@ -285,14 +316,16 @@ struct word_function : function_feature
   }
 };
 
-WordFeature2::WordFeature2() : Feature("W2", new word_function<2,true>()) {};
+WordFeature2::WordFeature2() : Feature("W2", std::make_shared<word_function<2,true>>(word_function<2,true>())) {};
+
 WordFeature2::~WordFeature2() {};
 
-WordFeature3::WordFeature3() : Feature("W3", new word_function<3,true>()) {};
+WordFeature3::WordFeature3() : Feature("W3", std::make_shared<word_function<3,true>>(word_function<3,true>())) {};
 WordFeature3::~WordFeature3() {};
 
-WordFeatureGen2::WordFeatureGen2() : Feature("WG2", new word_function<2,false>()) {};
+WordFeatureGen2::WordFeatureGen2() : Feature("WG2", std::make_shared<word_function<2,false>>(word_function<2,false>())) {};
 WordFeatureGen2::~WordFeatureGen2() {};
 
-WordFeatureGen3::WordFeatureGen3() : Feature("WG3", new word_function<3,false>()) {};
+WordFeatureGen3::WordFeatureGen3() : Feature("WG3", std::make_shared<word_function<3,false>>(word_function<3,false>())) {};
+
 WordFeatureGen3::~WordFeatureGen3() {};

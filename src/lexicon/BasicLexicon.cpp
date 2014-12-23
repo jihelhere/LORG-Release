@@ -14,7 +14,7 @@ typedef std::map<std::pair<int,int> , int> lexical_counts_map;
 
 BasicLexicon::~BasicLexicon() {}
 
-BasicLexicon::BasicLexicon(const WordSignature& unknown_word_mapping_, int unknown_cutoff):
+BasicLexicon::BasicLexicon(const std::shared_ptr<WordSignature>& unknown_word_mapping_, int unknown_cutoff):
   unknown_word_cutoff(unknown_cutoff),  unknown_word_map(unknown_word_mapping_),
   annotated_node_counts()
 {}
@@ -78,7 +78,6 @@ void BasicLexicon::update_annotated_rule_counts(LexicalRuleTraining& rule, const
 							   root_insides.scale) / root_insides.array[0];
 
   std::vector<double>& lr = rule.get_counts();
-
 
   //for each annotation of the LHS
   for(unsigned i = 0 ; i < rule.get_probability().size();++i) {
@@ -263,7 +262,7 @@ void BasicLexicon::collect_base_lexical_counts(const std::vector<PtbPsTree>& tre
 
 std::string BasicLexicon::get_word_class(const std::string& word, int position) const
 {
-  return unknown_word_map.get_unknown_mapping(word,position);
+  return unknown_word_map->get_unknown_mapping(word,position);
 }
 
 void BasicLexicon::replace_words_with_unknown(const std::set<std::string>& known_words, std::vector<PtbPsTree>& treebanktrees)
@@ -361,7 +360,7 @@ Lexicon * BasicLexicon::copy() const
 
 void BasicLexicon::copy(Lexicon*& dest) const
 {
-  if(dest == NULL) {
+  if(dest == nullptr) {
     BasicLexicon * new_lex = new BasicLexicon(unknown_word_map,unknown_word_cutoff);
     dest = new_lex;
   }
@@ -389,7 +388,7 @@ std::string BasicLexicon::header_string() const
      << LexiconFactory::lex_type_2_string(LexiconFactory::Basic) << '\n'
      <<  "// conf: "
      << "lex_unknown_map "
-     << WordSignature::lex_unknown_map_2_string(unknown_word_map.get_type()) << '\n'
+     << WordSignature::lex_unknown_map_2_string(unknown_word_map->get_type()) << '\n'
      << "// conf: "
      << "unknown_threshold " << unknown_word_cutoff
      << '\n';

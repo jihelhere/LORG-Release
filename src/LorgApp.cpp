@@ -1,5 +1,8 @@
 #include "LorgApp.h"
 
+#include "utils/SymbolTable.h"
+
+
 
 LorgApp::LorgApp() : verbose(false), in(NULL), out(NULL)
 #ifdef USE_THREADS

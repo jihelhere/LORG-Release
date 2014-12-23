@@ -5,6 +5,20 @@
 #include "utils/hash_impl.h"
 
 
+///// destructors
+TrainingNode::~TrainingNode()
+{};
+
+LexicalTrainingNode::~LexicalTrainingNode()
+{};
+
+BinaryTrainingNode::~BinaryTrainingNode()
+{
+  delete left; delete right;
+};
+UnaryTrainingNode::~UnaryTrainingNode()
+{delete left;};
+
 
 /////// resize_annotations
 void TrainingNode::resize_annotations(unsigned size)

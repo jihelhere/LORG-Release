@@ -21,7 +21,8 @@ namespace LexiconFactory {
 
   std::string lex_type_2_string(const lex_type& l);
 
-  Lexicon * create_lexicon(lex_type type, WordSignature& ws, unsigned cutoff, bool verbose);
+  Lexicon * create_lexicon(lex_type type, const std::shared_ptr<WordSignature>& ws,
+                           unsigned cutoff, bool verbose);
 
   Lexicon * create_lexicon(ConfigTable& config);
 }

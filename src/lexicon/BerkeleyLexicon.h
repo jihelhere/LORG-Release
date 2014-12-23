@@ -9,7 +9,7 @@ class BerkeleyLexicon : public Lexicon
 {
 private:
 
-  const WordSignature& unknown_word_map;
+  const std::shared_ptr<WordSignature> unknown_word_map;
 
   double unknown_treebank_proportion;
   unsigned smoothing_threshold;
@@ -67,7 +67,8 @@ private:
 public:
   ~BerkeleyLexicon();
 
-  BerkeleyLexicon(const WordSignature& unknown_word_mapping_,double unknown_treebank_proportion, int smoothing_threshold);
+  BerkeleyLexicon(const std::shared_ptr<WordSignature> unknown_word_mapping_,
+                  double unknown_treebank_proportion, int smoothing_threshold);
 
   void read_lexicon_from_Treebank(std::vector<PtbPsTree>& treebanktrees);
 

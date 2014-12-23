@@ -22,60 +22,61 @@ typedef std::unordered_map<int,double> unannotated_node_count_map;
 class TrainingGrammar: public Grammar<BRuleTraining,URuleTraining,LexicalRuleTraining>, public AnnotatedContents
 {
 
-    private:
-        unannotated_node_count_map unannotated_node_priors;
+ private:
+  unannotated_node_count_map unannotated_node_priors;
 
-        Lexicon* lexicon;
+  std::shared_ptr<Lexicon> lexicon;
 
-        std::vector<Tree<unsigned> > annot_histories;
+  std::vector<Tree<unsigned> > annot_histories;
 
 
-        //Debug methods
-        void output_counts(std::map<std::pair<int, std::pair<int,int> >, int> & binary_counts,
-                std::map<std::pair<int,int> , int> & unary_counts,
-                std::map< int, int> & LHS_counts);
+  //Debug methods
+  void output_counts(std::map<std::pair<int, std::pair<int,int> >, int> & binary_counts,
+                     std::map<std::pair<int,int> , int> & unary_counts,
+                     std::map< int, int> & LHS_counts);
 
-        //private and not implemented -> forbidden
-        // if you want to implement that, have a look at operator= first
-        TrainingGrammar(const TrainingGrammar&);
+  //private and not implemented -> forbidden
+  // if you want to implement that, have a look at operator= first
+  TrainingGrammar(const TrainingGrammar&);
 
-    public:
+ public:
 
-        enum SmoothType {LinearSmooth, WeightedSmooth, GenerationSmooth}; // GenerationSmooth is not working
+  enum SmoothType {LinearSmooth, WeightedSmooth, GenerationSmooth}; // GenerationSmooth is not working
 
-        //reads grammar from treebank
-        TrainingGrammar(Treebank<PtbPsTree> & tb, Lexicon * lex);
-        TrainingGrammar() : lexicon(NULL) {};
-        ~TrainingGrammar() {delete lexicon;}
-        void update_lexical_counts(std::vector<BinaryTrainingTree> & trees, bool last_iteration, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences);
-        void maximise_lexical_rules();
+  //reads grammar from treebank
+  TrainingGrammar(Treebank<PtbPsTree> & tb, std::shared_ptr<Lexicon> lex);
+  TrainingGrammar() : lexicon(nullptr) {};
+  ~TrainingGrammar() {}
+  void update_lexical_counts(std::vector<BinaryTrainingTree> & trees, bool last_iteration, std::vector< std::pair<LexicalRuleTraining*, std::vector<lrule_occurrence> > >& lex_occurrences);
+  void maximise_lexical_rules();
 
-        void split_all_rules(unsigned n, unsigned randomness = 1 );
-        void smooth_all_rules(double alpha_grammar, double alpha_lexicon, SmoothType type);
+  void split_all_rules(unsigned n, unsigned randomness = 1 );
+  void smooth_all_rules(double alpha_grammar, double alpha_lexicon, SmoothType type);
 
-        void remove_unlikely_annotations_all_rules(const double& threshold);
-        /**
-          \brief for each binary, unary and lexical rule in the grammar merges the rule (with a call to rule.merge_rule()
-          \param  annotation_sets_to_merge data structure created in em trainer which contains a map with key=unannotatedLabel and value= vector of
-          \ start indices.   map: label -> [vector of start indices of annotation sets that will be merged]
-          \the start index of an annotation set is the first annotataion of the annotation set.
-          \eg an annotation with start index 3 and split size 4, will contain annotations: {3,4,5,6}
-          \param split_size a label is split into split_size new annotated labels
-          \param proportions data structure containing the proportions calculation (calculated originally in EMTrainer) for each annotated label
-          \param full_sets_to_merge_lookup map: label -> [set of all indices of annotation sets that will be merged]
-          */
-        void merge_rules(const AnnotatedLabelsInfo& old_ali,
-                const Merge_map &, int,
-                const ProportionsMap&,
-                const std::map<int,std::set<int> > & );
+  void remove_unlikely_annotations_all_rules(const double& threshold);
 
-        const std::vector<BRuleTraining>& get_binary_rules() const;
-        const std::vector<URuleTraining>& get_unary_rules()  const;
-        const std::vector<LexicalRuleTraining>& get_lexical_rules() const;
+  /**
+     \brief for each binary, unary and lexical rule in the grammar merges the rule (with a call to rule.merge_rule()
+     \param  annotation_sets_to_merge data structure created in em trainer which contains a map with key=unannotatedLabel and value= vector of
+     \ start indices.   map: label -> [vector of start indices of annotation sets that will be merged]
+     \the start index of an annotation set is the first annotataion of the annotation set.
+     \eg an annotation with start index 3 and split size 4, will contain annotations: {3,4,5,6}
+     \param split_size a label is split into split_size new annotated labels
+     \param proportions data structure containing the proportions calculation (calculated originally in EMTrainer) for each annotated label
+     \param full_sets_to_merge_lookup map: label -> [set of all indices of annotation sets that will be merged]
+  */
+  void merge_rules(const AnnotatedLabelsInfo& old_ali,
+                   const Merge_map &, int,
+                   const ProportionsMap&,
+                   const std::map<int,std::set<int> > & );
 
-        std::vector<BRuleTraining>& get_binary_rules() ;
-        std::vector<URuleTraining>& get_unary_rules() ;
-        std::vector<LexicalRuleTraining>& get_lexical_rules() ;
+  const std::vector<BRuleTraining>& get_binary_rules() const;
+  const std::vector<URuleTraining>& get_unary_rules()  const;
+  const std::vector<LexicalRuleTraining>& get_lexical_rules() const;
+
+  std::vector<BRuleTraining>& get_binary_rules() ;
+  std::vector<URuleTraining>& get_unary_rules() ;
+  std::vector<LexicalRuleTraining>& get_lexical_rules() ;
 
         /**
           \brief Output operator
@@ -140,8 +141,8 @@ class TrainingGrammar: public Grammar<BRuleTraining,URuleTraining,LexicalRuleTra
 
         const std::vector< Tree<unsigned> >& get_annot_histories() const {return annot_histories;}
 
-        Lexicon* get_lexicon() {return lexicon;}
-        const Lexicon* get_lexicon() const {return lexicon;}
+        Lexicon* get_lexicon() {return lexicon.get();}
+        const Lexicon* get_lexicon() const {return lexicon.get();}
 
         template <class T>
             void perform_action_all_internal_rules(T& action);

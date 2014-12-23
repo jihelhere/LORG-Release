@@ -66,7 +66,7 @@ class TrainingNode
   friend class BinaryTrainingTree;
 public:
   TrainingNode() : lhs(), annotations() {};
-  virtual ~TrainingNode() {};
+  virtual ~TrainingNode();
 
   virtual AnnotatedRule * get_rule() = 0;
   virtual const AnnotatedRule * get_rule() const = 0;
@@ -113,8 +113,8 @@ class LexicalTrainingNode : public TrainingNode
 {
   friend class BinaryTrainingTree;
 public:
-  LexicalTrainingNode() : rule(NULL) {};
-  virtual ~LexicalTrainingNode() {};
+  LexicalTrainingNode() : rule(nullptr) {};
+  virtual ~LexicalTrainingNode();
 
   virtual LexicalRuleTraining *   get_rule() {return rule;}
   virtual const LexicalRuleTraining * get_rule() const {return rule;}
@@ -149,8 +149,8 @@ class BinaryTrainingNode : public TrainingNode
 {
   friend class BinaryTrainingTree;
 public:
-  BinaryTrainingNode() : left(NULL), right(NULL), rule(NULL) {};
-  virtual ~BinaryTrainingNode() {};
+  BinaryTrainingNode() : left(nullptr), right(nullptr), rule(nullptr) {};
+  virtual ~BinaryTrainingNode();
 
   virtual BRuleTraining * get_rule() {return rule;}
   virtual const BRuleTraining * get_rule() const {return rule;}
@@ -190,8 +190,8 @@ class UnaryTrainingNode : public TrainingNode
 {
   friend class BinaryTrainingTree;
 public:
-  UnaryTrainingNode() : left(NULL), rule(NULL) {};
-  virtual ~UnaryTrainingNode() {};
+  UnaryTrainingNode() : left(nullptr), rule(nullptr) {};
+  virtual ~UnaryTrainingNode();
 
   virtual URuleTraining * get_rule() {return rule;}
   virtual const URuleTraining * get_rule() const {return rule;}

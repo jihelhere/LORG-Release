@@ -10,7 +10,8 @@ private:
   unsigned unknown_word_cutoff;
 
   //TODO shouldn't this be moved to base class?
-  const WordSignature& unknown_word_map;
+  const std::shared_ptr<WordSignature> unknown_word_map;
+
 
   struct lexical_pair
   {
@@ -54,7 +55,7 @@ private:
  public:
   ~BasicLexicon();
 
-  BasicLexicon(const WordSignature& unknown_word_mapping,int unknown_word_cutoff=0);
+  BasicLexicon(const std::shared_ptr<WordSignature>& unknown_word_map,int unknown_word_cutoff=0);
 
   std::string get_word_class(const std::string& word, int position) const;
 

@@ -131,7 +131,7 @@ private:
   unsigned k;
 
 public:
-  ParserCKYAllMinDivKB(std::vector<AGrammar*>& cgs,
+  ParserCKYAllMinDivKB(const std::vector<AGrammar*>& cgs,
                        const std::vector<double>& p, double b_t,
                        const annot_descendants_type& annot_descendants_,
                        bool accurate_, unsigned min_beam, int stubborn, unsigned k_);

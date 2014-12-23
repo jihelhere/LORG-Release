@@ -16,7 +16,7 @@ class Extract
 {
 public:
   Extract(const std::vector<Feature>& features_) : features(features_) {};
-  Extract() {};
+  //  Extract() {};
   virtual ~Extract() {};
 
   //  void extract(const PtbPsTree& tree, std::vector<std::pair>& result);

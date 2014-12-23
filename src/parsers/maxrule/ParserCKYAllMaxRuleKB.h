@@ -13,7 +13,7 @@ class ParserCKYAllMaxRuleKB : public ParserCKYAllMaxRule<MaxRuleKBTypes>
 
  public:
   ParserCKYAllMaxRuleKB(ParserCKYAllFactory::MaxParsing_Calculation c,
-                        std::vector<AGrammar*>& cgs,
+                        const std::vector<AGrammar*>& cgs,
                         const std::vector<double>& p, double b_t,
                         const annot_descendants_type& annot_descendants_,
                         bool accurate_, unsigned min_beam, int stubborn, unsigned k_);

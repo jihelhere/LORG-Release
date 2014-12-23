@@ -443,9 +443,9 @@ class ParallelTask: public tbb::task {
         x[span][begin]->successor[1] = span > 0 ? x[span-1][begin+1] : NULL;
         x[span][begin]->set_ref_count((begin < end_of_begin) + (begin > 0));
 
-        std::cout << "created ("<< span << "," << begin << "," << end << " | "
-                  << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n";
-        std::cout.flush();
+        // std::cout << "created ("<< span << "," << begin << "," << end << " | "
+        //           << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n";
+        // std::cout.flush();
       }
     }
 
