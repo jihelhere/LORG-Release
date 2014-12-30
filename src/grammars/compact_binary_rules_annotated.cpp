@@ -10,5 +10,5 @@ const BRuleC2f * transform(const BRuleC2f& rule)
 }
 
 template
-compact_binary_rules::vector_brules<const BRuleC2f*>*
+compact_binary_rules::vector_brules<const BRuleC2f*>
 compact_binary_rules::vector_brules<const BRuleC2f*>::convert<BRuleC2f>(std::vector<BRuleC2f> const&);

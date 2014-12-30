@@ -23,7 +23,7 @@ ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(const std::vector<AGrammar*>& cgs,
 template <class Types>
 ParserCKYAll_Impl<Types>::~ParserCKYAll_Impl()
 {
-  for (std::vector<AGrammar*>::iterator i(grammars.begin()); i != grammars.end(); ++i)
+  for (auto i = grammars.begin(); i != grammars.end(); ++i)
     if(i != grammars.begin()) // the first grammar is deleted by super class
     {
       delete *i;
@@ -135,12 +135,11 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
     //iterating through all the rules P -> L R, indexed by L
 
 
-    for (const auto & same_rhs0_rules: brules->vrhs0) {
+    for (const auto & same_rhs0_rules: brules.vrhs0) {
 
       //std::cout << "accessing left" << std::endl;
-      Edge & left_edge = left_cell.get_edge(same_rhs0_rules.rhs0);
-      if (left_edge.is_closed())
-        continue;
+      Edge& left_edge = left_cell.get_edge(same_rhs0_rules.rhs0);
+      if (left_edge.is_closed()) continue;
 
       //std::cout << "accessing LR1" << std::endl;
       double L = left_edge.get_annotations().inside_probabilities.array[0];
@@ -148,9 +147,8 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
       //iterating through all the rules P -> L R, indexed by R, L fixed
       for(const auto & same_rhs: same_rhs0_rules) {
         // std::cout << "accessing right" << std::endl;
-        Edge & right_edge = right_cell.get_edge(same_rhs.rhs1);
-        if (right_edge.is_closed())
-          continue;
+        Edge& right_edge = right_cell.get_edge(same_rhs.rhs1);
+        if (right_edge.is_closed()) continue;
 
         // std::cout << "accessing LR" << std::endl;
         double LR = L * right_edge.get_annotations().inside_probabilities.array[0];
@@ -183,8 +181,8 @@ void ParserCKYAll_Impl<Types>::process_cell(Cell& cell, double beam_threshold) c
   // const unsigned & begin = cell.get_begin();
   // const unsigned & end   = cell.get_end();
   // const bool & isroot = cell.get_top();
-  unsigned begin = cell.get_begin();
-  unsigned end   = cell.get_end();
+  auto begin = cell.get_begin();
+  auto end   = cell.get_end();
   bool isroot = cell.get_top();
 
 
@@ -287,13 +285,14 @@ template <bool isroot>
 void ParserCKYAll_Impl<Types>::process_unary(Cell& cell, int lhs) const
 {
   //BLOCKTIMING("ParserCKYAll_Impl<Types>::process_unary");
-  const std::vector<const URuleC2f*>& rules = isroot ?
-                                              unary_rhs_2_rules_toponly[lhs] :
-                                              unary_rhs_2_rules_notop[lhs];
+  const auto& urules = isroot ?
+                       unary_rhs_2_rules_toponly[lhs] :
+                       unary_rhs_2_rules_notop[lhs];
 
   double L_inside = cell.get_edge(lhs).get_annotations().inside_probabilities.array[0];
 
-  std::for_each(rules.begin(),rules.end(),processunary<Cell>(cell, L_inside));
+  std::for_each(urules.begin(),urules.end(),
+                processunary<Cell>(cell, L_inside));
 }
 
 
@@ -553,7 +552,7 @@ void ParserCKYAll_Impl<Types>::get_parses(int start_symbol, unsigned kbest,
       break;
     }
     PtbPsTree * t = chart->get_best_tree(start_symbol, i);
-    best_trees.push_back(std::make_pair(t, chart->get_score(start_symbol, i)));
+    best_trees.emplace_back(t, chart->get_score(start_symbol, i));
   }
 
 }

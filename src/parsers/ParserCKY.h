@@ -67,7 +67,7 @@ protected:
 protected:
   Grammar<Bin,Un,Lex> * grammar; ///< the grammar
 
-  vector_brules * brules; //// the structure used to access binary rules
+  vector_brules brules; //// the structure used to access binary rules
   std::vector< std::vector<const Un*> >  unary_rhs_2_rules_toponly; // fast access unary rules from rhs
   std::vector< std::vector<const Un*> >  unary_rhs_2_rules_notop; // fast access unary rules from rhs
 
@@ -101,7 +101,6 @@ private:
 template <typename MyGrammar>
 ParserCKY<MyGrammar>::ParserCKY(MyGrammar* g) :
   grammar(g),
-  brules(NULL),
   unary_rhs_2_rules_toponly(), unary_rhs_2_rules_notop(),
   unary_rhs_from_binary(), unary_rhs_from_pos(),
   n_nonterminals(0)
@@ -144,8 +143,6 @@ ParserCKY<MyGrammar>::ParserCKY(MyGrammar* g) :
 template <typename MyGrammar>
 ParserCKY<MyGrammar>::~ParserCKY()
 {
-  delete brules;
-  brules = NULL;
   delete grammar;
   grammar = NULL;
 }

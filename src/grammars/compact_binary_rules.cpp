@@ -3,16 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#include <boost/phoenix/bind/bind_member_function.hpp>
-#include <boost/phoenix/core.hpp>
-#include <boost/phoenix/operator.hpp>
-#include <boost/phoenix/stl.hpp>
-#pragma clang diagnostic pop
 using namespace compact_binary_rules;
-
-using namespace boost::phoenix;
 
 
 template<class BinaryRule, typename info>
@@ -75,7 +66,7 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
 
 template<typename info>
 template<class BinaryRule>
-vector_brules<info> *
+vector_brules<info>
 vector_brules<info>::convert(const std::vector<BinaryRule >& binary_rules)
 {
   typedef std::vector<BinaryRule > vbr;
@@ -87,20 +78,21 @@ vector_brules<info>::convert(const std::vector<BinaryRule >& binary_rules)
   vvbrp brulesranked;
 
   for(const auto& br : binary_rules)
-  //   typename vbr::const_iterator brules_itr = binary_rules.begin();
-  // brules_itr != binary_rules.end(); ++brules_itr)
   {
 
     int rhs0 = br.get_rhs0();
 
     auto br_itr = std::find_if(brulesranked.begin(),brulesranked.end(),
-                               bind(&BinaryRule::get_rhs0,front(arg_names::arg1)) == rhs0
+                               [&rhs0](const vbrp& v)
+                               {
+                                 return v.front()->get_rhs0() == rhs0;
+                               }
                                );
 
     if(br_itr != brulesranked.end())
       br_itr->push_back(&br);
     else
-      brulesranked.push_back(vbrp(1,&br));
+      brulesranked.emplace_back(1,&br);
   }
 
   vvvbrp prebrulesrankedranked;
@@ -115,20 +107,23 @@ vector_brules<info>::convert(const std::vector<BinaryRule >& binary_rules)
 
       auto itr = std::find_if(prebrulesrankedranked[i].begin(),
                               prebrulesrankedranked[i].end(),
-                              bind(&BinaryRule::get_rhs1,front(arg_names::arg1)) == rhs1
-                              );
+                              [&rhs1](const vbrp& v)
+                              {
+                                return v.front()->get_rhs1() == rhs1;
+                              }
+                                                            );
 
       if(itr != prebrulesrankedranked[i].end())
 	itr->push_back(r);
       else
-	prebrulesrankedranked[i].push_back(vbrp(1,r));
+	prebrulesrankedranked[i].emplace_back(1,r);
     }
   }
 
 
-  vector_brules<info> * res = new vector_brules<info>();
+  vector_brules<info> res;
 
-  build_vector_brules<BinaryRule,info>(prebrulesrankedranked,*res);
+  build_vector_brules<BinaryRule,info>(prebrulesrankedranked, res);
 
   return res;
 }
