@@ -29,8 +29,8 @@ void ParserCKYBest::get_candidates(const Cell& left_cell,
   Edge current_candidate;
 
   //iterating through all the rules P -> L R, indexed by L
-  for(std::vector<Parser::vector_rhs0>::const_iterator same_rhs0_itr = brules->_begin;
-      same_rhs0_itr != brules->_end; ++same_rhs0_itr) {
+  for(std::vector<Parser::vector_rhs0>::const_iterator same_rhs0_itr = brules._begin;
+      same_rhs0_itr != brules._end; ++same_rhs0_itr) {
 
     // is L present in  left_cell ?
     if(left_cell.exists_edge(same_rhs0_itr->rhs0)) {
