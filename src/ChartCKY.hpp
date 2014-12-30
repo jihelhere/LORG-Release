@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-
 #include "./ChartCKY.h"
 #include "./PCKYAllCell.hpp"
 
@@ -89,14 +88,14 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
 
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_nothread(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply_nothread(const std::function<void(Cell &)>& f)
 {
   opencells_apply_bottom_up_nothread(f);
 }
 
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_bottom_up_nothread(std::function<void(Cell &)> f, unsigned min_span)
+ChartCKY<Types>::opencells_apply_bottom_up_nothread(const std::function<void(Cell &)>& f, unsigned min_span)
 {
 
   unsigned sent_size = get_size();
@@ -115,7 +114,7 @@ ChartCKY<Types>::opencells_apply_bottom_up_nothread(std::function<void(Cell &)> 
 
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_top_down_nothread(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply_top_down_nothread(const std::function<void(Cell &)>& f)
 {
   unsigned sent_size = get_size();
   for (signed span = sent_size - 1; span >= 0; --span) {
@@ -133,7 +132,7 @@ ChartCKY<Types>::opencells_apply_top_down_nothread(std::function<void(Cell &)> f
 
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_top_down_nothread(std::function<void(const Cell &)> f) const
+ChartCKY<Types>::opencells_apply_top_down_nothread(const std::function<void(const Cell &)>& f) const
 {
   unsigned sent_size = get_size();
   for (signed span = sent_size-1; span >= 0; --span) {
@@ -154,7 +153,7 @@ ChartCKY<Types>::opencells_apply_top_down_nothread(std::function<void(const Cell
 template<class Types>
 inline
 void
-ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
 {
   opencells_apply_nothread(f);
 }
@@ -162,7 +161,7 @@ ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
 template<class Types>
 inline
 void
-ChartCKY<Types>::opencells_apply_bottom_up(std::function<void(Cell &)> f, unsigned min_span)
+ChartCKY<Types>::opencells_apply_bottom_up(const std::function<void(Cell &)>& f, unsigned min_span)
 {
   opencells_apply_bottom_up_nothread(f, min_span);
 }
@@ -170,7 +169,7 @@ ChartCKY<Types>::opencells_apply_bottom_up(std::function<void(Cell &)> f, unsign
 template<class Types>
 inline
 void
-ChartCKY<Types>::opencells_apply_top_down(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply_top_down(const std::function<void(Cell &)>& f)
 {
   opencells_apply_top_down_nothread(f);
 }
@@ -182,7 +181,7 @@ ChartCKY<Types>::opencells_apply_top_down(std::function<void(Cell &)> f)
 #ifdef WITH_PARALLEL_FOR
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_bottom_up(std::function<void(Cell &)> f, unsigned min_span )
+ChartCKY<Types>::opencells_apply_bottom_up(const std::function<void(Cell &)>& f, unsigned min_span )
 {
   unsigned sent_size = get_size();
   for (unsigned span = min_span; span < sent_size; ++span) {
@@ -200,7 +199,7 @@ ChartCKY<Types>::opencells_apply_bottom_up(std::function<void(Cell &)> f, unsign
 }
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply_top_down(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply_top_down(const std::function<void(Cell &)>& f)
 {
   unsigned sent_size = get_size();
   for (signed span = sent_size-1; span >= 0; --span) {
@@ -222,7 +221,7 @@ ChartCKY<Types>::opencells_apply_top_down(std::function<void(Cell &)> f)
 
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
 {
   tbb::parallel_for(tbb::blocked_range<Cell*>(the_cells, the_cells + nb_cells),
                     [&f](const tbb::blocked_range<Cell*>& r)
@@ -243,7 +242,7 @@ class ChartTask: public tbb::task {
  public:
   //   virtual ~ChartTask() {(std::cout << "destruction of " << this << std::endl).flush();}
   ChartTask(std::function<void()> _action)
-      : action(_action)
+      : action(std::move(_action))
   { /*std::cout << "initialisation" << endl;*/}
 
   tbb::task* successor[2]; // always NULL in constructor ?
@@ -262,7 +261,7 @@ class ChartTask: public tbb::task {
 #ifdef OPENCELLS_APPLY_PARALLEL_FOR
 template<class Types>
 void
-ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
   {
     tbb::parallel_for(tbb::blocked_range<Cell *>(the_cells, the_cells+nb_cells),
                       [&f](const tbb::blocked_range<Cell *>& r){
@@ -288,7 +287,7 @@ class ParallelTask: public tbb::task {
 
  public:
     ParallelTask(std::function<void(Cell &)> _action, atomic<Cell *> & _it, Cell * _end, tbb::task * _waiter)
-    : action(_action), it(_it), end(_end), waiter(_waiter)
+        : action(std::move(_action)), it(_it), end(_end), waiter(_waiter)
     {
       //     std::cout << "ParallelTask it = " << _it << std::endl;
     }
@@ -313,7 +312,7 @@ class ParallelTask: public tbb::task {
 };
   template<class Types>
   void
-  ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+  ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
   {
     atomic<Cell *> it; it = the_cells.data();
     tbb::task_list seeds;
@@ -337,7 +336,7 @@ class ParallelTask: public tbb::task {
 
   template<class Types>
   void
-  ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+  ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
   {
     tbb::task_group g;
     for (auto & cell: the_cells) {
@@ -351,7 +350,7 @@ class ParallelTask: public tbb::task {
   #ifdef OPENCELLS_APPLY_CHART_TASK
   template<class Types>
   void
-  ChartCKY<Types>::opencells_apply(std::function<void(Cell &)> f)
+  ChartCKY<Types>::opencells_apply(const std::function<void(Cell &)>& f)
   {
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
 
@@ -380,7 +379,7 @@ class ParallelTask: public tbb::task {
 
   template<class Types>
   void
-  ChartCKY<Types>::opencells_apply_bottom_up(std::function<void(Cell &)> f, unsigned min_span)
+  ChartCKY<Types>::opencells_apply_bottom_up(const std::function<void(Cell &)>& f, unsigned min_span)
   {
     signed min_s = min_span;
     signed sent_size = get_size();
@@ -423,7 +422,7 @@ class ParallelTask: public tbb::task {
 
   template<class Types>
   void
-  ChartCKY<Types>::opencells_apply_top_down(std::function<void(Cell &)> f)
+  ChartCKY<Types>::opencells_apply_top_down(const std::function<void(Cell &)>& f)
   {
     signed sent_size = get_size();
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;

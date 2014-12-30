@@ -100,15 +100,15 @@ class ChartCKY
   std::ostream & to_stream(std::ostream & s) const;
   std::string toString() const;
 
-  void opencells_apply(std::function<void(Cell &)> f);
-  void opencells_apply_nothread(std::function<void(Cell &)> f);
-  void opencells_apply_bottom_up(std::function<void(Cell &)> f, unsigned min_span = 0);
-  void opencells_apply_bottom_up_nothread(std::function<void(Cell &)> f, unsigned min_span = 0);
-  void opencells_apply_top_down(std::function<void(Cell &)> f);
-  void opencells_apply_top_down_nothread(std::function<void(Cell &)> f);
-  void opencells_apply_top_down_nothread(std::function<void(const Cell &)> f) const;
+  void opencells_apply(const std::function<void(Cell &)>& f);
+  void opencells_apply_nothread(const std::function<void(Cell &)>& f);
+  void opencells_apply_bottom_up(const std::function<void(Cell &)>& f, unsigned min_span = 0);
+  void opencells_apply_bottom_up_nothread(const std::function<void(Cell &)>& f, unsigned min_span = 0);
+  void opencells_apply_top_down(const std::function<void(Cell &)>& f);
+  void opencells_apply_top_down_nothread(const std::function<void(Cell &)>& f);
+  void opencells_apply_top_down_nothread(const std::function<void(const Cell &)>& f) const;
 
-  std::ostream & operator>>(std::ostream & out) { opencells_apply_bottom_up([&out](Cell & cell){return out << cell << std::endl; }); return out; }
+  std::ostream & operator<<(std::ostream & out) { opencells_apply_bottom_up([&out](Cell & cell){return out << cell << std::endl; }); return out; }
 
 
   void update_relaxations(bool, const MAP<int, MAP<int, MAP<int, double>>>&,
