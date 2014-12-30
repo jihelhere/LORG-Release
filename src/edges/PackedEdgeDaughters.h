@@ -167,16 +167,11 @@ public:
   }
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
-
-    const auto& lannot = left->get_annotations();
-
-    Parent::get_rule()->update_inside_annotations(annotations, lannot);
+    Parent::get_rule()->update_inside_annotations(annotations, left->get_annotations());
   }
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
-    auto& lannot = left->get_annotations();
-
-    Parent::get_rule()->update_outside_annotations(annotations, lannot);
+    Parent::get_rule()->update_outside_annotations(annotations, left->get_annotations());
   }
 };
 

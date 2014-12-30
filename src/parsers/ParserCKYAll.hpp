@@ -142,7 +142,7 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
       if (left_edge.is_closed()) continue;
 
       //std::cout << "accessing LR1" << std::endl;
-      double L = left_edge.get_annotations().inside_probabilities.array[0];
+      const double& L = left_edge.get_annotations().inside_probabilities.array[0];
 
       //iterating through all the rules P -> L R, indexed by R, L fixed
       for(const auto & same_rhs: same_rhs0_rules) {
@@ -154,7 +154,7 @@ void ParserCKYAll_Impl<Types>::get_candidates(Cell& left_cell,
         double LR = L * right_edge.get_annotations().inside_probabilities.array[0];
 
         //iterating through all the rules P -> L R, indexed by P, R and L fixed
-        for(const auto & rule: same_rhs) {
+        for(auto rule: same_rhs) {
           result_cell.process_candidate(left_edge,right_edge, rule, LR);
         }
       }
@@ -340,7 +340,8 @@ void ParserCKYAll_Impl<Types>::beam_chart_io_relative() const
 
 //absolute beam
 template <class Types>
-void ParserCKYAll_Impl<Types>::beam_chart(double log_sent_prob, double log_threshold, bool huang)
+template<bool huang>
+void ParserCKYAll_Impl<Types>::beam_chart(double log_sent_prob, double log_threshold)
 {
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
@@ -348,7 +349,7 @@ void ParserCKYAll_Impl<Types>::beam_chart(double log_sent_prob, double log_thres
   compute_outside_probabilities();
 
   this->chart->opencells_apply_bottom_up(
-      [log_sent_prob, log_threshold, huang]
+      [log_sent_prob, log_threshold]
       (Cell& cell)
       {
         cell.apply_on_edges(&Edge::clean_invalidated_binaries);
@@ -469,22 +470,14 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
 
   //  std::cout << "beam_c2f" << std::endl;
 
-  for(unsigned i = 0; i < current_grammars.size() - 1; ++i) {
-
-    double beam_threshold = io_beam_thresholds[i + 1];
-
+  for(unsigned i = 0; i < current_grammars.size() - 1; ++i)
+  {
     //std::cout << "beaming with grammar: " << i << std::endl;
-
-
-
 
     //std::cout << "before inside" << std::endl;
     compute_inside_probabilities();
     // std::cout << std::log(get_sentence_probability()) << std::endl;
     // std::cout << get_sentence_probability() << std::endl;
-
-
-
 
     // if(chart->get_root().is_closed())
     //   std::cout << "root cell is closed" << std::endl;
@@ -496,34 +489,29 @@ void ParserCKYAll_Impl<Types>::beam_c2f(const std::vector<AGrammar*>& current_gr
       break;
     }
 
-        // std::cout << "after inside" << std::endl;
-        // std::cout << "before beam" << std::endl;
+    // std::cout << "after inside" << std::endl;
+    // std::cout << "before beam" << std::endl;
     double sp = std::log(get_sentence_probability());
     //std::cout << "sentence probability: " << sp << std::endl;
 
     // huang beam seems to affect only the first pass
-    //bool huang = i == 0;
-    bool huang = false;
-    if(chart->get_size() >= min_length_beam) // TODO if sentence is short skip everything but correct resizing
-      beam_chart(sp, beam_threshold, huang);
+    // bool huang = i == 0;
+    constexpr bool huang = false;
+    if(chart->get_size() >= min_length_beam)
+      beam_chart<huang>(sp, io_beam_thresholds[i + 1]);
     //std::cout << "after beam" << std::endl;
 
     // PCKYAllCell& root = chart->get_root();
     // if (!root.exists_edge(SymbolTable::instance_nt()->get_label_id(LorgConstants::tree_root_name)))
     //   std::cout << "no axiom at root" << std::endl;
 
-
     //std::cout << "before change" << std::endl;
-
-
 
     // TODO this function should take current_annot_descendants as an argument
     // instead annot_descendants is changed in ParserCKYAllMaxVarMultiple::extract_solution
     // which is a bit .. hackish
     change_rules_resize(i, current_grammars);
   }
-
-
 }
 
 template <class Types>
@@ -546,13 +534,15 @@ template <class Types>
 void ParserCKYAll_Impl<Types>::get_parses(int start_symbol, unsigned kbest,
                                           std::vector<std::pair<PtbPsTree *,double> >& best_trees)
 {
-  for(unsigned i = 0; i < kbest; ++i) {
+  for(unsigned i = 0; i < kbest; ++i)
+  {
     // get results
-    if(!chart->has_solution(start_symbol, i)) {
+    if(not chart->has_solution(start_symbol, i))
+    {
       break;
     }
-    PtbPsTree * t = chart->get_best_tree(start_symbol, i);
-    best_trees.emplace_back(t, chart->get_score(start_symbol, i));
+    best_trees.emplace_back(chart->get_best_tree(start_symbol, i),
+                            chart->get_score(start_symbol, i));
   }
 
 }

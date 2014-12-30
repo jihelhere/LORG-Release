@@ -308,7 +308,8 @@ protected:
      \param threshold, threshold for pruning
      \param huang, triggers the use of huang/charniak pruning with the base grammar
   */
-  void beam_chart(double sent_prob, double threshold, bool huang);
+  template<bool huang>
+  void beam_chart(double sent_prob, double threshold);
 
 
   /**

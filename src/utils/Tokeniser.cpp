@@ -98,7 +98,7 @@ struct read_helper_token
 
   void operator()(const std::string& form, unsigned pos)
   {
-    result.push_back(Word(form,pos));
+    result.emplace_back(form,pos);
   }
 };
 
@@ -124,12 +124,12 @@ struct read_helper_tokentag
 
 
     while(++token != end && *token != ")" ) {
-      strtags.push_back(*token);
+      strtags.emplace_back(*token);
     }
     if(token == end )
       throw MissingTagException();
 
-    result.push_back(Word(form,pos, pos+1, strtags));
+    result.emplace_back(form,pos, pos+1, strtags);
   }
 };
 
@@ -166,7 +166,7 @@ void Tokeniser::tokenise_toktag(const std::string& sentence,
 	if(form == "]]" || form == "]") {
 	  if( pos > 1 + open_pos) {
 	    bool close_pos_hard = form == "]]";
-	    brackets.push_back(bracketing(open_pos,open_pos_hard,pos-1,close_pos_hard));
+	    brackets.emplace_back(open_pos,open_pos_hard,pos-1,close_pos_hard);
 	  }
 	}
 	else {
@@ -209,7 +209,7 @@ bool Tokeniser::tokenise( std::istream& input,
   bool real = false;
   while(std::getline(input,raw_string)) {
     if(raw_string[0] == m_comment_char)
-      comments.push_back(raw_string);
+      comments.emplace_back(raw_string);
     else {
       real = true;
       break;
@@ -258,7 +258,7 @@ Word* Tokeniser::tokenise_lattice_line(const std::string& line)
 
   std::vector<std::string> pos_vect;
   for(; token != end; ++token) {
-    pos_vect.push_back(*token);
+    pos_vect.emplace_back(*token);
   }
 
   int start, endi;
@@ -292,21 +292,21 @@ void Tokeniser::tokenise_lat(std::string& raw_string_first_line,
                              std::vector< bracketing >& /* ignored brackets */)
 {
   std::vector<std::string> lines;
-  lines.push_back(raw_string_first_line);
+  lines.emplace_back(raw_string_first_line);
 
   std::string line;
 
   //get all the lines
   while(std::getline(input, line)) {
     if(line == "") break;
-    lines.push_back(line);
+    lines.emplace_back(line);
   }
 
   for (std::vector<std::string>::const_iterator i(lines.begin()); i != lines.end(); ++i)
     {
       Word* lw = tokenise_lattice_line(*i);
       if (lw) {
-        next_sentence.push_back(*lw);
+        next_sentence.emplace_back(*lw);
         delete lw;
       }
       else // todo: proper error handling

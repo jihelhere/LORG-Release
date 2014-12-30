@@ -41,8 +41,6 @@ void parse_solution::init_feature_extractor()
                       WordFeatureGen3()}));
 }
 
-
-
 ParseSolutionFactory parse_solution::factory = ParseSolutionFactory();
 
 std::ostream& operator<<(std::ostream& out, const unix_parse_solution& ps)

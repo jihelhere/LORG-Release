@@ -16,7 +16,7 @@ Word::Word( const std::string& str, int string_start, int string_end, const std:
     // fix "unknown tag" bug
     // if tag doesn't exist, then do tagging
     try {
-      tags.push_back(SymbolTable::instance_nt().get(i));
+      tags.emplace_back(SymbolTable::instance_nt().get(i));
     }
     catch(Miss& m){
       //      std::cerr << "Here 1" << std::endl;
