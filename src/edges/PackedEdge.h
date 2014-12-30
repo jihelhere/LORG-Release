@@ -166,8 +166,7 @@ public:
   /**
      \brief build and add a daughter (binary, unary and lexical versions)
    */
-  void add_daughters(Edge & left,
-                     Edge & right, const BinaryRule* rule);
+  void add_daughters(Edge & left, Edge & right, const BinaryRule* rule);
   void add_daughters(Edge & left, const UnaryRule* rule);
   void add_daughters(const LexicalRule* rule, const Word* w);
 

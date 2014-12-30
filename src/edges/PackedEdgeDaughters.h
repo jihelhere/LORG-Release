@@ -77,14 +77,11 @@ public:
 protected:
   EdgePtr left;
   EdgePtr right;
-  // EdgeRef left;
-  // EdgeRef right;
 
   //   friend class Types::Edge ;
 public:
   BinaryPackedEdgeDaughters(Edge& le, Edge& ri, const typename Types::BRule * ru)
       : Parent(ru), left(&le),right(&ri)
-        //: Parent(ru), left(le),right(ri)
   {};
 
   // inline BinaryPackedEdgeDaughters& operator=(const BinaryPackedEdgeDaughters& other)
@@ -105,41 +102,31 @@ public:
 
   inline Edge& left_daughter() const {return *left;}
   inline Edge& right_daughter() const {return * right;}
-  // inline Edge& left_daughter() const {return left;}
-  // inline Edge& right_daughter() const  {return right;}
 
   inline bool operator==(const BinaryPackedEdgeDaughters& other)
   {
-    return Parent::rule == other.rule && left == other.left && right == other.right;
+    return Parent::rule == other.rule and left == other.left and right == other.right;
   }
+
   inline bool points_towards_invalid_edges() const
   {
     return left->is_closed() or right->is_closed() ;
-    //return left.is_closed() or right.is_closed() ;
   }
 
   inline void update_inside_annotations(AnnotationInfo & annotations) const {
     assert(Parent::rule != NULL);
 
-    const auto& lannot = left->get_annotations();
-    const auto& rannot = right->get_annotations();
-
     Parent::get_rule()->update_inside_annotations(annotations,
-                                                  lannot,
-                                                  rannot
+                                                  left->get_annotations(),
+                                                  right->get_annotations()
                                                   );
   }
 
   inline void update_outside_annotations(AnnotationInfo & annotations) const
   {
-    auto& lannot = left->get_annotations();
-    auto& rannot = right->get_annotations();
-
-
-
     Parent::get_rule()->update_outside_annotations(annotations,
-                                                   lannot,
-                                                   rannot
+                                                   left->get_annotations(),
+                                                   right->get_annotations()
                                                    );
   }
 };

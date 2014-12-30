@@ -9,15 +9,12 @@
 #include "rules/LexicalRuleC2f.h"
 #include "grammars/AnnotatedLabelsInfo.h"
 
-
 #include <cassert>
 #include <cstring>
-
 
 #include <numeric>
 #include <algorithm>
 #include <functional>
-
 
 using std::function;
 
@@ -61,6 +58,7 @@ public:
   /**
      \brief initialise the cell
      \param cl true if closed
+     \param top true if cell spans the whole sentence
    */
   void init(bool cl, unsigned begin, unsigned end, Edge * first_edge, bool top);
   void reinit(bool cl);
@@ -78,7 +76,7 @@ public:
      \brief insert a candidate edge in the cell from application of a binary rule
      \param
   */
-  void process_candidate(Edge & left, Edge & right, const BinaryRule*, double LR_inside);
+  void process_candidate(Edge & l, Edge & r, const BinaryRule*, double LR_inside);
 
 
   /**

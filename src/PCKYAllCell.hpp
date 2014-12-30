@@ -108,7 +108,7 @@ void PCKYAllCell<Types>::add_word(const Word & word)
 
   for(const auto & rule : word.get_rules())
   {
-    const typename Types::LRule* r = static_cast<const typename Types::LRule*>(rule);
+    const auto* r = static_cast<const typename Types::LRule*>(rule);
     auto& e = edges[rule->get_lhs()];
 
 
@@ -208,15 +208,10 @@ void PCKYAllCell<Types>::clean()
       all_null = false ;
     }
 
-  // //if all edge pointers are NULL, close the cell
+  //if all edge pointers are NULL, close the cell
   if(all_null)
-    {
-      closed = true;
-    }
+    closed = true;
 }
-
-
-
 
 //relative prior beam
 template <class Types>
@@ -460,13 +455,13 @@ void PCKYAllCell<Types>::change_rules_resize(const AnnotatedLabelsInfo& next_ann
       AnnotationInfo a(next_annotations.get_number_of_annotations(i), 0.0);
 
       //process invalid annotations
-      for(unsigned annot = 0; annot < edge.get_annotations().inside_probabilities.array.size(); ++annot) {
-        if(!edge.valid_prob_at(annot)) {
-
-          const std::vector<unsigned>& next_invalids = annot_descendants_current[i][annot];
-          for(std::vector<unsigned>::const_iterator new_annot(next_invalids.begin()); new_annot != next_invalids.end(); ++new_annot) {
-            a.invalids[*new_annot] = true;
-          }
+      for(unsigned annot = 0; annot < edge.get_annotations().inside_probabilities.array.size(); ++annot)
+      {
+        if(!edge.valid_prob_at(annot))
+        {
+          const auto& next_invalids = annot_descendants_current[i][annot];
+          for (const auto& new_annot : next_invalids)
+            a.invalids[new_annot] = true;
         }
       }
 
