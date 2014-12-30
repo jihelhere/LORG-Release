@@ -160,21 +160,21 @@ int TwoStageLorgParseApp::run()
       //  }
 
 
-      int k = 0;
+      //int k = 0;
 
       if (parsers.size() + bi_crfs.size() + pos_crfs.size() > 1)
-        k = find_consensus(best_trees, sentence.size()); // doesn't
-                                                         // work with lattices
+        //k =
+        (void) find_consensus(best_trees, sentence.size()); // doesn't work with lattices
 
       // if(verbose)
       //   std::cerr << "k: " << k << std::endl;
 
 
-      for (size_t i = 0; i < ( 0 == bi_crfs.size() ? 0 : 1); ++i)
+      for (size_t i = 0U; i < ( 0U == bi_crfs.size() ? 0U : 1U); ++i)
       {
         bi_crfs[i].crf_retag();
 
-        for (size_t j = 0; j < bi_crfs[i].best_string_sequence.size(); ++j)
+        for (size_t j = 0U; j < bi_crfs[i].best_string_sequence.size(); ++j)
         {
           std::cout << sentence[j].get_form() << "\t" << bi_crfs[i].best_string_sequence[j] << std::endl;
         }
@@ -182,11 +182,11 @@ int TwoStageLorgParseApp::run()
       }
 
 
-      for (size_t i = 0; i < ( 0 == pos_crfs.size() ? 0 : 1); ++i)
+      for (size_t i = 0U; i < ( 0U == pos_crfs.size() ? 0U : 1U); ++i)
       {
         pos_crfs[i].crf_retag();
 
-        for (size_t j = 0; j < pos_crfs[i].best_string_sequence.size(); ++j)
+        for (size_t j = 0U; j < pos_crfs[i].best_string_sequence.size(); ++j)
         {
           std::cout << sentence[j].get_form() << "\t" << pos_crfs[i].best_string_sequence[j] << std::endl;
         }
@@ -197,7 +197,7 @@ int TwoStageLorgParseApp::run()
       ///
 
 
-      for (size_t i = 0; i < 1; ++i)
+      for (size_t i = 0U; i < 1U; ++i)
         // for (size_t i = 0; i < parsers.size(); ++i)
       {
         if (parsers[i]->is_chart_valid(start_symbol))

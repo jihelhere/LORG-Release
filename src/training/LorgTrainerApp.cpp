@@ -71,13 +71,7 @@ LorgTrainerApp::LorgTrainerApp()
 {}
 
 LorgTrainerApp::~LorgTrainerApp()
-{
-  LorgApp::~LorgApp();
-
-  // if (lexicon != nullptr)
-  //   delete lexicon;
-  // lexicon = nullptr;
-}
+{}
 
 
 

@@ -77,12 +77,15 @@ public:
   void print_leaf_node_probs();
 
   void free_nodes();
+
   // to make the compiler happy ...
-  BinaryTrainingTree(BinaryTrainingTree&& o) : root(std::move(o.root)) {};
-  //BinaryTrainingTree& operator=(const BinaryTrainingTree&);
-  //BinaryTrainingTree(const BinaryTrainingTree& other) : root(other.root) {}
-private:
+  BinaryTrainingTree(BinaryTrainingTree&& o);
+  // TODO to be used by old gccs ?? should it use move ??
   BinaryTrainingTree(const BinaryTrainingTree& o);
+
+  //BinaryTrainingTree& operator=(const BinaryTrainingTree&);
+private:
+  //BinaryTrainingTree(const BinaryTrainingTree& o);
 
 
   /**

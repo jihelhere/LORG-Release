@@ -8,7 +8,10 @@
 
 BinaryTrainingTree::BinaryTrainingTree() : root(nullptr) {}
 
-//need to fix that somehow
+BinaryTrainingTree::BinaryTrainingTree(BinaryTrainingTree&& o) : root(std::move(o.root)) {}
+
+BinaryTrainingTree::BinaryTrainingTree(const BinaryTrainingTree& o) : root(o.root) {}
+
 BinaryTrainingTree::~BinaryTrainingTree(){}
 
 inline unsigned nb_subtrees(const PtbPsTree& tree, const PtbPsTree::const_depth_first_iterator& position)
