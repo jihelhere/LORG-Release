@@ -59,93 +59,6 @@ std::ostream& operator<<(std::ostream& out, const URule& rule)
 }
 
 
-
-// URule * URule::convert_rule(const Rule& old)
-// {
-//   if (old.get_rhs().size() != 1)
-//     return NULL;
-
-//   return new URule(old.get_lhs(),old.get_rhs(0),1,1,std::vector<double>(1,old.get_probability()),old.is_lexical());
-// }
-
-// std::vector<Rule> URule::to_rules() const
-// {
-//   if (is_lexical())
-//     return to_rules_lexical();
-//   else
-//     return to_rules_non_lexical();
-// }
-
-// std::vector<Rule> URule::to_rules_non_lexical() const
-// {
-
-//   std::vector<Rule> result;
-
-//   std::string sb_lhs = SymbolTable::instance_nt()->translate(get_lhs());
-//   std::string sb_rhs0= SymbolTable::instance_nt()->translate(get_rhs(0));
-
-//   for(unsigned i = 0 ; i < probabilities.size(); ++i) {
-//     std::ostringstream s_lhs;
-
-//     s_lhs << sb_lhs;
-//     if(sb_lhs != LorgConstants::tree_root_name )
-//     	 s_lhs << "_" << i;
-// //      s_lhs << "||" << i;
-
-
-//     for(unsigned j = 0 ; j < probabilities[i].size(); ++j) {
-//       std::ostringstream s_rhs0 ;
-//    //   s_rhs0 << sb_rhs0 << "||" << j;
-//       s_rhs0 << sb_rhs0 << "_" << j;
-//       std::vector<int> rhs(1);
-//       rhs[0] = SymbolTable::instance_nt()->insert(s_rhs0.str());
-
-//       if(probabilities[i][j] != 0) {
-
-// 	result.push_back(Rule(SymbolTable::instance_nt()->insert(s_lhs.str()),
-// 			      rhs,
-// 			      false,
-// 			      -1,
-// 			      std::log(probabilities[i][j]),
-// 			      true));
-//       }
-//     }
-//   }
-
-//   return result;
-// }
-
-// std::vector<Rule> URule::to_rules_lexical() const
-// {
-
-//   std::vector<Rule> result;
-
-//   std::string sb_lhs = SymbolTable::instance_nt()->translate(get_lhs());
-//   std::vector<int> rhs(1,get_rhs(0));
-//  // std::cout << "toruleslex: " <<  sb_lhs  << " "<< SymbolTable::instance_word()->translate(get_rhs(0)) << " "<< get_probability(0,0) << std::endl;
-// //  std::cout << "\t\t" <<  std::log(probabilities[0][0]) << std::endl;
-//   for(unsigned i = 0 ; i < probabilities.size(); ++i) {
-//     std::ostringstream s_lhs;
-//   //  s_lhs << sb_lhs << "||" << i;
-
-//      s_lhs << sb_lhs << "_" << i;
-
-//      if(probabilities[i].size() > 0 && probabilities[i][0] != 0) {
-
-
-//        result.push_back(Rule(SymbolTable::instance_nt()->insert(s_lhs.str()),
-// 			     rhs,
-// 			     true,
-// 			     -1,
-// 			     std::log(probabilities[i][0]),
-// 			     true
-// 			     ));
-//      }
-//   }
-
-//   return result;
-// }
-
 //#include <iostream>
 
 #ifdef USE_MANUAL_SSE
@@ -244,10 +157,10 @@ void URule::update_outside_annotations(const AnnotationInfo& up_annot,
 //   }
 // }
 {
-  for(unsigned short i = 0 ; i < probabilities.size();++i) {
+  for(auto i = 0U; i < probabilities.size();++i) {
     if(up_annot.invalids[i]) continue;
-    const std::vector<double>& dim_i = probabilities[i];
-    for(unsigned short j = 0 ; j < dim_i.size();++j) {
+    const auto& dim_i = probabilities[i];
+    for(auto j = 0U; j < dim_i.size();++j) {
       if(left_annot.invalids[j]) continue;
       left_annot.unary_temp.array[j] += up_annot.outside_probabilities.array[i] * dim_i[j];
     }
@@ -306,7 +219,7 @@ void URule::remove_unlikely_annotations(const double& threshold)
   for(unsigned i = 0; i < probabilities.size(); ++i)
     for(unsigned j = 0; j < probabilities[i].size(); ++j)
       if(probabilities[i][j] < threshold) {
-	probabilities[i][j] = 0;
+	probabilities[i][j] = 0.0;
 	changed = true;
       }
 

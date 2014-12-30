@@ -160,7 +160,7 @@ void set_rhs1(short r) {rhs1 = r;}
      \brief replace annotations with 0 if they're below threshold
      \param threshold the threshold
   */
-  void remove_unlikely_annotations(const double& threshold);
+  void remove_unlikely_annotations(double threshold);
 
 
   bool is_empty() const {return probabilities.empty();}

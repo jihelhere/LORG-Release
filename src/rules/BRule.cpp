@@ -83,7 +83,7 @@ void BRule::update_inside_annotations(AnnotationInfo& up_annot,
   auto& rlast = right_annot.inside_probabilities.array[size -1];
 #endif //USE_MANUAL_SSE
 
-  for(size_t i = 0 ; i < probabilities.size();++i) {
+  for(size_t i = 0 ; i < probabilities.size(); ++i) {
     if(up_annot.invalids[i]) continue;
     auto& ui = up_annot.inside_probabilities.array[i];
     const auto& probabilities_i = probabilities[i];
@@ -96,11 +96,11 @@ void BRule::update_inside_annotations(AnnotationInfo& up_annot,
 #ifndef USE_MANUAL_SSE
       double inner = 0.0;
       for(size_t k = 0 ; k < probabilities_ij.size();++k) {
-        if(right_annot.invalids[k]) continue;
+        //branching here is detrimental (according to too few experiments)
+        //if(right_annot.invalids[k]) continue;
         inner += right_annot.inside_probabilities.array[k] * probabilities_ij[k];
       }
 #else
-
 
       // std::cerr << *this << std::endl;
       // std::cerr << "size " << size << std::endl;
@@ -129,8 +129,8 @@ void BRule::update_inside_annotations(AnnotationInfo& up_annot,
       //std::cout << *this << " " << up[i] << " " << i<< std::endl;
       ui += left_annot.inside_probabilities.array[j] * inner;
     }
-    assert(ui >= 0.0);
-    assert(ui <= 1.0);
+    assert(ui >= 0.0 - std::numeric_limits<double>::epsilon());
+    assert(ui <= 1.0 + std::numeric_limits<double>::epsilon());
   }
 
   // for(size_t i = 0; i < up.size(); ++i)
@@ -145,8 +145,8 @@ void BRule::update_inside_annotations(std::vector<double>& up,
 {
   up[0] += probabilities[0][0][0] * left_right_precomputation;
 
-    assert(up[0] >= 0.0);
-    assert(up[0] <= 1.0);
+  assert(up[0] >= 0.0 - std::numeric_limits<double>::epsilon());
+  assert(up[0] <= 1.0 + std::numeric_limits<double>::epsilon());
 }
 
 
@@ -160,34 +160,35 @@ void BRule::update_outside_annotations(const AnnotationInfo& up_annot,
                                        ) const
 {
   #ifdef USE_THREADS
-  std::vector<atomic<double>> & lo =
-      *reinterpret_cast<std::vector<atomic<double>> *>(&left_annot.outside_probabilities.array);
-  std::vector<atomic<double>> & ro =
-      *reinterpret_cast<std::vector<atomic<double>> *>(&right_annot.outside_probabilities.array);
+  auto & lo = *reinterpret_cast<std::vector<atomic<double>> *>(&left_annot.outside_probabilities.array);
+  auto & ro = *reinterpret_cast<std::vector<atomic<double>> *>(&right_annot.outside_probabilities.array);
   #else
-  std::vector<double> & lo = left_annot.outside_probabilities.array ;
-  std::vector<double> & ro = right_annot.outside_probabilities.array ;
+  auto & lo = left_annot.outside_probabilities.array ;
+  auto & ro = right_annot.outside_probabilities.array ;
   #endif
-  for(unsigned short i = 0; i < probabilities.size(); ++i) {
+  for(auto i = 0U; i < probabilities.size(); ++i)
+  {
     if(up_annot.invalids[i] || up_annot.outside_probabilities.array[i] == 0.0) continue;
-    const std::vector<std::vector<double> >& dim_i = probabilities[i];
-    for(unsigned short j = 0; j < dim_i.size(); ++j) {
-      const std::vector<double>& dim_j = dim_i[j];
-      double temp4left = 0.0;
-      double factor4right = 0.0;
-      if(not left_annot.invalids[j]) factor4right = up_annot.outside_probabilities.array[i] * left_annot.inside_probabilities.array[j];
-      for(unsigned short k = 0; k < dim_j.size(); ++k) {
-        const double& t = dim_j[k];
-        // if(right_in[k] != LorgConstants::NullProba) temp4left += right_in[k] * t;
-        // if(right_out[k] != LorgConstants::NullProba) right_out[k] += factor4right * t;
-
-        // I and O are always invalid at the same time
-        if(not right_annot.invalids[k]) {
-          temp4left += right_annot.inside_probabilities.array[k] * t;
-          ro[k] += factor4right * t;
+    const auto& dim_i = probabilities[i];
+    for(auto j = 0U; j < dim_i.size(); ++j)
+    {
+      if(not left_annot.invalids[j])
+      {
+        const auto& dim_j = dim_i[j];
+        double temp4left = 0.0;
+        double factor4right = up_annot.outside_probabilities.array[i] * left_annot.inside_probabilities.array[j];
+        for(auto k = 0U; k < dim_j.size(); ++k)
+        {
+          // I and O are always invalid at the same time
+          if(not right_annot.invalids[k])
+          {
+            const double& t = dim_j[k];
+            temp4left += right_annot.inside_probabilities.array[k] * t;
+            ro[k] += factor4right * t;
+          }
         }
+      lo[j] += up_annot.outside_probabilities.array[i] * temp4left;
       }
-      if(not left_annot.invalids[j]) lo[j] += up_annot.outside_probabilities.array[i] * temp4left;
     }
   }
 }
@@ -238,7 +239,8 @@ BRule::update_outside_annotations_return_marginal(const AnnotationInfo& up_annot
   return marginal ;
 }
 
-void BRule::remove_unlikely_annotations(const double& threshold)
+//TODO Rename this one because there is no annotation involved
+void BRule::remove_unlikely_annotations(double threshold)
 {
   bool changed = false;
 
@@ -247,11 +249,10 @@ void BRule::remove_unlikely_annotations(const double& threshold)
       for(unsigned k = 0; k < probabilities[i][j].size(); ++k)
 	if(probabilities[i][j][k] < threshold) {
 	  changed = true;
-	  probabilities[i][j][k] = 0;
+	  probabilities[i][j][k] = 0.0;
 	}
 
   if(changed) compact();
-
 }
 
 
@@ -282,7 +283,6 @@ void BRule::compact()
         probabilities[i][j].shrink_to_fit();
 
       }
-      //std::vector<double>(probabilities[i][j].begin(), probabilities[i][j].end()).swap(probabilities[i][j]);
     }
 
   //get rid of lines of empty vectors
@@ -298,9 +298,9 @@ void BRule::compact()
     {
       //std::cerr << "compacted 2 levels" << std::endl;
       probabilities[i].clear();
+      probabilities[i].shrink_to_fit();
     }
-    probabilities[i].shrink_to_fit();
-    //std::vector< std::vector<double> >(probabilities[i].begin(), probabilities[i].end()).swap(probabilities[i]);
+
   }
 
   // std::cerr << "nb zeros: " <<nb_zeros
