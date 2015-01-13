@@ -482,7 +482,7 @@ void PCKYAllCell<Types>::change_rules_resize(unsigned new_size, unsigned finer_i
 {
   apply_on_edges(function<void(Edge&)>([new_size,finer_idx](Edge&e){
         //resize
-        e.get_annotations().reset_probabilities(0.0, true);
+        e.get_annotations().reset_probabilities(0.0, false);
         e.get_annotations().resize(new_size);
         //replace rule
         e.replace_rule_probabilities(finer_idx);
