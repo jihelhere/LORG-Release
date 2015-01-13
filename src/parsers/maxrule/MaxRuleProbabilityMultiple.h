@@ -338,7 +338,7 @@ void MaxRuleProbabilityMultiple::backup_annotations(const AnnotationInfo& annota
   //       std::cout << annotations.inside_probabilities.array[i] << " " ;
   //     }
   //   std::cout << std::endl;
-  annotations_backup.push_back(annotations);
+  annotations_backup.emplace_back(annotations);
 }
 
 

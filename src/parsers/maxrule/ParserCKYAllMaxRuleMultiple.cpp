@@ -28,14 +28,13 @@ ParserCKYAllMaxRuleMultiple::ParserCKYAllMaxRuleMultiple(ParserCKYAllFactory::Ma
 
 
   // create another mapping between final grammars starting with the last one
-  // that's how MaxRuleProbability class knows where to find rules
-  std::vector<AGrammar*>& lasts = fine_grammars.back();
-  std::vector<AGrammar*> maxn_mapping(1,lasts.back());
+  // that's how MaxRuleProbability class knows where to find
+  std::vector<AGrammar*> maxn_mapping(1, fine_grammars.back().back());
   maxn_mapping.push_back(grammars.back());
-  //  create_coarse_to_fine_mapping(maxn_mapping);
-  for (unsigned i = 0; i < fine_grammars.size(); ++i) {
-    maxn_mapping.push_back(fine_grammars[i][fine_grammars[i].size()-1]);
-  }
+
+  for (const auto& fg : fine_grammars)
+    maxn_mapping.push_back(fg.back());
+
 
   create_coarse_to_fine_mapping(maxn_mapping);
 
@@ -48,7 +47,10 @@ ParserCKYAllMaxRuleMultiple::~ParserCKYAllMaxRuleMultiple()
 {
   for(unsigned i = 0; i < fine_grammars.size(); ++i)
     for(unsigned j = 0; j < fine_grammars[i].size(); ++j)
-      delete fine_grammars[i][j];
+      {
+        delete fine_grammars[i][j];
+        fine_grammars[i][j] = nullptr;
+      }
 }
 
 
