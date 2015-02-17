@@ -24,7 +24,7 @@ if (PROFILING)
 endif (PROFILING)
 
 # Boost nécessaire
-find_package(Boost 1.56 COMPONENTS regex program_options system filesystem thread unit_test_framework serialization REQUIRED)
+find_package(Boost 1.56 COMPONENTS regex program_options system filesystem unit_test_framework serialization REQUIRED)
 link_directories ( ${Boost_LIBRARY_DIRS} )
 include_directories ( ${Boost_INCLUDE_DIRS} )
 
