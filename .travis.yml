@@ -21,7 +21,7 @@ install:
 
 script:
   - autoreconf --install && ./configure --with-boost=$BOOST_ROOT && make
-
+  - mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 cache:
   # directory:

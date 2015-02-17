@@ -13,6 +13,9 @@ endif()
 
 #add_definitions(-DNDEBUG)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+
 # profiling
 option(PROFILING "Enable gprof gmon.out generation" off)
 if (PROFILING)
@@ -21,7 +24,7 @@ if (PROFILING)
 endif (PROFILING)
 
 # Boost nécessaire
-find_package(Boost 1.46 COMPONENTS regex program_options system filesystem thread unit_test_framework serialization REQUIRED)
+find_package(Boost 1.56 COMPONENTS regex program_options system filesystem thread unit_test_framework serialization REQUIRED)
 link_directories ( ${Boost_LIBRARY_DIRS} )
 include_directories ( ${Boost_INCLUDE_DIRS} )
 
@@ -61,7 +64,7 @@ else()
         message(WARNING "Install TBB and enable the MULTITHREAD option if you want to compile tb2gram (the grammar training tool)")
     endif()
 endif()
-    
+
 
 # tcmalloc
 option(WANT_TCMALLOC "Require use of tcmalloc" off)
@@ -107,7 +110,7 @@ else()
     set(C11_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
     set(C11_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 endif()
-    
+
 set(CMAKE_CXX_FLAGS "${C11_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${C11_CXX_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS_RELEASE "${C11_CXX_FLAGS_RELEASE}")
@@ -120,5 +123,3 @@ set(CMAKE_CXX_FLAGS_RELEASE "${C11_CXX_FLAGS_RELEASE}")
 # targets are in src and src/training subdirectories
 add_subdirectory(src)
 add_subdirectory(test)
-    
-    
