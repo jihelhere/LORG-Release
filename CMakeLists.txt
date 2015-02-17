@@ -13,7 +13,7 @@ endif()
 
 #add_definitions(-DNDEBUG)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -march=native -O3 -pipe -ftemplate-depth=512")
 
 
 # profiling
@@ -98,9 +98,11 @@ include (CPack)
 
 # compilation options
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -march=native -O3 -pipe -ftemplate-depth=512")
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     set(C11_CXX_FLAGS "-std=c++0x")
-    set(C11_CXX_FLAGS_RELEASE "-O6 -Wall -Wextra -pipe -DNDEBUG")
+    set(C11_CXX_FLAGS_RELEASE "-O3 -Wall -Wextra -pipe -DNDEBUG")
     #set(CMAKE_CXX_FLAGS_RELEASE -Ofast -Wall -Wextra -pipe
     #set(CMAKE_CXX_FLAGS_RELEASE -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2")
     #set(CMAKE_CXX_FLAGS_RELEASE -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer")

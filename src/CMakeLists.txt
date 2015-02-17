@@ -63,7 +63,13 @@ set(twostage_lorgparser_SOURCES
          utils/data_parsers/BURuleInputParser.cpp
          utils/data_parsers/AnnotHistoriesParser.cpp
          edges/AnnotationInfo.cpp
-         rules/BRule.cpp rules/URule.cpp rules/LexicalRule.cpp)
+         rules/BRule.cpp rules/URule.cpp rules/LexicalRule.cpp
+	 utils/WapitiWrapper.cpp wapiti/src/dual.c wapiti/src/decoder.c
+         wapiti/src/model.c wapiti/src/options.c wapiti/src/pattern.c
+         wapiti/src/progress.c wapiti/src/quark.c wapiti/src/reader.c
+         wapiti/src/rprop.c wapiti/src/sgdl1.c wapiti/src/thread.c
+         wapiti/src/tools.c wapiti/src/vmath.c wapiti/src/bcd.c wapiti/src/gradient.c
+         wapiti/src/lbfgs.c)
 
 set(common_include_dir ${CMAKE_CURRENT_SOURCE_DIR} ${TBB_INCLUDE_DIRS})
 set(common_libs  ${TBB_LIBS} ${RTLIB} ${TCMALLOC_LIB})
