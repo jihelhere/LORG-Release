@@ -106,9 +106,9 @@ AC_DEFUN([AX_BOOST_UNIT_TEST_FRAMEWORK],
                    if test "x$link_unit_test_framework" = "xyes"; then
                       break;
                    fi
-                   for unittest_library in `ls $BOOSTLIBDIR/lib${ax_lib}.so* $BOOSTLIBDIR/lib${ax_lib}.a* 2>/dev/null` ; do
+                   for unittest_library in `ls $BOOSTLIBDIR/lib${ax_lib}.so* $BOOSTLIBDIR/lib${ax_lib}.dylib* $BOOSTLIBDIR/lib${ax_lib}.a* 2>/dev/null` ; do
                    if test -r $unittest_library ; then
-                       libextension=`echo $unittest_library | sed 's,.*/,,' | sed -e 's;^lib\(boost_unit_test_framework.*\)\.so.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.a*$;\1;'`
+                       libextension=`echo $unittest_library | sed 's,.*/,,' | sed -e 's;^lib\(boost_unit_test_framework.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.so.*$;\1;' -e 's;^lib\(boost_unit_test_framework.*\)\.a*$;\1;'`
                        ax_lib=${libextension}
                        link_unit_test_framework="yes"
                     else

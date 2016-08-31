@@ -11,6 +11,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #pragma clang diagnostic pop
 
 template <typename Bin, typename Un, typename Lex>
