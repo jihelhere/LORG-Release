@@ -116,7 +116,7 @@ LorgOptions SimpleLorgParseApp::get_options() const
 bool SimpleLorgParseApp::read_config(ConfigTable& configuration)
 {
 
-  if(LorgParseApp::read_config(configuration) == false)
+  if(not LorgParseApp::read_config(configuration))
     return false;
 
   // get training grammar
