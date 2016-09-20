@@ -3,15 +3,13 @@
 #include "utils/SymbolTable.h"
 #include "rules/Production.h"
 
-
 #define WORD_EMBEDDING_SIZE 50
 #define NT_EMBEDDING_SIZE 20
 #define HIDDEN_SIZE 80
 
 nn_scorer::nn_scorer(cnn::Model& m, cnn::Trainer& t) :
-    cg(),
+    cg(nullptr),
     trainer(&t),
-
 
     _p_W_int(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE*3})),
     _p_b_int(m.add_parameters({HIDDEN_SIZE})),
@@ -24,7 +22,7 @@ nn_scorer::nn_scorer(cnn::Model& m, cnn::Trainer& t) :
                                     {WORD_EMBEDDING_SIZE})),
     _p_nts(m.add_lookup_parameters(SymbolTable::instance_nt().get_symbol_count()+1,
                                    {NT_EMBEDDING_SIZE})),
-
+    rules_expressions(),
     expressions()
 
 {}
@@ -33,6 +31,16 @@ void nn_scorer::register_last_expression(const Edge * e)
 {
   expressions[e] = last_expression;
 }
+
+
+void nn_scorer::clear()
+{
+  rules_expressions.clear();
+  expressions.clear();
+
+  // other members are managed somewhere else!
+}
+
 
 
 void nn_scorer::set_gold(std::vector<anchored_binrule_type>& ancbin,
@@ -56,22 +64,33 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 {
     auto r = static_cast<const Production*>(mp);
 
-    //std::cerr << *r << std::endl;
+    double v;
 
-    cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word,r->get_rhs0()),
-                                                      cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
+    if (rules_expressions.count(r))
+      v = as_scalar(cg->get_value(rules_expressions[r].i));
+    else
+    {
 
-    cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
-    cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
-    cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
+      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word,r->get_rhs0()),
+                                                        cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
 
-    last_expression = o * cnn::expr::tanh(W*i + b);
+      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
+      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
+      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
 
-    //std::cerr << "before as_scalar" << std::endl;
-    cg->incremental_forward();
-    double v = as_scalar(cg->get_value(last_expression.i));
-    //std::cerr << v << std::endl;
-    //std::cerr << "after as_scalar" << std::endl;
+      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
+
+      //std::cerr << "before as_scalar" << std::endl;
+      cg->incremental_forward();
+      v = as_scalar(cg->get_value(out.i));
+      //std::cerr << v << std::endl;
+      //std::cerr << "after as_scalar" << std::endl;
+
+      rules_expressions[r] = out;
+      last_expression = &rules_expressions[r];
+    }
+
+
 
     if (gold and not anchored_lexicals.count(std::make_tuple(position,*r)))
       v += 1.0;
@@ -84,20 +103,34 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
     auto r = static_cast<const Production*>(mp);
 
-    cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
-                                                       cnn::expr::lookup(*cg,_p_nts,SymbolTable::instance_nt().get_symbol_count()),
-                                                       cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
+    double v;
+    if (rules_expressions.count(r))
+    {
+      v = as_scalar(cg->get_value(rules_expressions[r].i));
+    }
+    else
+    {
+
+      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
+                                                        cnn::expr::lookup(*cg,_p_nts,SymbolTable::instance_nt().get_symbol_count()),
+                                                        cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
 
 
     cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
     cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
     cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
 
-    last_expression = o * cnn::expr::tanh(W*i + b);
+    cnn::expr::Expression out = o * cnn::expr::tanh(W*i + b);
 
     cg->incremental_forward();
     // return 0.0;
-    double v = as_scalar(cg->get_value(last_expression.i));
+    v = as_scalar(cg->get_value(out.i));
+
+    rules_expressions[r] = out;
+    last_expression = &rules_expressions[r];
+
+    }
+
 
     if (gold and not anchored_unaries.count(std::make_tuple(begin,end,*r)))
       v += 1.0;
@@ -110,18 +143,35 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
   {
     auto r = static_cast<const Production*>(mp);
 
-    cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
-                                                      cnn::expr::lookup(*cg,_p_nts,r->get_rhs1()),
-                                                      cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
+    double v;
 
-    cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
-    cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
-    cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
+    if (rules_expressions.count(r))
+    {
+      v = as_scalar(cg->get_value(rules_expressions[r].i));
+    }
+    else
+    {
 
-    last_expression = o * cnn::expr::tanh(W*i + b);
 
-    cg->incremental_forward();
-    double v = as_scalar(cg->get_value(last_expression.i));
+      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
+                                                        cnn::expr::lookup(*cg,_p_nts,r->get_rhs1()),
+                                                        cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
+
+      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
+      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
+      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
+
+      cnn::expr::Expression out = o * cnn::expr::tanh(W*i + b);
+
+      cg->incremental_forward();
+      v = as_scalar(cg->get_value(out.i));
+
+      rules_expressions[r] = out;
+      last_expression = &rules_expressions[r];
+
+    }
+
+
 
     if (gold and not anchored_binaries.count(std::make_tuple(s,e,m,*r)))
       v += 1.0;

@@ -218,7 +218,7 @@ int NNLorgParseApp::run_train()
     {
       cnn::ComputationGraph cg;
       network.set_cg(cg);
-      network.expressions.clear();
+      network.clear();
 
 
       const auto s = tree.yield();
@@ -295,7 +295,7 @@ int NNLorgParseApp::run_train()
                       {
                         if (network.expressions.count(ep))
                         {
-                          errs.push_back(network.expressions[ep]);
+                          errs.push_back(*network.expressions[ep]);
                           //                          ++c;
                         }
                       }
@@ -315,7 +315,7 @@ int NNLorgParseApp::run_train()
                          (void) network.compute_lexical_score(std::get<0>(al),
                                                               &std::get<1>(al));
                          // ++c;
-                         return - network.last_expression;
+                         return - *network.last_expression;
                        }
                        );
 
@@ -330,7 +330,7 @@ int NNLorgParseApp::run_train()
                          (void) network.compute_unary_score(std::get<0>(au),
                                                             std::get<1>(au),
                                                             &std::get<2>(au));
-                         return - network.last_expression;
+                         return - *network.last_expression;
                        }
                        );
 
@@ -346,7 +346,7 @@ int NNLorgParseApp::run_train()
                                                              std::get<1>(ab),
                                                              std::get<2>(ab),
                                                              &std::get<3>(ab));
-                         return - network.last_expression;
+                         return - *network.last_expression;
                        }
                        );
 

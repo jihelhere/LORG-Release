@@ -69,8 +69,10 @@ struct nn_scorer
   cnn::LookupParameter _p_nts;
 
 
-  cnn::expr::Expression last_expression; // TODO: change this, this is hackish and incompatbible with parallel processing
-  std::unordered_map<const Edge*, cnn::expr::Expression> expressions;
+  cnn::expr::Expression* last_expression; // TODO: change this, this is hackish and incompatbible with parallel processing
+
+  std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
+  std::unordered_map<const Edge*, cnn::expr::Expression*> expressions;
 
   std::unordered_set<anchored_binrule_type> anchored_binaries;
   std::unordered_set<anchored_unirule_type> anchored_unaries;
@@ -78,7 +80,11 @@ struct nn_scorer
   bool gold;
 
 
-  nn_scorer() : cg(nullptr), trainer(nullptr), gold(false) {}
+  nn_scorer() : cg(nullptr), trainer(nullptr),
+                rules_expressions(),
+                expressions(),
+                gold(false) {}
+
   nn_scorer(cnn::Model& m, cnn::Trainer& t);
 
   void set_cg(cnn::ComputationGraph& g) {cg = &g;};
@@ -100,4 +106,5 @@ struct nn_scorer
 
   void register_last_expression(const Edge*e);
 
+  void clear();
 };
