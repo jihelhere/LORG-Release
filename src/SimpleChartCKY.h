@@ -30,6 +30,8 @@ class ChartCKY
 public:
   typedef typename Types::Cell Cell ;
   typedef typename Types::ChartWord MyWord;
+  typedef typename Types::scorer Scorer ;
+
 
 private:
   Cell ** chart; ///< the chart itself
@@ -53,7 +55,7 @@ public:
      \param grammar_size  the number non-terminals in the grammar
      \param brackets chunks
   */
-  ChartCKY(const std::vector< MyWord >& sentence, unsigned grammar_size, const std::vector<bracketing>& brackets);
+  ChartCKY(const std::vector< MyWord >& sentence, unsigned grammar_size, const std::vector<bracketing>& brackets, Scorer& scorer);
 
   /**
      \brief get the size of the chart
@@ -69,11 +71,14 @@ public:
      \return a cell (may segfault if coordinates are out of bounds)
   */
 
-  Cell& access(unsigned start, unsigned end) const;
+  const Cell& access(unsigned start, unsigned end) const;
+  Cell& access(unsigned start, unsigned end);
 
-  Cell& get_root() const;
+  const Cell& get_root() const;
 
   PtbPsTree* get_best_tree(int start_symbol, unsigned k) const;
+  std::unordered_set<const typename Types::Edge*> get_best_edges(int start_symbol) const;
+
 
   double get_score(int start_symbol, unsigned k) const;
 

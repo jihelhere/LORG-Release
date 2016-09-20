@@ -96,6 +96,43 @@ AM_CONDITIONAL([WANT_TBB],[test "x$use_tbb" != "xno"])
 
 AM_CONDITIONAL([WANT_TBB], [test "x$want_tbb" != "xno"])
 
+
+
+# Check for CNN
+AC_ARG_WITH(cnn,
+	[AC_HELP_STRING([--with-cnn=DIR], [cnn in DIR])],
+	[cnn_dir="${withval}"], [cnn_dir=''])
+if test "x$cnn_dir" != "x"; then
+  CNN_CPPFLAGS="-I${cnn_dir}"
+  CNN_LDFLAGS="-L${cnn_dir}/build/cnn/ -lcnn"
+else
+  AS_ERROR("Must specify --with-cnn=[CNN_DIR]")
+fi
+
+# Check if we have CUDA
+AC_ARG_WITH(cuda,
+	[AC_HELP_STRING([--with-cuda=DIR], [cuda in DIR])],
+	[cuda_dir="${withval}"], [cuda_dir=''])
+if test "x$cuda_dir" != "x"; then
+  CNN_CPPFLAGS="-I${cnn_dir} -I${cuda_dir}/include -DHAVE_CUDA"
+  CNN_LDFLAGS="-L${cnn_dir}/build/cnn -lcnn -lcnncuda -L${cuda_dir}/lib64 -lcudart -lcublas"
+fi
+AC_SUBST(CNN_CPPFLAGS)
+AC_SUBST(CNN_LDFLAGS)
+
+# Check for Eigen
+AC_ARG_WITH(eigen,
+	[AC_HELP_STRING([--with-eigen=DIR], [eigen in DIR])],
+	[eigen_dir="${withval}"], [eigen_dir=''])
+if test "x$eigen_dir" != "x"; then
+  EIGEN_CPPFLAGS="-I${eigen_dir}"
+else
+  AS_ERROR("Must specify --with-eigen=[EIGEN_DIR]")
+fi
+AC_SUBST(EIGEN_CPPFLAGS)
+
+
+
 AC_CONFIG_FILES([
         Makefile
 	src/Makefile

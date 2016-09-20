@@ -42,7 +42,7 @@ public:
   typedef compact_binary_rules::vector_rhs1<const Bin *> vector_rhs1;
 
 
-  ParserCKY( MyGrammar* grammar);
+  ParserCKY( MyGrammar& grammar);
   virtual ~ParserCKY();
 
 
@@ -60,16 +60,15 @@ public:
 
 protected:
   bool
-  rules_for_unary_exist(int rhs_id) const {return !unary_rhs_2_rules_notop[rhs_id].empty() && !unary_rhs_2_rules_toponly[rhs_id].empty();}
+  rules_for_unary_exist(int rhs_id) const {return !unary_rhs_2_rules[rhs_id].empty();}
 
   void remove_lex_rule(Lex* l);
 
 protected:
-  Grammar<Bin,Un,Lex> * grammar; ///< the grammar
+  Grammar<Bin,Un,Lex>& grammar; ///< the grammar
 
   vector_brules brules; //// the structure used to access binary rules
-  std::vector< std::vector<const Un*> >  unary_rhs_2_rules_toponly; // fast access unary rules from rhs
-  std::vector< std::vector<const Un*> >  unary_rhs_2_rules_notop; // fast access unary rules from rhs
+  std::vector< std::vector<const Un*> >  unary_rhs_2_rules; // fast access unary rules from rhs
 
   std::vector<short> unary_rhs_from_binary; /// lhs of binary rules which are also rhs of unary rules
   std::vector<short> unary_rhs_from_pos;  /// pos tags which are also rhs of unary rules
@@ -99,36 +98,36 @@ private:
 };
 
 template <typename MyGrammar>
-ParserCKY<MyGrammar>::ParserCKY(MyGrammar* g) :
+ParserCKY<MyGrammar>::ParserCKY(MyGrammar& g) :
   grammar(g),
-  unary_rhs_2_rules_toponly(), unary_rhs_2_rules_notop(),
+  unary_rhs_2_rules(),
   unary_rhs_from_binary(), unary_rhs_from_pos(),
   n_nonterminals(0)
 {
-  grammar->init();
+  grammar.init();
 
   std::vector<short> bin_lhs; //lhs'es in binary rules
   std::vector<short> lex_lhs; //lhs'es in lexical rules
   std::vector<short> nts; // all the non-terminals in rules
 
   //collect lex_lhs nts
-  for(typename std::vector<Lex>::const_iterator it(grammar->lexical_rules.begin());
-      it != grammar->lexical_rules.end(); ++it) {
+  for(typename std::vector<Lex>::const_iterator it(grammar.lexical_rules.begin());
+      it != grammar.lexical_rules.end(); ++it) {
     add_lex_rule(*it);
     add_ifabsent(lex_lhs,it->get_lhs());
     add_ifabsent(nts,it->get_lhs());
   }
 
   //collect bin_lhs nts
-  for(typename std::vector<Bin>::const_iterator it(grammar->binary_rules.begin());
-      it != grammar->binary_rules.end(); ++it) {
+  for(typename std::vector<Bin>::const_iterator it(grammar.binary_rules.begin());
+      it != grammar.binary_rules.end(); ++it) {
     add_ifabsent(bin_lhs, it->get_lhs());
     add_ifabsent(nts,it->get_lhs());
   }
 
   //collect nts and unary rules
-  for(typename std::vector<Un>::const_iterator it(grammar->unary_rules.begin());
-      it != grammar->unary_rules.end();++it) {
+  for(typename std::vector<Un>::const_iterator it(grammar.unary_rules.begin());
+      it != grammar.unary_rules.end();++it) {
     add_unary_rule(*it,bin_lhs,lex_lhs);
     add_ifabsent(nts,it->get_lhs());
   }
@@ -137,14 +136,14 @@ ParserCKY<MyGrammar>::ParserCKY(MyGrammar* g) :
   n_nonterminals = nts.size();
 
   // compact binary rules
-  brules = compact_binary_rules::vector_brules<const Bin*>::convert(grammar->binary_rules);
+  brules = compact_binary_rules::vector_brules<const Bin*>::convert(grammar.binary_rules);
 }
 
 template <typename MyGrammar>
 ParserCKY<MyGrammar>::~ParserCKY()
 {
-  delete grammar;
-  grammar = NULL;
+  // delete grammar;
+  // grammar = NULL;
 }
 
 template<typename MyGrammar>
@@ -180,20 +179,16 @@ void ParserCKY<MyGrammar>::add_unary_rule(const Un& r,
                                           const std::vector<short>& blhs,
                                           const std::vector<short>& llhs)
 {
-  static short start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+  //  static short start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
   short rhs_id = short(r.get_rhs0());
 
-  if(rhs_id >= (int) unary_rhs_2_rules_toponly.size())
+  if(rhs_id >= (int) unary_rhs_2_rules.size())
     {
-      unary_rhs_2_rules_toponly.resize(rhs_id+1);
-      unary_rhs_2_rules_notop.resize(rhs_id+1);
+      unary_rhs_2_rules.resize(rhs_id+1);
     }
 
-  if (r.get_lhs() == start_symbol)
-    unary_rhs_2_rules_toponly[rhs_id].push_back(&r);
-  else
-    unary_rhs_2_rules_notop[rhs_id].push_back(&r);
+  unary_rhs_2_rules[rhs_id].push_back(&r);
 
   if(exists(blhs,rhs_id) &&(!exists(unary_rhs_from_binary,rhs_id)))
     unary_rhs_from_binary.push_back(rhs_id);

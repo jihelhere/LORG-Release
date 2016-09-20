@@ -30,7 +30,7 @@ class LorgOptions
     // Options for the trainer -- treebank processing
     po::options_description tb_opts("grammar options");
     tb_opts.add_options()
-
+        ("treebank", po::value<std::vector< std::string> >(), "set the treebank to read. If not set, read from stdin")
         ("nodes-to-remove",po::value<std::string>()->multitoken()->default_value("-NONE-"), "specifies a set of nodes that are to be removed from the trees")
         ("remove-functions",po::value<bool>()->default_value(true),"specifies whether grammatical functions are to be removed")
         ("replace-numbers",po::value<bool>()->default_value(false),"specifies whether numbers are replaced with the token NUMBER" )
@@ -77,7 +77,6 @@ class LorgOptions
     // Options for the EM trainer
     po::options_description grammar_opts("grammar options");
     grammar_opts.add_options()
-        ("treebank", po::value<std::vector< std::string> >(), "set the treebank to read. If not set, read from stdin")
         ("filter-level",po::value<int>()->default_value(1),
          "set the minimal number of occurrences in the treebank for a rule to be added in the grammar. If no set, add all rules")
         ("split-size",po::value<unsigned>()->default_value(2),"number of splits for one iteration of split-merge EM")

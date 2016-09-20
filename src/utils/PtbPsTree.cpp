@@ -203,7 +203,7 @@ std::string
 n_daughters_left_to_string(const std::list<iterator>& daughters, const std::string& ancestor_name, int markov)
 {
   std::ostringstream treename;
-  treename << "[("  + ancestor_name + ")>";
+  treename << "[|"  + ancestor_name + "|>";
   //  treename << "@"+ ancestor_name;
 
   auto iter = daughters.rbegin();
@@ -224,7 +224,7 @@ std::string
 n_daughters_right_to_string(const std::list<iterator>& daughters, const std::string& ancestor_name, int markov)
 {
   std::ostringstream treename;
-  treename << "[("  + ancestor_name + ")>";
+  treename << "[|"  + ancestor_name + "|>";
   // treename << "@"+ ancestor_name;
 
   auto iter = daughters.begin();
@@ -467,4 +467,76 @@ void PtbPsTree::collect_internal_counts(std::map<Production, double> & binary_co
         }
       }
     }
+}
+
+
+
+
+
+void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
+                                     std::vector<std::tuple<int,int,Production>>& anchored_unaries,
+                                     std::vector<std::tuple<int,Production>>& anchored_lexicals) const
+{
+  return anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
+                              0, number_of_leaves());
+
+}
+void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
+                                     std::vector<std::tuple<int,int,Production>>& anchored_unaries,
+                                     std::vector<std::tuple<int,Production>>& anchored_lexicals,
+                                     int begin, int end) const
+{
+  typedef PtbPsTree::const_depth_first_iterator const_iterator;
+  static SymbolTable& sym_tab_nt = SymbolTable::instance_nt();
+  static SymbolTable& sym_tab_word = SymbolTable::instance_word();
+
+  auto i = dfbegin();
+
+  if(!i->leaf()) {
+    int lhs = sym_tab_nt.insert(*i);
+    std::vector<int> rhs;
+
+    const_iterator j = i;
+    j.down_first();
+    if(j->leaf())
+    {  //lexical rule
+      rhs.push_back(sym_tab_word.insert(*j));
+      anchored_lexicals.push_back(std::make_tuple(begin,Production(lhs,rhs,true)));
+    }
+    else
+    { // internal rule
+
+      std::vector<PtbPsTree> daughters;
+
+      for(; j != this->dfend(); j.right())
+      {
+        rhs.push_back(sym_tab_nt.insert(*j));
+        auto t = subtree(j);
+        daughters.push_back(*static_cast<PtbPsTree*>(&t));
+      }
+      if (rhs.size() == 1) //unary rule
+      {
+        anchored_unaries.push_back(std::make_tuple(begin,end,Production(lhs,rhs,false)));
+        daughters[0].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
+                                          begin,end);
+      }
+      else //binaries
+      {
+        assert(rhs.size() == 2);
+
+        int m = begin + daughters[0].number_of_leaves();
+
+
+        anchored_binaries.push_back(std::make_tuple(begin,m,end,Production(lhs,rhs,false)));
+        daughters[0].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
+                                          begin, m);
+        daughters[1].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
+                                          m, end);
+      }
+
+
+
+
+    }
+  }
 }

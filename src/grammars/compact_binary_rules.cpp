@@ -13,6 +13,7 @@ info transform(const BinaryRule&)
 }
 
 
+
 template<class BinaryRule, typename info>
 void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<info>& result )
 {

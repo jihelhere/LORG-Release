@@ -4,6 +4,7 @@
 
 #include "PsTree.h"
 
+#include <tuple>
 #include <unordered_map>
 
 #pragma clang diagnostic push
@@ -78,6 +79,7 @@ public:
 
 
   void parent_annotate(unsigned level, bool extra);
+
   void productions(std::vector<Production>& internals,std::vector<Production>& lexicals) const;
 
   void collect_internal_counts( std::map<Production, double> & binary_counts,
@@ -86,6 +88,17 @@ public:
 
   void coarse_terminal(bool prime,
 		       std::unordered_map< std::string, std::unordered_set<std::string> >& coarse_to_fine_map);
+
+  void anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
+                            std::vector<std::tuple<int,int,Production>>& anchored_unaries,
+                            std::vector<std::tuple<int,Production>>& anchored_lexicals) const;
+
+ private:
+  void anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
+                            std::vector<std::tuple<int,int,Production>>& anchored_unaries,
+                            std::vector<std::tuple<int,Production>>& anchored_lexicals,
+                            int begin, int end) const;
+
 
 };
 

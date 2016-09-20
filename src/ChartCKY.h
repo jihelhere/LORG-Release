@@ -84,7 +84,6 @@ class ChartCKY
 
   double get_score(int start_symbol, unsigned k) const;
 
-
   void init(const std::vector< MyWord >& sentence);
 
   void reset_probabilities();

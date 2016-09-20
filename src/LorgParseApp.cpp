@@ -7,7 +7,7 @@ LorgOptions LorgParseApp::get_options() const
   LorgOptions options;
   options.add_parser_options();
   options.add_unknown_word_mapping_options();
-  options.add_parser_positionals();
+  //options.add_parser_positionals();
   return options;
 }
 

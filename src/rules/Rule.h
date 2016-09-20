@@ -73,6 +73,8 @@ public:
   */
   void set_log_mode(bool m);
 
+  //size_t hash() const;
+
 
   /**
      \brief Output operator
@@ -84,6 +86,11 @@ public:
 
   bool is_invalid() const;
 };
+
+// size_t Rule::hash() const
+// {
+//   return Production::hash();
+// }
 
 
 inline
@@ -101,5 +108,12 @@ void Rule::set_probability(const double& p) { probability = p; }
 
 inline
 bool Rule::is_invalid() const {return false;}
+
+namespace std {
+    template <>
+    struct hash<Rule> {
+      size_t operator () (const Rule &f) const { return f.hash(); }
+    };
+}
 
 #endif // RULE_H_

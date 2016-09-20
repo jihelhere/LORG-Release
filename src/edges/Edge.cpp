@@ -7,7 +7,7 @@
 Edge::~Edge()
 {}
 
-Edge::Edge(): lhs(), left(NULL), right(NULL), probability(), lex(false){}
+Edge::Edge(): lhs(), left(NULL), right(NULL), probability(-10000000), lex(false){}
 
 Edge::Edge(int l,const Edge * r, const double& p):
   lhs(l), left(r), right(NULL), probability(p), lex(false)
@@ -42,8 +42,8 @@ PtbPsTree* Edge::to_ptbpstree(int /*not read*/, unsigned /*not read*/) const
 void Edge::to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos) const
 {
   if(lex){
-	     //std::cout << "lex: " << get_lhs() << std::endl;
-	     //std::cout << SymbolTable::instance_word()->translate(get_lhs()) << std::endl;
+    // std::cout << "lex: " << get_lhs() << std::endl;
+    // std::cout << SymbolTable::instance_word().translate(get_lhs()) << std::endl;
     pos = tree.add_last_daughter(pos, SymbolTable::instance_word().translate(get_lhs()));
 
 
@@ -51,9 +51,9 @@ void Edge::to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos) c
     // pos = tree.add_last_daughter(pos, "");
   }
   else{
-    //	 std::cout << SymbolTable::instance_nt()->translate(get_lhs()) << std::endl;
-    //std::cout << "int: " << get_lhs() << std::endl;
-    //std::cout << "probability: " << get_probability() << std::endl;
+    // std::cout << SymbolTable::instance_nt().translate(get_lhs()) << std::endl;
+    // std::cout << "int: " << get_lhs() << std::endl;
+    // std::cout << "probability: " << get_probability() << std::endl;
     pos = tree.add_last_daughter(pos, SymbolTable::instance_nt().translate(get_lhs()));
    }
   if(!is_terminal()) {
@@ -113,4 +113,31 @@ Edge::Edge(PtbPsTree& tree, PtbPsTree::depth_first_iterator current)
       *this = Edge(SymbolTable::instance_nt().insert(*current),left,right,0);
     }
   }
+}
+
+
+
+
+std::unordered_set<const Edge*> Edge::to_set() const
+{
+  std::unordered_set<const Edge*> res;
+
+  res.insert(this);
+  if (get_left_child())
+    get_left_child()->to_set(res);
+  if (get_right_child())
+    get_right_child()->to_set(res);
+
+  return res;
+}
+
+
+void Edge::to_set(std::unordered_set<const Edge*>& res) const
+{
+  if (lex) return;
+  res.insert(this);
+  if (get_left_child())
+    get_left_child()->to_set(res);
+  if (get_right_child())
+    get_right_child()->to_set(res);
 }

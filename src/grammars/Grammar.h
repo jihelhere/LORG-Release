@@ -36,9 +36,9 @@ public:
      \param unary_rules unary rules
      \param lexical_rules lexical rules
   */
-  void set_rules(std::vector<Bin>&  binary_rules,
-		 std::vector<Un>&   unary_rules,
-		 std::vector<Lex>& lexical_rules);
+  void set_rules(const std::vector<Bin>&  binary_rules,
+		 const std::vector<Un>&   unary_rules,
+		 const std::vector<Lex>& lexical_rules);
 
   void init();
 
@@ -98,11 +98,11 @@ void Grammar<Bin, Un, Lex>::init()
 
 template<class Bin, class Un, class Lex>
 inline
-void Grammar<Bin, Un, Lex>::set_rules(std::vector<Bin>& binary_rules_,
-				      std::vector<Un>&  unary_rules_,
-				      std::vector<Lex>& lexical_rules_)
+void Grammar<Bin, Un, Lex>::set_rules(const std::vector<Bin>& binary_rules_,
+				      const std::vector<Un>&  unary_rules_,
+				      const std::vector<Lex>& lexical_rules_)
 {
-  binary_rules_.swap(binary_rules);
-  unary_rules_.swap(unary_rules);
-  lexical_rules_.swap(lexical_rules);
+  binary_rules = binary_rules_;
+  unary_rules = unary_rules_;
+  lexical_rules = lexical_rules_;;
 }

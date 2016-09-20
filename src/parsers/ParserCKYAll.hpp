@@ -285,9 +285,7 @@ template <bool isroot>
 void ParserCKYAll_Impl<Types>::process_unary(Cell& cell, int lhs) const
 {
   //BLOCKTIMING("ParserCKYAll_Impl<Types>::process_unary");
-  const auto& urules = isroot ?
-                       unary_rhs_2_rules_toponly[lhs] :
-                       unary_rhs_2_rules_notop[lhs];
+  const auto& urules = unary_rhs_2_rules[lhs];
 
   double L_inside = cell.get_edge(lhs).get_annotations().inside_probabilities.array[0];
 

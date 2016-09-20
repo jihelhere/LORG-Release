@@ -151,7 +151,7 @@ int LorgTrainerApp::run()
     std::clog << "Treebank is ready ("
               << tb.get_trees().size()
               << " trees)"  << "\n";
-
+`
   TrainingGrammar em_grammar(tb, lexicon);
 
   //output treebank trees modified by the lexicon -- if requested

@@ -3,6 +3,8 @@
 
 #include "SimpleChartCKY.h"
 
+#undef USE_THREADS
+
 /* use parallel_for in opencells_apply_bottom_up and opencells_apply_top_down */
 //#define WITH_PARALLEL_FOR
 
@@ -420,7 +422,17 @@ public:
 
   template<class Types>
   inline
-  typename Types::Cell& ChartCKY<Types>::access(unsigned start, unsigned end) const
+  typename Types::Cell& ChartCKY<Types>::access(unsigned start, unsigned end)
+  {
+    //   assert(start <= end);
+    //   assert(end < size);
+    return chart[start][end-start];
+  }
+
+
+  template<class Types>
+  inline
+  const typename Types::Cell& ChartCKY<Types>::access(unsigned start, unsigned end) const
   {
     //   assert(start <= end);
     //   assert(end < size);
@@ -447,7 +459,7 @@ public:
 
 
   template<class Types>
-  typename Types::Cell& ChartCKY<Types>::get_root() const
+  const typename Types::Cell& ChartCKY<Types>::get_root() const
   {
     return access(0,size-1);
   }
@@ -455,16 +467,32 @@ public:
   template<class Types>
   PtbPsTree* ChartCKY<Types>::get_best_tree(int start_symbol, unsigned k) const
   {
-    PtbPsTree* tree = NULL;
+    PtbPsTree* tree = nullptr;
 
     const Cell & root_cell = this->get_root();
 
-    if (!root_cell.is_closed() && root_cell.exists_edge(start_symbol)) {
-      tree = root_cell.get_edge(start_symbol).to_ptbpstree(start_symbol, k);
+    if (!root_cell.is_closed() && root_cell.exists_edge_all_height(start_symbol)) {
+      tree = root_cell.get_best_edge(start_symbol).to_ptbpstree(start_symbol, k);
     }
 
     return tree;
   }
+
+
+  template<class Types>
+  std::unordered_set<const typename Types::Edge*> ChartCKY<Types>::get_best_edges(int start_symbol) const
+  {
+    const Cell & root_cell = this->get_root();
+    std::unordered_set<const typename Types::Edge*> res;
+
+
+    if (!root_cell.is_closed() && root_cell.exists_edge_all_height(start_symbol)) {
+      root_cell.get_best_edge(start_symbol).to_set(res);
+    }
+
+    return res;
+  }
+
 
   //score at root
   template<class Types>
@@ -500,7 +528,7 @@ public:
 
   // assume that words in sentence are in left to right direction (start in ascending direction)
   template<class Types>
-  ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s, unsigned grammar_size, const std::vector<bracketing>& bs) :
+  ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s, unsigned grammar_size, const std::vector<bracketing>& bs, Scorer& scorer) :
   chart(NULL),
   size(find_last_in_sentence(s)),
   sentence(s),
@@ -529,7 +557,7 @@ public:
       if(access(sentence[i].get_start(), sentence[i].get_end()-1).is_closed())
         std::clog << "Problem in chart initialisation: brackets and tokenization are insconsistent." << std::endl;
 
-      access(sentence[i].get_start(), sentence[i].get_end()-1).add_word(sentence[i]);
+      access(sentence[i].get_start(), sentence[i].get_end()-1).add_word(sentence[i], scorer);
     }
 
     #ifdef USE_THREADS

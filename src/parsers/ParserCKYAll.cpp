@@ -77,7 +77,7 @@ ParserCKYAll::ParserCKYAll(const std::vector<AGrammar*>& cgs,
                            unsigned min_beam, int stubborn,
                            WordSignature* ws)
     :
-    Parser(cgs[0]),
+    Parser(*cgs[0]),
     grammars(cgs),
     priors(p), prior_beam_threshold(prior_threshold),
     annot_descendants(annot_descendants_),

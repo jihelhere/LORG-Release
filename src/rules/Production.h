@@ -28,7 +28,7 @@ public:
     \param llexical given lexical status
   */
   Production(int llhs, const std::vector<int>& rrhs, bool llexical);
-  
+
   /**
     \brief Constructor, that constructs a production from a formatted string
   */
@@ -59,7 +59,7 @@ public:
     \brief returns true if rule is unary, false otherwise
   */
   bool is_unary() const;
-  
+
   /**
     \brief Gets the current right hand side of the production
     \return Right hand side
@@ -77,7 +77,7 @@ public:
     \return true, if lexical, false otherwise
   */
   bool is_lexical() const;
-  
+
   /**
     \brief Sets the lexical status of the production
     \param[in] l New lexical status, true for lexical, false for non-terminal
@@ -85,18 +85,22 @@ public:
   void set_lexical(bool l);
 
   // std::list<Production> binarize_right() const;
-  
+
   // std::list<Production> binarize_left() const;
 
 
 
   bool operator==(const Production& other) const;
-  
+
   // to be able to use std::maps with Productions as keys
   bool operator<(const Production& other) const;
 
 
-  
+  size_t hash() const;
+
+  bool is_invalid() const {return false;}
+
+
   /**
      \brief Output operator
      \param os the ostream to write on
@@ -108,65 +112,80 @@ public:
 
 };
 
+
+#include <boost/functional/hash.hpp>
+inline
+size_t Production::hash() const
+{
+  std::hash<int> hash_int;
+
+  size_t seed = 0;
+  boost::hash_combine(seed, hash_int(lhs));
+  for (auto& r : rhs)
+    boost::hash_combine(seed, hash_int(r));
+  return seed;
+}
+
+
 //TODO test index < vector.size()
 inline
-int Production::get_rhs(int index) const 
-{ 
-  return rhs[index]; 
+int Production::get_rhs(int index) const
+{
+  return rhs[index];
 }
 
 //TODO test vector.size() > 0
 inline
-int Production::get_rhs0() const 
-{ 
-  return rhs[0]; 
+int Production::get_rhs0() const
+{
+  return rhs[0];
 }
 
 //TODO test vector.size() > 1
 inline
-int Production::get_rhs1() const 
-{ 
-  return rhs[1]; 
+int Production::get_rhs1() const
+{
+  return rhs[1];
 }
 
 
 
 inline
-bool Production::is_unary() const 
-{ 
-  return (rhs.size()==1); 
+bool Production::is_unary() const
+{
+  return (rhs.size()==1);
 }
-  
+
 
 inline
-const std::vector<int>& Production::get_rhs() const 
-{ 
-  return rhs; 
+const std::vector<int>& Production::get_rhs() const
+{
+  return rhs;
 }
 
 inline
 std::vector<int>& Production::get_rhs()
-{ 
-  return rhs; 
+{
+  return rhs;
 }
 
 
 inline
-void Production::set_rhs(const std::vector<int>& r) 
-{ 
-  rhs = r; 
+void Production::set_rhs(const std::vector<int>& r)
+{
+  rhs = r;
 }
 
 inline
-bool Production::is_lexical() const 
-{ 
-	return lexical; 
+bool Production::is_lexical() const
+{
+	return lexical;
 }
 
-inline 
-void Production::set_lexical(bool l) 
-{ 
-  lexical = l; 
+inline
+void Production::set_lexical(bool l)
+{
+  lexical = l;
 }
 
 inline
@@ -179,11 +198,18 @@ bool Production::operator==(const Production& other) const
 inline
 bool Production::operator<(const Production& other) const
 {
-  return lhs < other.lhs || 
+  return lhs < other.lhs ||
     (lhs == other.lhs && rhs < other.rhs);
 }
 
 
+
+namespace std {
+    template <>
+    struct hash<Production> {
+        size_t operator () (const Production &f) const { return f.hash(); }
+    };
+}
 
 
 // inline
@@ -195,7 +221,7 @@ bool Production::operator<(const Production& other) const
 //     rhs = other.rhs;
 //     lexical = other.lexical;
 //   }
-  
+
 //   // by convention, always return *this
 //   return *this;
 // };

@@ -46,6 +46,9 @@ int SimpleLorgParseApp::run()
 
   clock_t parse_start = (verbose) ? clock() : 0;
 
+  ParserCKYBest::scorer scorer;
+
+
   std::vector<std::string> comments;
       while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
     clock_t sent_start = (verbose) ? clock() : 0;
@@ -60,7 +63,7 @@ int SimpleLorgParseApp::run()
 
 
     // the pointer to the solution
-    PtbPsTree*  best_tree = NULL;
+    PtbPsTree*  best_tree = nullptr;
 
     // check length of input sentence
     if(s.size() <= max_length) {
@@ -69,7 +72,7 @@ int SimpleLorgParseApp::run()
       tagger->tag(s, *(parser->get_word_signature()));
 
       // create and initialise chart
-      ParserCKYBest::Chart chart(s,parser->get_nonterm_count(),brackets);
+      ParserCKYBest::Chart chart(s,parser->get_nonterm_count(),brackets, scorer);
 
       // parse
       parser->parse(chart);
@@ -136,7 +139,7 @@ bool SimpleLorgParseApp::read_config(ConfigTable& configuration)
   }
 
 
-  parser = new ParserCKYBest(grammar);
+  parser = new ParserCKYBest(*grammar);
 
   tagger = std::auto_ptr<Tagger>(new Tagger(nullptr));
   tagger->set_word_rules(&(parser->get_words_to_rules()));

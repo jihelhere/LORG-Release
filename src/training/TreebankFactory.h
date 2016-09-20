@@ -1,7 +1,7 @@
 // -*- mode: c++ -*-
 
-#ifndef TREEBANKFACTORY_H
-#define TREEBANKFACTORY_H
+#pragma once
+#include <boost/filesystem.hpp>
 
 
 #include "Treebank.h"
@@ -152,7 +152,3 @@ Treebank<Tree> TreebankFactory::BuildEmptyTreebank(const ConfigTable& conf)
   bool verbose = conf.exists("verbose");
   return Treebank<Tree>(read_config(conf), verbose);
 }
-
-
-
-#endif // TREEBANKFACTORY_H

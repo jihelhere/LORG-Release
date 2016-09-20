@@ -697,7 +697,7 @@ Tree<Content>::yield() const
 {
   std::vector<Content> result;
 
-  typename Tree<Content>::leaf_iterator l_iter = lbegin();
+  typename Tree<Content>::const_leaf_iterator l_iter = lbegin();
   for(; l_iter !=  lend(); ++l_iter)
     result.push_back(*l_iter);
 

@@ -83,6 +83,7 @@ public:
      \param p new probability
   */
   void set_probability(const double& p);
+  void set_pruning_probability(const double& p);
 
   /**
      \brief set the left child of the edge
@@ -114,6 +115,7 @@ public:
      \brief get the probability of the edge
   */
   double get_probability() const;
+  double get_pruning_probability() const;
 
   /**
      \brief return true if the edge is childless
@@ -125,6 +127,9 @@ public:
   */
   PtbPsTree * to_ptbpstree(int /*start symbol, not read*/, unsigned /*not read*/) const;
 
+
+  std::unordered_set<const Edge*> to_set() const;
+  void  to_set(std::unordered_set<const Edge*>&) const;
 
   /**
      \brief Output operator
@@ -139,6 +144,7 @@ private:
   const Edge* left;		///< children of the edge
   const Edge* right;		///< children of the edge
   double probability;			///< probability associated with the edge
+  double pruning_probability;
   bool lex; /// true if the lhs should be read in symboltable::instance_word
             /// should be false during CKY viterbi parsing  for all edges.
 
@@ -157,6 +163,8 @@ Edge::replace(const  Edge& e)
   left = e.left;
   right = e.right;
   probability = e.probability;
+  pruning_probability = e.pruning_probability;
+
 }
 
 inline
@@ -178,9 +186,21 @@ void Edge::set_probability(const double& p)
 }
 
 inline
+void Edge::set_pruning_probability(const double& p)
+{
+  pruning_probability = p;
+}
+
+inline
 double Edge::get_probability() const
 {
   return probability;
+}
+
+inline
+double Edge::get_pruning_probability() const
+{
+  return pruning_probability;
 }
 
 inline
@@ -220,6 +240,7 @@ Edge& Edge::operator=(const Edge& other)
   left = other.left;
   right= other.right;
   probability = other.probability;
+  pruning_probability = other.pruning_probability;
   return *this;
 }
 

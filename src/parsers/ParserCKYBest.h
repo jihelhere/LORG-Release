@@ -16,10 +16,32 @@
 */
 
 struct SimpleBestTypes {
-  typedef Word ChartWord ;
-  typedef PCKYBestCell Cell ;
-  typedef ChartCKY< SimpleBestTypes > Chart ;
+
+  struct probability_extractor
+  {
+    double compute_lexical_score(int, const MetaProduction* mp)
+    {
+      return static_cast<const Rule*>(mp)->get_probability();
+    }
+    double compute_unary_score(int,int,const MetaProduction* mp)
+    {
+      return static_cast<const Rule*>(mp)->get_probability();
+    }
+    double compute_binary_score(int,int,int,const MetaProduction* mp)
+    {
+      return static_cast<const Rule*>(mp)->get_probability();
+    }
+
+    void register_last_expression(const Edge*){}
+
+  };
+
+  typedef probability_extractor scorer;
   typedef ::Edge Edge;
+  typedef Word ChartWord ;
+  typedef PCKYBestCell<Edge, probability_extractor> Cell ;
+  typedef ChartCKY< SimpleBestTypes > Chart ;
+
 };
 
 class WordSignature;
@@ -39,7 +61,7 @@ public:
      \brief ParserCKYBest constructor
      \param g the grammar to be used when parsing sentences
   */
-  ParserCKYBest(Grammar<Rule,Rule,Rule>* g);
+  ParserCKYBest(Grammar<Rule,Rule,Rule>& g);
 
   /**
       \brief parses the sentence using the grammar

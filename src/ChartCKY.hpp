@@ -71,13 +71,14 @@ ChartCKY<Types>::ChartCKY(const std::vector< MyWord >& s,
     }
   }
 
-  for (unsigned i = 0; i < sentence.size(); ++i)
+  for (const auto& w : sentence)
   {
     //       BLOCKTIMING("ChartCKY<Types>::ChartCKY add_word");
     // todo: proper error handling
-    if (access(sentence[i].get_start(), sentence[i].get_end() - 1).is_closed())
+    auto& c = access(w.get_start(), w.get_end() - 1);
+    if (c.is_closed())
       std::clog << "Problem in chart initialisation: brackets and tokenization are insconsistent." << std::endl;
-    access(sentence[i].get_start(), sentence[i].get_end()-1).add_word(sentence[i]);
+    c.add_word(w);
   }
 //     std::cout << "Chart is built and intialised" << std::endl;
 //     std::cout << *this << std::endl; std::cout.flush();

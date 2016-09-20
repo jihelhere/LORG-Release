@@ -5,7 +5,7 @@ ParserCKYBest::~ParserCKYBest()
 {
 }
 
-ParserCKYBest::ParserCKYBest(Grammar<Rule,Rule,Rule>* g):
+ParserCKYBest::ParserCKYBest(Grammar<Rule,Rule,Rule>& g):
   ParserCKY< Grammar<Rule,Rule,Rule> >(g)
 {}
 
@@ -28,37 +28,45 @@ void ParserCKYBest::get_candidates(const Cell& left_cell,
 {
   Edge current_candidate;
 
-  //iterating through all the rules P -> L R, indexed by L
-  for(std::vector<Parser::vector_rhs0>::const_iterator same_rhs0_itr = brules._begin;
-      same_rhs0_itr != brules._end; ++same_rhs0_itr) {
+  // left and right edges can come from various
+  // heights in unary chains
+  // TODO: moe efficient implementation -> we do complete scans of NTS several times
+  // even in the case the NT is absent at a lower height
 
+  for(unsigned lh = 0; lh < Cell::unary_length; ++lh)
+    for(unsigned rh = 0; rh < Cell::unary_length; ++rh)
+
+  //iterating through all the rules P -> L R, indexed by L
+  for(const auto& same_rhs0 : brules)
+  {
     // is L present in  left_cell ?
-    if(left_cell.exists_edge(same_rhs0_itr->rhs0)) {
-      const Edge& left_edge = left_cell.at(same_rhs0_itr->rhs0);
+    if(left_cell.exists_edge(lh, same_rhs0.rhs0)) {
+      const Edge& left_edge = left_cell.at(lh, same_rhs0.rhs0);
       current_candidate.set_left_child(&left_edge);
 
       //iterating through all the rules P -> L R, indexed by R, L fixed
-      for (std::vector<Parser::vector_rhs1>::const_iterator same_rhs1_itr = same_rhs0_itr->_begin;
-	   same_rhs1_itr != same_rhs0_itr->_end; ++same_rhs1_itr) {
+      for (const auto& same_rhs1 : same_rhs0)
+      {
 
 	// is R present in right_cell ?
-	if(right_cell.exists_edge(same_rhs1_itr->rhs1)) {
+	if(right_cell.exists_edge(rh, same_rhs1.rhs1)) {
 
-	  const Edge& right_edge = right_cell.at(same_rhs1_itr->rhs1);
+	  const Edge& right_edge = right_cell.at(rh, same_rhs1.rhs1);
 	  current_candidate.set_right_child(&right_edge);
 
 	  double prob1 = left_edge.get_probability() + right_edge.get_probability();
 
 	  //iterating through all the rules P -> L R, indexed by P, R and L fixed
-	  std::vector< const Rule * >::const_iterator bitr = same_rhs1_itr->_begin;
-	  for(; bitr != same_rhs1_itr->_end; ++bitr) {
-	    current_candidate.set_lhs((*bitr)->get_lhs());
 
-	    current_candidate.set_probability(prob1 + (*bitr)->get_probability());
+	  for(const auto& b : same_rhs1)
+          {
+	    current_candidate.set_lhs(b->get_lhs());
+	    current_candidate.set_probability(prob1 + b->get_probability());
 
 	    //	    std::cout << *(*bitr) << std::endl;
 
-	    (void) result_cell.process_candidate(current_candidate);
+            // always set at height 0
+	    (void) result_cell.process_candidate(0, current_candidate);
 	  }
 	}
       }
@@ -106,12 +114,10 @@ void ParserCKYBest::add_unary_init(Cell& cell, bool isroot) const
 {
 
   //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs]
-  std::vector<short>::const_iterator unary_rhs_itr_end = unary_rhs_from_pos.end();
-  for (std::vector<short>::const_iterator unary_rhs_itr = unary_rhs_from_pos.begin();
-       unary_rhs_itr != unary_rhs_itr_end; ++unary_rhs_itr) {
-
-    if (cell.exists_edge(*unary_rhs_itr))
-      follow_unary_chain(cell,&cell[*unary_rhs_itr],isroot);
+  for (const auto&  unary_rhs : unary_rhs_from_pos)
+  {
+    if (cell.exists_edge(0, unary_rhs))
+      follow_unary_chain(cell, &cell.at(0,unary_rhs), isroot);
   }
 }
 
@@ -121,13 +127,9 @@ void ParserCKYBest::add_unary(Cell& cell, bool isroot) const
 {
 
   //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs being a lhs of a binary rule]
-  std::vector<short>::const_iterator unary_rhs_itr_end = unary_rhs_from_binary.end();
-  for (std::vector<short>::const_iterator unary_rhs_itr = unary_rhs_from_binary.begin();
-       unary_rhs_itr != unary_rhs_itr_end; ++unary_rhs_itr) {
-
-    if (cell.exists_edge(*unary_rhs_itr))
-      follow_unary_chain(cell,&cell[*unary_rhs_itr],isroot);
-  }
+  for (const auto unary_rhs : unary_rhs_from_binary)
+    if (cell.exists_edge(0, unary_rhs))
+      follow_unary_chain(cell, &cell.at(0,unary_rhs),isroot);
 }
 
 //inline
@@ -135,33 +137,34 @@ void ParserCKYBest::follow_unary_chain(Cell& cell, const Edge * edge, bool isroo
 {
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
-  std::vector<const Edge*> accumulator(1,edge);
+  std::vector<std::pair<unsigned,const Edge*>> accumulator = {{0,edge}};
 
   Edge candidate;
   candidate.set_right_child(NULL);
 
   do {
-    const Edge * current_edge = accumulator.back();
+    const auto& p = accumulator.back();
+    unsigned current_height = p.first;
+    const Edge * current_edge = p.second;
     accumulator.pop_back();
 
+    if (current_height >= Cell::unary_length - 1)
+      continue;
     candidate.set_left_child(current_edge);
-    const std::vector<const Rule*>& rules = isroot ?
-      unary_rhs_2_rules_toponly[current_edge->get_lhs()] :
-      unary_rhs_2_rules_notop[current_edge->get_lhs()];
-    std::vector<const Rule*>::const_iterator rule_end = rules.end();
-    for (std::vector<const Rule*>::const_iterator rule_itr = rules.begin(); rule_itr != rule_end; ++rule_itr) {
+    const auto& rules = unary_rhs_2_rules[current_edge->get_lhs()];
 
-      //      std::cout << *(*rule_itr) << std::endl;
+    for(const auto& rulep : rules)
+    {
+      if(isroot || rulep->get_lhs() != start_symbol)
+      {
+        candidate.set_lhs(rulep->get_lhs());
+        candidate.set_probability(current_edge->get_probability() + rulep->get_probability());
 
-      if(isroot || (*rule_itr)->get_lhs() != start_symbol)
-
-      candidate.set_lhs((*rule_itr)->get_lhs());
-      candidate.set_probability(current_edge->get_probability() + (*rule_itr)->get_probability());
-
-      const Edge * new_edge = cell.process_candidate(candidate);
-      if(new_edge && rules_for_unary_exist(new_edge->get_lhs())) {
-	accumulator.push_back(new_edge);
-	//	std::cout << *(*rule_itr) << std::endl;
+        const Edge * new_edge = cell.process_candidate(current_height + 1, candidate);
+        if(new_edge && rules_for_unary_exist(new_edge->get_lhs()))
+        {
+          accumulator.push_back(std::make_pair(current_height + 1, new_edge));
+        }
       }
     }
   } while(!accumulator.empty());

@@ -52,6 +52,10 @@ namespace compact_binary_rules {
 
     vector_brules() : vrhs0(), _begin(), _end() {}
 
+    inline const_iterator begin() const {return _begin;}
+    inline const_iterator end() const {return _end;}
+
+
     template<class BinaryRule>
     static vector_brules convert(const std::vector<BinaryRule>&);
   };

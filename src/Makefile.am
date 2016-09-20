@@ -7,7 +7,7 @@ endif
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I. -I${top_srcdir}/src
 #AM_LDFLAGS = $(BOOST_LDFLAGS)
 
-bin_PROGRAMS = simple_lorgparser twostage_lorgparser feature_extractor wapiti_dd
+bin_PROGRAMS = simple_lorgparser twostage_lorgparser feature_extractor wapiti_dd nn_lorgparser
 #gram2clmodel
 
 common_sources = rules/Types4Rules.h rules/MetaProduction.h \
@@ -222,3 +222,72 @@ feature_extractor_SOURCES = feature_extract/ExtractApp.h \
 	utils/RandomGenerator.h utils/RandomGenerator.cpp
 
 feature_extractor_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SERIALIZATION_LIB)
+
+
+
+#####
+# nn_lorgparser_SOURCES =
+nn_lorgparser_SOURCES = nn_lorgparser.cpp \
+	NNLorgParseApp.h NNLorgParseApp.cpp \
+	utils/SymbolTable.cpp utils/SymbolTable.h \
+	LorgParseApp.cpp LorgParseApp.h \
+	utils/data_parsers/PTBInputParser.h utils/data_parsers/PTBInputParser.cpp \
+	utils/PtbPsTree.cpp utils/PtbPsTree.h utils/PsTree.h \
+	utils/Tree.h utils/tree_detail/BreadthFirstTreeIterator.h  \
+	utils/tree_detail/ConstDepthFirstTreeIterator.h  \
+	utils/tree_detail/ConstLeafTreeIterator.h  utils/tree_detail/ConstTreeIterator.h  \
+	utils/tree_detail/DepthFirstTreeIterator.h  utils/tree_detail/LeafTreeIterator.h  \
+	utils/tree_detail/Node.h  utils/tree_detail/TreeIterator.h \
+	utils/LorgConstants.h\
+	utils/ConfigTable.h utils/ConfigTable.cpp utils/LorgOptions.h \
+	rules/Types4Rules.h rules/MetaProduction.h \
+	rules/Production.cpp rules/Production.h \
+	utils/RandomGenerator.h utils/RandomGenerator.cpp \
+	parsers/ParserCKY.h\
+	edges/Edge.cpp edges/Edge.h \
+	parsers/ParserCKYBest.cpp parsers/ParserCKYBest.h \
+	SimpleChartCKY.h SimpleChartCKY.hpp PCKYBestCell.cpp PCKYBestCell.h \
+	grammars/compact_binary_rules_simple.cpp \
+	utils/data_parsers/RuleInputParser.cpp utils/data_parsers/RuleInputParser.h \
+	utils/Tagger.h utils/Tagger.cpp \
+	utils/TokeniserFactory.h utils/TokeniserFactory.cpp\
+	utils/Tokeniser.h utils/Tokeniser.cpp utils/TokeniserSpec.h \
+	utils/EnglishSpec.h Bracketing.h \
+	lexicon/WordSignature.h \
+	lexicon/WordSignatureFactory.h lexicon/WordSignatureFactory.cpp \
+	lexicon/BerkeleyEnglishUMapping.h lexicon/BerkeleyEnglishUMapping.cpp \
+	lexicon/BaselineFrenchUMapping.h lexicon/BaselineFrenchUMapping.cpp \
+	lexicon/EnglishIGMapping.h lexicon/EnglishIGMapping.cpp \
+	lexicon/FrenchIGMapping.h lexicon/FrenchIGMapping.cpp \
+	lexicon/ItalianIGMapping.h lexicon/ItalianIGMapping.cpp \
+	lexicon/ArabicUMapping.h lexicon/ArabicUMapping.cpp \
+	lexicon/ArabicIGMapping.h lexicon/ArabicIGMapping.cpp \
+	rules/Rule.cpp rules/Rule.h \
+	grammars/compact_binary_rules.h grammars/compact_binary_rules.cpp \
+	grammars/Grammar.h grammars/Grammar.cpp \
+	utils/threads.h \
+	Word.cpp Word.h \
+	LorgApp.h LorgApp.cpp \
+	training/Treebank.h training/Treebank.cpp training/TreebankFactory.h \
+	ParseSolution.h ParseSolution.cpp \
+	feature_extract/Extract.h feature_extract/Extract.cpp \
+	feature_extract/Feature.h feature_extract/Feature.cpp \
+	TagGuesser.h utils/unordered_map_serialization.hpp \
+	parsers/ParserCKYNN.h 	parsers/ParserCKYNN.cpp \
+	grammars/compact_binary_rules_production.cpp Bracketing.h \
+	parsers/NNScorer.h parsers/NNScorer.cpp \
+	lexicon/BasicLexicon.cpp lexicon/LexiconFactory.cpp rules/LexicalRule.cpp rules/LexicalRuleTraining.cpp edges/AnnotationInfo.cpp lexicon/BerkeleyLexicon.cpp lexicon/Lexicon.cpp
+
+nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(CNN_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
+nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer
+# nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
+#nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
+
+#flags for debugging
+#nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I.
+#nn_lorgparser_CXXFLAGS= -O2 -g -pg -Wall -ftemplate-depth=512
+
+
+
+nn_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(CNN_LDFLAGS)
+#nn_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler
