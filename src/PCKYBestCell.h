@@ -37,7 +37,7 @@ public:
      to use it will result in segfault !
      You have to call init first
    */
-  PCKYBestCell() : edges(nullptr), closed(true), word_edge(nullptr) {};
+  PCKYBestCell() : edges(nullptr), closed(true) {};
 
   /**
      \brief Constructor
@@ -324,8 +324,9 @@ void PCKYBestCell<MyEdge,probability_extractor>::add_word(const Word & word,
                                                           probability_extractor& scorer)
 {
   if(!word_edge)
-    set_word_edge(new MyEdge(word.get_id(),0,true));
-
+  {
+    set_word_edge(new MyEdge(word.get_id(),0,true, &word.get_form()));
+  }
 
   for(const auto& r : word.get_rules())
   {

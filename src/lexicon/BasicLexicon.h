@@ -36,8 +36,9 @@ private:
   void update_node_counts();
   void replace_words_with_unknown(const std::set<std::string>& known_words, std::vector<PtbPsTree>& treebanktrees);
   void collect_base_lexical_counts(const std::vector<PtbPsTree>& treebanktrees,
-				   std::map<int,unsigned>& LHS_counts, std::map<int,unsigned>& RHS_counts,
-				   lexical_counts_map& lexical_counts);
+				   std::map<std::string,unsigned>& LHS_counts,
+                                   std::map<std::string,unsigned>& RHS_counts,
+                                   std::map<std::pair<std::string,std::string> , int>& lexical_counts);
 #ifdef USE_THREADS
   void update_annotated_counts_from_trees(const std::vector<BinaryTrainingTree> & trees,
                                           bool last_iteration,

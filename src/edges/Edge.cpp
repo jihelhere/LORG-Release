@@ -7,18 +7,19 @@
 Edge::~Edge()
 {}
 
-Edge::Edge(): lhs(), left(NULL), right(NULL), probability(-10000000), lex(false){}
+Edge::Edge(): lhs(), left(NULL), right(NULL), probability(-10000000), lex(false),
+              word_form(nullptr) {}
 
 Edge::Edge(int l,const Edge * r, const double& p):
-  lhs(l), left(r), right(NULL), probability(p), lex(false)
+    lhs(l), left(r), right(NULL), probability(p), lex(false), word_form(nullptr)
 {}
 
 Edge::Edge(int l,const Edge * r1,const Edge * r2, const double& p):
-  lhs(l), left(r1), right(r2), probability(p), lex(false)
+    lhs(l), left(r1), right(r2), probability(p), lex(false), word_form(nullptr)
 {}
 
-Edge::Edge(int lh, const double& p, bool le):
-  lhs(lh), left(NULL), right(NULL), probability(p), lex(le)
+Edge::Edge(int lh, const double& p, bool le, const std::string* wf):
+    lhs(lh), left(NULL), right(NULL), probability(p), lex(le), word_form(wf)
 {}
 
 
@@ -44,8 +45,9 @@ void Edge::to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos) c
   if(lex){
     // std::cout << "lex: " << get_lhs() << std::endl;
     // std::cout << SymbolTable::instance_word().translate(get_lhs()) << std::endl;
-    pos = tree.add_last_daughter(pos, SymbolTable::instance_word().translate(get_lhs()));
 
+    //pos = tree.add_last_daughter(pos, SymbolTable::instance_word().translate(get_lhs()));
+    pos = tree.add_last_daughter(pos, *word_form);;
 
     // // dont bother, words will be rewritten anyway
     // pos = tree.add_last_daughter(pos, "");

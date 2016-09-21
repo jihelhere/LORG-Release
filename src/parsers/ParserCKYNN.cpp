@@ -146,7 +146,7 @@ void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
   unsigned sent_size=chart.get_size();
   for (unsigned span = 2; span <= sent_size; ++span)
   {
-    std::cerr << "span: " << span << std::endl;
+    //std::cerr << "span: " << span << std::endl;
     unsigned end_of_begin=sent_size-span;
     for (unsigned begin=0; begin <= end_of_begin; ++begin)
     {

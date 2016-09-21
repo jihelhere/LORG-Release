@@ -40,7 +40,7 @@ public:
      \param l lhs nonterminal
      \param p probability
   */
-  Edge(int l, const double& p, bool lex =  false);
+  Edge(int l, const double& p, bool lex, const std::string* wf);
 
   /**
      \brief Copy Constructor
@@ -147,6 +147,7 @@ private:
   double pruning_probability;
   bool lex; /// true if the lhs should be read in symboltable::instance_word
             /// should be false during CKY viterbi parsing  for all edges.
+  const std::string* word_form;
 
   void to_ptbpstree(PtbPsTree& tree, PtbPsTree::depth_first_iterator& pos) const;
   Edge(PtbPsTree& tree, PtbPsTree::depth_first_iterator pos);

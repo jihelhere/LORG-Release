@@ -23,9 +23,9 @@ BasicLexicon::BasicLexicon(const std::shared_ptr<WordSignature>& unknown_word_ma
 void BasicLexicon::read_lexicon_from_Treebank(std::vector<PtbPsTree>& treebanktrees)
 {
 
-  std::map<int, unsigned> RHS_counts;
-  std::map<int, unsigned> LHS_counts;
-  lexical_counts_map lexical_counts;
+  std::map<std::string, unsigned> RHS_counts;
+  std::map<std::string, unsigned> LHS_counts;
+  std::map<std::pair<std::string,std::string> , int>  lexical_counts;
 
   collect_base_lexical_counts(treebanktrees, LHS_counts, RHS_counts, lexical_counts);
 
@@ -35,13 +35,14 @@ void BasicLexicon::read_lexicon_from_Treebank(std::vector<PtbPsTree>& treebanktr
 
 
   //map words with count <= cutoff to unknown token
-  for(std::map<int, unsigned>::const_iterator i(RHS_counts.begin()); i != RHS_counts.end(); ++i) {
-    if(i->second <= unknown_word_cutoff) {
+  for(const auto& i : RHS_counts) {
+    if(i.second <= unknown_word_cutoff) {
       // std::cout << "yeah less than cutoff " << i->second << std::endl;
       ++nb_unknown;
     }
     else {
-      (void) known_words.insert(SymbolTable::instance_word().translate(i->first));
+      SymbolTable::instance_word().insert(i.first);
+      (void) known_words.insert(i.first);
     }
   }
 
@@ -57,10 +58,13 @@ void BasicLexicon::read_lexicon_from_Treebank(std::vector<PtbPsTree>& treebanktr
   collect_base_lexical_counts(treebanktrees,LHS_counts,RHS_counts, lexical_counts);
 
   //normalise counts
-  for(lexical_counts_map::const_iterator itr(lexical_counts.begin()); itr != lexical_counts.end(); ++itr){
-    const lexical_pair& l = itr->first;
-    double prob = double(itr->second) / double(LHS_counts[l.label]);
-    lexical_rules.push_back(LexicalRuleTraining(l.label, l.word, prob));
+  for(const auto& itr : lexical_counts) {
+    const std::pair<std::string,std::string>& l = itr.first;
+    double prob = double(itr.second) / double(LHS_counts[l.first]);
+
+    lexical_rules.push_back(LexicalRuleTraining(SymbolTable::instance_nt().insert(l.first),
+                                                SymbolTable::instance_word().insert(l.second),
+                                                prob));
   }
 
   std::clog << "created " << lexical_rules.size()  << " lexical rules" << std::endl;
@@ -234,12 +238,9 @@ void BasicLexicon::traverse_leaf_nodes(const BinaryTrainingTree& tree)
 }
 
 void BasicLexicon::collect_base_lexical_counts(const std::vector<PtbPsTree>& treebanktrees,
-					       std::map<int,unsigned>& LHS_counts, std::map<int,unsigned>& RHS_counts,
-					       lexical_counts_map& lexical_counts)
+					       std::map<std::string,unsigned>& LHS_counts, std::map<std::string,unsigned>& RHS_counts,
+                                               std::map<std::pair<std::string,std::string> , int>& lexical_counts)
 {
-  SymbolTable& sym_tab_nt = SymbolTable::instance_nt();
-  SymbolTable& sym_tab_word = SymbolTable::instance_word();
-
   unsigned treebank_size = treebanktrees.size();
 
   for (unsigned tree_i=0; tree_i< treebank_size; ++tree_i){
@@ -249,13 +250,11 @@ void BasicLexicon::collect_base_lexical_counts(const std::vector<PtbPsTree>& tre
 	PtbPsTree::const_depth_first_iterator i = j;
 	i.up();
 
-	int lhs = sym_tab_nt.insert(*i);
-	++LHS_counts[lhs];
+	++LHS_counts[*i];
 
-	int rhs = sym_tab_word.insert(*j);
-	++RHS_counts[rhs];
+	++RHS_counts[*j];
 
-	++lexical_counts[lexical_pair(lhs, rhs)];
+	++lexical_counts[std::make_pair(*i, *j)];
       }
   }
 }

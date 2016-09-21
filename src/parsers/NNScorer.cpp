@@ -7,9 +7,8 @@
 #define NT_EMBEDDING_SIZE 20
 #define HIDDEN_SIZE 80
 
-nn_scorer::nn_scorer(cnn::Model& m, cnn::Trainer& t) :
+nn_scorer::nn_scorer(cnn::Model& m) :
     cg(nullptr),
-    trainer(&t),
 
     _p_W_int(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE*3})),
     _p_b_int(m.add_parameters({HIDDEN_SIZE})),
@@ -58,6 +57,14 @@ void nn_scorer::set_gold(std::vector<anchored_binrule_type>& ancbin,
   gold = true;
 }
 
+void nn_scorer::unset_gold()
+{
+  anchored_binaries.clear();
+  anchored_unaries.clear();
+  anchored_lexicals.clear();
+  gold = false;
+}
+
 
 
 double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
@@ -87,13 +94,20 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
       //std::cerr << "after as_scalar" << std::endl;
 
       rules_expressions[r] = out;
-      last_expression = &rules_expressions[r];
+      last_expression = rules_expressions[r];
     }
 
 
 
     if (gold and not anchored_lexicals.count(std::make_tuple(position,*r)))
+    {
+      //std::cerr << "wrong rule at position: " << position << " " << *r << std::endl;
       v += 1.0;
+    }
+    // else
+    // {
+    //   std::cerr << "correct rule at position: " << position << " " << *r << std::endl;
+    // }
 
     return v;
   }
@@ -120,14 +134,14 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
     cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
     cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
 
-    cnn::expr::Expression out = o * cnn::expr::tanh(W*i + b);
+    cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
 
     cg->incremental_forward();
     // return 0.0;
     v = as_scalar(cg->get_value(out.i));
 
     rules_expressions[r] = out;
-    last_expression = &rules_expressions[r];
+    last_expression = rules_expressions[r];
 
     }
 
@@ -161,13 +175,13 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
       cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
       cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
 
-      cnn::expr::Expression out = o * cnn::expr::tanh(W*i + b);
+      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
 
       cg->incremental_forward();
       v = as_scalar(cg->get_value(out.i));
 
       rules_expressions[r] = out;
-      last_expression = &rules_expressions[r];
+      last_expression = rules_expressions[r];
 
     }
 

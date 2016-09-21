@@ -137,6 +137,9 @@ void collect_rules(const std::vector<PtbPsTree>& trees,
 
 int NNLorgParseApp::run_train()
 {
+  unix_parse_solution::init();
+  json_parse_solution::init();
+
   if(verbose) std::clog << "Start learning process.\n";
 
 
@@ -194,8 +197,8 @@ int NNLorgParseApp::run_train()
   // clock_t parse_start = (verbose) ? clock() : 0;
 
 
-  ParserCKYNN::scorer network(m, trainer);
-#define ITERATIONS 100
+  ParserCKYNN::scorer network(m);
+#define ITERATIONS 30
 
   for (unsigned iteration = 0; iteration < ITERATIONS; ++iteration)
   {
@@ -282,91 +285,96 @@ int NNLorgParseApp::run_train()
         auto edges = chart.get_best_edges(start_symbol);
 
 
-        std::cerr << "db1" << std::endl;
+        // std::cerr << "db1" << std::endl;
 
         std::vector<cnn::expr::Expression> errs;
         // std::transform(edges.begin(), edges.end(), std::back_inserter(errs),
         //                [&](const decltype(edges)::value_type& ep){return network.expressions[ep];});
 
 
-        // unsigned c = 0;
+        unsigned c = 0;
         std::for_each(edges.begin(), edges.end(),
                       [&](const decltype(edges)::value_type& ep)
                       {
                         if (network.expressions.count(ep))
                         {
-                          errs.push_back(*network.expressions[ep]);
-                          //                          ++c;
+                          errs.push_back(network.expressions[ep]);
+                          ++c;
                         }
+                        else
+                          std::cerr << "edge is not scored" << std::endl;
                       }
                       );
 
-        // std::cerr << "c " << c << std::endl;
+        std::cerr << "c " << c << std::endl;
 
 
-        std::cerr << "db2" << std::endl;
+        // std::cerr << "db2" << std::endl;
 
 
-        // c = 0;
+        c = 0;
         std::transform(anchored_lexicals.begin(), anchored_lexicals.end(),
                        std::back_inserter(errs),
                        [&](const anchored_lexrule_type& al)
                        {
                          (void) network.compute_lexical_score(std::get<0>(al),
                                                               &std::get<1>(al));
-                         // ++c;
-                         return - *network.last_expression;
+                         ++c;
+                         return - network.last_expression;
                        }
                        );
 
-        // std::cerr << "c " << c << std::endl;
-        std::cerr << "db3" << std::endl;
+        std::cerr << "c " << c << std::endl;
+        // std::cerr << "db3" << std::endl;
 
 
-        std::transform(anchored_unaries.begin(), anchored_unaries.end(),
-                       std::back_inserter(errs),
-                       [&](const anchored_unirule_type& au)
-                       {
-                         (void) network.compute_unary_score(std::get<0>(au),
-                                                            std::get<1>(au),
-                                                            &std::get<2>(au));
-                         return - *network.last_expression;
-                       }
-                       );
+        // std::transform(anchored_unaries.begin(), anchored_unaries.end(),
+        //                std::back_inserter(errs),
+        //                [&](const anchored_unirule_type& au)
+        //                {
+        //                  (void) network.compute_unary_score(std::get<0>(au),
+        //                                                     std::get<1>(au),
+        //                                                     &std::get<2>(au));
+        //                  return - *network.last_expression;
+        //                }
+        //                );
 
 
-        std::cerr << "db4" << std::endl;
+        // std::cerr << "db4" << std::endl;
 
-
+        c = 0;
         std::transform(anchored_binaries.begin(), anchored_binaries.end(),
                        std::back_inserter(errs),
                        [&](const anchored_binrule_type& ab)
                        {
+                         ++c;
                          (void) network.compute_binary_score(std::get<0>(ab),
                                                              std::get<1>(ab),
                                                              std::get<2>(ab),
                                                              &std::get<3>(ab));
-                         return - *network.last_expression;
+                         return - network.last_expression;
                        }
                        );
 
 
-        std::cerr << "db5" << std::endl;
+        std::cerr << "c " << c << std::endl;
+
+        // std::cerr << "db5" << std::endl;
         //
         cnn::expr::Expression s = cnn::expr::sum(errs);
-        std::cerr << "db5a" << std::endl;
+        // std::cerr << "db5a" << std::endl;
         network.cg->incremental_forward();
         loss += as_scalar(network.cg->get_value(s.i));
-        std::cerr << "db5b" << std::endl;
+        // std::cerr << "db5b" << std::endl;
         network.cg->backward(s.i);
-        std::cerr << "db5c" << std::endl;
+        // std::cerr << "db5c" << std::endl;
 
-        network.trainer->update(1.0);
+        trainer.update();
 
-        std::cerr << "db6" << std::endl;
+        // std::cerr << "db6" << std::endl;
 
         delete best_tree;
-        std::cerr << "db7" << std::endl;
+        // std::cerr << "db7" << std::endl;
       }
       // else
       // {
@@ -383,12 +391,93 @@ int NNLorgParseApp::run_train()
     std::ofstream ms(mout.str());
     boost::archive::text_oarchive oa(ms);
 
-                        oa << m;
+    oa << m;
+
+    ///////////// process dev file
+          {
+
+            std::vector<Word> s;
+            std::vector< bracketing > brackets;
+            std::string test_sentence;
+            int count = 0;
+
+            int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+
+            //clock_t parse_start = (verbose) ? clock() : 0;
+
+            std::stringstream devss;
+            devss << "dev-hyp-" << iteration;
+            std::ofstream devstream(devss.str());
+
+
+            std::vector<std::string> comments;
+            while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
+              clock_t sent_start = (verbose) ? clock() : 0;
+
+              // should be "extra-verbose"
+              if(verbose) {
+                std::clog << "Tokens: ";
+                for(std::vector<Word>::const_iterator i = s.begin(); i != s.end(); i++)
+                  std::clog << "<" << i->get_form() << ">";
+                std::clog << "\n";
+              }
+
+              cnn::ComputationGraph cg;
+              network.set_cg(cg);
+              network.unset_gold();
+              network.clear();
+
+              // the pointer to the solution
+              PtbPsTree*  best_tree = nullptr;
+
+              // check length of input sentence
+              if(s.size() <= max_length) {
+
+                // tag
+                std::cerr << "tag" << std::endl;
+                tagger.tag(s, *(parser.get_word_signature()));
+
+                // create and initialise chart
+                std::cerr << "chart" << std::endl;
+                ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, network);
+
+                // parse
+                std::cerr << "parse" << std::endl;
+                parser.parse(chart, network);
+
+                // get results
+                std::cerr << "results" << std::endl;
+                best_tree = chart.get_best_tree(start_symbol, 0);
+              }
+
+              //FIXME get real prob
+              std::vector<std::pair<PtbPsTree*, double> > solutions = {{best_tree, 1.0}};
+
+
+              parse_solution * p_typed =
+                  parse_solution::factory.create_object(parse_solution::UNIX,
+                                                        parse_solution(test_sentence, ++count,
+                                                                       s.size(), solutions,
+                                                                       (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
+                                                                       verbose, comments,false)
+                                                        );
+              p_typed->print(devstream);
+              delete p_typed;
+
+
+    delete best_tree;
+    s.clear();
+    brackets.clear();
+
+
+            }
+          }
+
+
 
   }
 
-
-  return 0;
+        return 0;
 
 }
 
@@ -396,6 +485,10 @@ int NNLorgParseApp::run_train()
 int NNLorgParseApp::run()
 {
   if (train) return run_train();
+  // else
+  //   return run_parse();
+
+
 
   if(verbose) std::clog << "Start parsing process.\n";
 
