@@ -68,8 +68,6 @@ struct nn_scorer
   cnn::LookupParameter _p_nts;
 
 
-  cnn::expr::Expression last_expression; // TODO: change this, this is hackish and incompatbible with parallel processing
-
   std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
   std::unordered_map<const Edge*, cnn::expr::Expression> expressions;
 
@@ -93,12 +91,15 @@ struct nn_scorer
 
 
 
-  double compute_lexical_score(int position, const MetaProduction* mp);
-  double compute_unary_score(int begin, int end, const MetaProduction* mp);
-  double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp);
+  double compute_lexical_score(int position, const MetaProduction* mp,
+                                cnn::expr::Expression* expp);
+  double compute_unary_score(int begin, int end, const MetaProduction* mp,
+                              cnn::expr::Expression* expp);
+  double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp,
+                               cnn::expr::Expression* expp);
 
 
-  void register_last_expression(const Edge*e);
+  void register_expression(const Edge*ep, const cnn::expr::Expression& expp);
 
   void clear();
 };

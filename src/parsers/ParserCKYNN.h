@@ -89,10 +89,13 @@ class ParserCKYNN :
   void get_candidates(const Cell& left_cell, const Cell& right_cell, Cell& result_cell, scorer& scorer) const;
 
 
+  void set_nbthreads(unsigned u) {nbthreads = u;}
+  unsigned get_nbthreads() const {return nbthreads;}
+
  private:
 
   WordSignature * word_signature;
 
-
+  unsigned nbthreads;
 
 };

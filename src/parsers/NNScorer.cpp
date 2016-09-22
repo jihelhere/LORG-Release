@@ -7,6 +7,15 @@
 #define NT_EMBEDDING_SIZE 20
 #define HIDDEN_SIZE 80
 
+#ifdef USE_THREADS
+#include <tbb/mutex.h>
+#include <tbb/spin_mutex.h>
+
+
+tbb::spin_mutex rule_mutex;
+tbb::spin_mutex expression_mutex;
+#endif
+
 nn_scorer::nn_scorer(cnn::Model& m) :
     cg(nullptr),
 
@@ -26,9 +35,13 @@ nn_scorer::nn_scorer(cnn::Model& m) :
 
 {}
 
-void nn_scorer::register_last_expression(const Edge * e)
+void nn_scorer::register_expression(const Edge * ep,
+                                    const cnn::expr::Expression& expp)
 {
-  expressions[e] = last_expression;
+  {
+    tbb::spin_mutex::scoped_lock lock(expression_mutex);
+    expressions[ep] = expp;
+  }
 }
 
 
@@ -67,14 +80,20 @@ void nn_scorer::unset_gold()
 
 
 
-double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
+double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp,
+                                        cnn::expr::Expression* expp)
 {
     auto r = static_cast<const Production*>(mp);
 
     double v;
 
+    {
+      tbb::spin_mutex::scoped_lock lock(rule_mutex);
     if (rules_expressions.count(r))
+    {
       v = as_scalar(cg->get_value(rules_expressions[r].i));
+      *expp = rules_expressions[r];
+    }
     else
     {
 
@@ -94,9 +113,9 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
       //std::cerr << "after as_scalar" << std::endl;
 
       rules_expressions[r] = out;
-      last_expression = rules_expressions[r];
+      *expp = rules_expressions[r];
     }
-
+    }
 
 
     if (gold and not anchored_lexicals.count(std::make_tuple(position,*r)))
@@ -110,17 +129,23 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
     // }
 
     return v;
+    //return 0.0;
   }
 
-double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* mp)
+double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* mp,
+                                      cnn::expr::Expression *expp)
   {
 
     auto r = static_cast<const Production*>(mp);
 
     double v;
+
+    {
+      tbb::spin_mutex::scoped_lock lock(rule_mutex);
     if (rules_expressions.count(r))
     {
       v = as_scalar(cg->get_value(rules_expressions[r].i));
+      *expp = rules_expressions[r];
     }
     else
     {
@@ -141,55 +166,57 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
     v = as_scalar(cg->get_value(out.i));
 
     rules_expressions[r] = out;
-    last_expression = rules_expressions[r];
+    *expp = rules_expressions[r];
 
     }
-
+    }
 
     if (gold and not anchored_unaries.count(std::make_tuple(begin,end,*r)))
       v += 1.0;
 
-
    return v;
+
+
+   //return 0.0;
   }
 
-double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction* mp)
-  {
+double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction* mp,
+                                       cnn::expr::Expression* expp)
+{
     auto r = static_cast<const Production*>(mp);
 
     double v;
 
-    if (rules_expressions.count(r))
     {
-      v = as_scalar(cg->get_value(rules_expressions[r].i));
+      tbb::spin_mutex::scoped_lock lock(rule_mutex);
+      if (rules_expressions.count(r))
+      {
+        v = as_scalar(cg->get_value(rules_expressions[r].i));
+        *expp = rules_expressions[r];
+      }
+      else
+      {
+        cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
+                                                          cnn::expr::lookup(*cg,_p_nts,r->get_rhs1()),
+                                                          cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
+
+        cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
+        cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
+        cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
+
+        cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
+
+        cg->incremental_forward();
+        v = as_scalar(cg->get_value(out.i));
+
+        rules_expressions[r] = out;
+        *expp = rules_expressions[r];
+      }
     }
-    else
-    {
-
-
-      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,r->get_rhs0()),
-                                                        cnn::expr::lookup(*cg,_p_nts,r->get_rhs1()),
-                                                        cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
-
-      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
-      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
-      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
-
-      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
-
-      cg->incremental_forward();
-      v = as_scalar(cg->get_value(out.i));
-
-      rules_expressions[r] = out;
-      last_expression = rules_expressions[r];
-
-    }
-
-
 
     if (gold and not anchored_binaries.count(std::make_tuple(s,e,m,*r)))
       v += 1.0;
 
     return v;
-    //return 0.0;
+    //  return 0.0;
   }

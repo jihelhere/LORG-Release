@@ -142,7 +142,6 @@ int NNLorgParseApp::run_train()
 
   if(verbose) std::clog << "Start learning process.\n";
 
-
   // initialise treebank from configuration
   // initialise training grammar from treebank
 
@@ -176,6 +175,11 @@ int NNLorgParseApp::run_train()
 
 
   ParserCKYNN parser(grammar);
+
+#ifdef USE_THREADS
+  parser.set_nbthreads(nbthreads);
+#endif
+
   parser.set_word_signature(ws);
   Tagger tagger(&(parser.get_words_to_rules()));
   std::vector<bracketing> brackets;
@@ -306,43 +310,47 @@ int NNLorgParseApp::run_train()
                       }
                       );
 
-        std::cerr << "c " << c << std::endl;
+        //      std::cerr << "c " << c << std::endl;
 
 
         // std::cerr << "db2" << std::endl;
 
 
         c = 0;
+        cnn::expr::Expression expp;
+
         std::transform(anchored_lexicals.begin(), anchored_lexicals.end(),
                        std::back_inserter(errs),
                        [&](const anchored_lexrule_type& al)
                        {
                          (void) network.compute_lexical_score(std::get<0>(al),
-                                                              &std::get<1>(al));
+                                                              &std::get<1>(al),
+                                                              &expp);
                          ++c;
-                         return - network.last_expression;
+                         return - expp;
                        }
                        );
 
-        std::cerr << "c " << c << std::endl;
-        // std::cerr << "db3" << std::endl;
+        // std::cerr << "c " << c << std::endl;
+        // // std::cerr << "db3" << std::endl;
 
 
-        // std::transform(anchored_unaries.begin(), anchored_unaries.end(),
-        //                std::back_inserter(errs),
-        //                [&](const anchored_unirule_type& au)
-        //                {
-        //                  (void) network.compute_unary_score(std::get<0>(au),
-        //                                                     std::get<1>(au),
-        //                                                     &std::get<2>(au));
-        //                  return - *network.last_expression;
-        //                }
-        //                );
+        std::transform(anchored_unaries.begin(), anchored_unaries.end(),
+                       std::back_inserter(errs),
+                       [&](const anchored_unirule_type& au)
+                       {
+                         (void) network.compute_unary_score(std::get<0>(au),
+                                                            std::get<1>(au),
+                                                            &std::get<2>(au),
+                                                            &expp);
+                         return - expp;
+                       }
+                       );
 
 
-        // std::cerr << "db4" << std::endl;
+        // // std::cerr << "db4" << std::endl;
 
-        c = 0;
+        // c = 0;
         std::transform(anchored_binaries.begin(), anchored_binaries.end(),
                        std::back_inserter(errs),
                        [&](const anchored_binrule_type& ab)
@@ -351,13 +359,14 @@ int NNLorgParseApp::run_train()
                          (void) network.compute_binary_score(std::get<0>(ab),
                                                              std::get<1>(ab),
                                                              std::get<2>(ab),
-                                                             &std::get<3>(ab));
-                         return - network.last_expression;
+                                                             &std::get<3>(ab),
+                                                             &expp);
+                         return - expp;
                        }
                        );
 
 
-        std::cerr << "c " << c << std::endl;
+        //     std::cerr << "c " << c << std::endl;
 
         // std::cerr << "db5" << std::endl;
         //
@@ -582,6 +591,12 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   if(not LorgParseApp::read_config(configuration))
     return false;
 
+#ifdef USE_THREADS
+  nbthreads = configuration.get_value<unsigned>("nbthreads");
+#endif
+
+
+
   // if (configuration.exists("train")) {
   //   train = true;
 
@@ -614,14 +629,6 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
     //std::cerr << "grammar wasn't set." << std::endl;
     //return false;
   }
-
-
-  // parser = new ParserCKYBest(grammar);
-
-  //tagger = std::auto_ptr<Tagger>(new Tagger(nullptr));
-  //tagger->set_word_rules(&(parser->get_words_to_rules()));
-
-  //parser->set_word_signature(WordSignatureFactory::create_wordsignature(configuration));
 
   ws = WordSignatureFactory::create_wordsignature(configuration);
   return true;

@@ -3,14 +3,14 @@
 
 #include "SimpleChartCKY.h"
 
-#undef USE_THREADS
+//#undef USE_THREADS
 
 /* use parallel_for in opencells_apply_bottom_up and opencells_apply_top_down */
-//#define WITH_PARALLEL_FOR
+#define WITH_PARALLEL_FOR
 
 /* choices for the opencells_apply method */
 // #define OPENCELLS_APPLY_TASK_GROUP
-#define OPENCELLS_APPLY_PARALLEL_FOR
+// #define OPENCELLS_APPLY_PARALLEL_FOR
 // #define OPENCELLS_APPLY_CONTINUATION_TASK
 // #define OPENCELLS_APPLY_CHART_TASK
 
@@ -85,6 +85,7 @@ void
 ChartCKY<Types>::opencells_apply( std::function<void(Cell &)> f)
 {
   opencells_apply_nothread(f);
+
 }
 
 template<class Types>
@@ -100,7 +101,7 @@ inline
 void
 ChartCKY<Types>::opencells_apply_top_down( std::function<void(Cell &)> f)
 {
-  opencells_apply_bottom_up_nothread(f);
+  opencells_apply_top_down_nothread(f);
 }
 
 
@@ -112,6 +113,8 @@ template<class Types>
 void
 ChartCKY<Types>::opencells_apply_bottom_up( std::function<void(Cell &)> f, unsigned min_span )
 {
+  //  opencells_apply_bottom_up_nothread(f, min_span);
+
   unsigned sent_size = get_size();
   for (unsigned span = min_span; span < sent_size; ++span) {
     unsigned end_of_begin=sent_size-span;

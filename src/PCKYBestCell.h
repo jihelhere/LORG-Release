@@ -7,6 +7,42 @@
 #include "Word.h"
 #include "rules/Rule.h"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weffc++"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winconsistent-missing-override"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
+
+#include <cnn/cnn.h>
+#include <cnn/training.h>
+#include "cnn/expr.h"
+
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#pragma clang diagnostic pop
+#pragma clang diagnostic pop
+#pragma clang diagnostic pop
+#else
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#endif
+
+
 /**
   \class PCKYBestCell
   \brief represents a cell in a chart
@@ -331,10 +367,11 @@ void PCKYBestCell<MyEdge,probability_extractor>::add_word(const Word & word,
   for(const auto& r : word.get_rules())
   {
     //std::cerr << r << std::endl;
-    MyEdge e(r->get_lhs(), word_edge, scorer.compute_lexical_score(get_begin(), r));
+    cnn::expr::Expression expp;
+    MyEdge e(r->get_lhs(), word_edge, scorer.compute_lexical_score(get_begin(), r,&expp));
     e.set_pruning_probability(static_cast<const Rule*>(r)->get_probability());
     const auto& ep = add_edge(0, e);
-    scorer.register_last_expression(ep);
+    scorer.register_expression(ep,expp);
   }
 }
 

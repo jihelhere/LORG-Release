@@ -1,17 +1,26 @@
 #include "ParserCKYNN.h"
 #include "SimpleChartCKY.hpp"
 
-#define THRESHOLD -9
+#define THRESHOLD -100000
+
 
 void ParserCKYNN::parse(Chart& chart, scorer& s) const
 {
   bool isroot = chart.get_size() == 1;
 
-  for(unsigned i = 0; i < chart.get_size(); ++i)
-  {
-    //std::cerr << "add unary init " << i << endl;
-    add_unary_init(chart.access(i,i),isroot, s);
-  }
+
+  chart.opencells_apply(
+      [&](Cell& cell)
+      {
+        if (cell.get_end() == 0)
+          add_unary_init(cell, isroot, s);
+      }
+                         );
+  // for(unsigned i = 0; i < chart.get_size(); ++i)
+  // {
+  //   //std::cerr << "add unary init " << i << endl;
+  //   add_unary_init(chart.access(i,i),isroot, s);
+  // }
 
   process_internal_rules(chart, s);
 }
@@ -110,15 +119,16 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
 
         candidate.set_lhs(rulep->get_lhs());
         candidate.set_pruning_probability(pruning_probability);
+        cnn::expr::Expression expp;
         double prob = current_edge->get_probability() +
-                      s.compute_unary_score(cell.get_begin(), cell.get_end(), rulep);
+                      s.compute_unary_score(cell.get_begin(), cell.get_end(), rulep, &expp);
         candidate.set_probability(prob);
 
         const Edge * new_edge = cell.process_candidate(current_height + 1, candidate);
 
         if (new_edge && new_edge->get_probability() == prob)
         {
-          s.register_last_expression(new_edge);
+          s.register_expression(new_edge, expp);
         }
 
 
@@ -143,21 +153,15 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
 
 void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
 {
-  unsigned sent_size=chart.get_size();
-  for (unsigned span = 2; span <= sent_size; ++span)
-  {
-    //std::cerr << "span: " << span << std::endl;
-    unsigned end_of_begin=sent_size-span;
-    for (unsigned begin=0; begin <= end_of_begin; ++begin)
+  chart.opencells_apply_bottom_up(
+    [&](Cell&cell)
     {
-      unsigned end = begin + span -1;
-      //      std::cerr << "begin: " << begin << ", end: " << end << std::endl;
+      auto begin = cell.get_begin();
+      auto end   = cell.get_end();
+      bool isroot = cell.get_top();
 
-      Cell& result_cell = chart.access(begin,end);
+      //std::cerr << "span: " << begin << " " << end << std::endl;
 
-      if(!result_cell.is_closed())
-      {
-        // look for all possible new edges
         for (unsigned m = begin; m < end; ++m)
         {
           const Cell& left_cell = chart.access(begin,m);
@@ -165,18 +169,53 @@ void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
           {
             const Cell& right_cell = chart.access(m+1,end);
             if( !right_cell.is_closed())
-              get_candidates(left_cell,right_cell,result_cell, s);
+              get_candidates(left_cell,right_cell,cell, s);
           }
         }
-        // std::cout << result_cell << std::endl;
+        // std::cout << cell << std::endl;
+        add_unary(cell, isroot, s);
+    },
+    1 // start from span = 1 (i.e. 2 words)
+  );
 
-        add_unary(result_cell, span == sent_size, s);
 
-	//	result_cell.apply_beam();
-      }
-      // std::cout << result_cell << std::endl;
-    }
-  }
+  // unsigned sent_size=chart.get_size();
+  // for (unsigned span = 2; span <= sent_size; ++span)
+  // {
+  //   //std::cerr << "span: " << span << std::endl;
+  //   unsigned end_of_begin=sent_size-span;
+  //   for (unsigned begin=0; begin <= end_of_begin; ++begin)
+  //   {
+  //     unsigned end = begin + span -1;
+  //     //      std::cerr << "begin: " << begin << ", end: " << end << std::endl;
+
+  //     Cell& result_cell = chart.access(begin,end);
+
+  //     if(!result_cell.is_closed())
+  //     {
+  //       // look for all possible new edges
+  //       for (unsigned m = begin; m < end; ++m)
+  //       {
+  //         const Cell& left_cell = chart.access(begin,m);
+  //         if(!left_cell.is_closed())
+  //         {
+  //           const Cell& right_cell = chart.access(m+1,end);
+  //           if( !right_cell.is_closed())
+  //             get_candidates(left_cell,right_cell,result_cell, s);
+  //         }
+  //       }
+  //       // std::cout << result_cell << std::endl;
+
+  //       add_unary(result_cell, span == sent_size, s);
+
+  //       //	result_cell.apply_beam();
+  //     }
+  //     // std::cout << result_cell << std::endl;
+  //   }
+  // }
+
+
+
 }
 
 
@@ -222,17 +261,18 @@ void ParserCKYNN::get_candidates(const Cell& left_cell,
 
             current_candidate.set_pruning_probability(pruprob);
 	    current_candidate.set_lhs(b->get_lhs());
+            cnn::expr::Expression expp;
             double prob = prob1 + s.compute_binary_score(result_cell.get_begin(),
                                                          result_cell.get_end(),
                                                          right_cell.get_begin(),
-                                                         b);
+                                                         b, &expp);
 	    current_candidate.set_probability(prob);
 
 	    //	    std::cout << *(*bitr) << std::endl;
 
 	    auto ep = result_cell.process_candidate(0, current_candidate);
             if (ep and ep->get_probability() == prob)
-              s.register_last_expression(ep);
+              s.register_expression(ep,expp);
 	  }
 	}
       }
