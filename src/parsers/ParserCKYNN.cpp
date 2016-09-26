@@ -119,16 +119,16 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
 
         candidate.set_lhs(rulep->get_lhs());
         candidate.set_pruning_probability(pruning_probability);
-        cnn::expr::Expression expp;
+        std::vector<cnn::expr::Expression> expv;
         double prob = current_edge->get_probability() +
-                      s.compute_unary_score(cell.get_begin(), cell.get_end(), rulep, &expp);
+                      s.compute_unary_score(cell.get_begin(), cell.get_end() + 1, rulep, expv);
         candidate.set_probability(prob);
 
         const Edge * new_edge = cell.process_candidate(current_height + 1, candidate);
 
         if (new_edge && new_edge->get_probability() == prob)
         {
-          s.register_expression(new_edge, expp);
+          s.register_expression(new_edge, expv);
         }
 
 
@@ -261,18 +261,18 @@ void ParserCKYNN::get_candidates(const Cell& left_cell,
 
             current_candidate.set_pruning_probability(pruprob);
 	    current_candidate.set_lhs(b->get_lhs());
-            cnn::expr::Expression expp;
+            std::vector<cnn::expr::Expression> expv;
             double prob = prob1 + s.compute_binary_score(result_cell.get_begin(),
-                                                         result_cell.get_end(),
+                                                         result_cell.get_end() + 1,
                                                          right_cell.get_begin(),
-                                                         b, &expp);
+                                                         b, expv);
 	    current_candidate.set_probability(prob);
 
 	    //	    std::cout << *(*bitr) << std::endl;
 
 	    auto ep = result_cell.process_candidate(0, current_candidate);
             if (ep and ep->get_probability() == prob)
-              s.register_expression(ep,expp);
+              s.register_expression(ep,expv);
 	  }
 	}
       }

@@ -283,6 +283,7 @@ nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer
 # nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
+
 #flags for debugging
 #nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I.
 #nn_lorgparser_CXXFLAGS= -O2 -g -pg -Wall -ftemplate-depth=512

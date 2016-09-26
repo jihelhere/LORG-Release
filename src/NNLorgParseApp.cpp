@@ -265,11 +265,13 @@ int NNLorgParseApp::run_train()
         tagger.tag(words, *(parser.get_word_signature()));
 
 
-
+        network.set_words(words);
 
         // create and initialise chart
+        std::cerr << "chart" << std::endl;
         ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
 
+        std::cerr << "parse" << std::endl;
         parser.parse(chart, network);
 
         // get results
@@ -296,14 +298,16 @@ int NNLorgParseApp::run_train()
         //                [&](const decltype(edges)::value_type& ep){return network.expressions[ep];});
 
 
-        unsigned c = 0;
+        //        unsigned c = 0;
         std::for_each(edges.begin(), edges.end(),
                       [&](const decltype(edges)::value_type& ep)
                       {
-                        if (network.expressions.count(ep))
+                        if (network.edges_expressions.count(ep))
                         {
-                          errs.push_back(network.expressions[ep]);
-                          ++c;
+                          errs.insert(errs.end(),
+                                      network.edges_expressions[ep].begin(),
+                                      network.edges_expressions[ep].end());
+                          //                ++c;
                         }
                         else
                           std::cerr << "edge is not scored" << std::endl;
@@ -313,62 +317,71 @@ int NNLorgParseApp::run_train()
         //      std::cerr << "c " << c << std::endl;
 
 
-        // std::cerr << "db2" << std::endl;
+        std::cerr << "db2" << std::endl;
 
 
-        c = 0;
-        cnn::expr::Expression expp;
+        //        c = 0;
+
+        std::vector<cnn::expr::Expression> expp;
 
         std::transform(anchored_lexicals.begin(), anchored_lexicals.end(),
                        std::back_inserter(errs),
                        [&](const anchored_lexrule_type& al)
                        {
+                         expp.clear();
                          (void) network.compute_lexical_score(std::get<0>(al),
                                                               &std::get<1>(al),
-                                                              &expp);
-                         ++c;
-                         return - expp;
+                                                              expp);
+                         //               ++c;
+                         return - cnn::expr::sum(expp);
                        }
                        );
 
         // std::cerr << "c " << c << std::endl;
-        // // std::cerr << "db3" << std::endl;
+        std::cerr << "db3" << std::endl;
 
 
         std::transform(anchored_unaries.begin(), anchored_unaries.end(),
                        std::back_inserter(errs),
                        [&](const anchored_unirule_type& au)
                        {
+                         std::cerr << std::get<0>(au) << " " << std::get<1>(au) << " " << std::get<2>(au) << std::endl;
+
+                         expp.clear();
                          (void) network.compute_unary_score(std::get<0>(au),
-                                                            std::get<1>(au),
+                                                            std::get<1>(au) -  std::get<0>(au) - 1,
                                                             &std::get<2>(au),
-                                                            &expp);
-                         return - expp;
+                                                            expp);
+                         return - cnn::expr::sum(expp);
                        }
                        );
 
 
-        // // std::cerr << "db4" << std::endl;
+        std::cerr << "db4" << std::endl;
 
         // c = 0;
         std::transform(anchored_binaries.begin(), anchored_binaries.end(),
                        std::back_inserter(errs),
                        [&](const anchored_binrule_type& ab)
                        {
-                         ++c;
+                         //++c;
+                         expp.clear();
+
+                         //std::cerr << std::get<0>(ab) << " " << std::get<1>(ab) << " " << std::get<2>(ab) << " " << std::get<3>(ab) << std::endl;
+
                          (void) network.compute_binary_score(std::get<0>(ab),
                                                              std::get<1>(ab),
                                                              std::get<2>(ab),
                                                              &std::get<3>(ab),
-                                                             &expp);
-                         return - expp;
+                                                             expp);
+                         return - cnn::expr::sum(expp);
                        }
                        );
 
 
         //     std::cerr << "c " << c << std::endl;
 
-        // std::cerr << "db5" << std::endl;
+        std::cerr << "db5" << std::endl;
         //
         cnn::expr::Expression s = cnn::expr::sum(errs);
         // std::cerr << "db5a" << std::endl;
@@ -418,6 +431,8 @@ int NNLorgParseApp::run_train()
             devss << "dev-hyp-" << iteration;
             std::ofstream devstream(devss.str());
 
+            //rewind test-input
+            in->seekg (0, in->beg);
 
             std::vector<std::string> comments;
             while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
@@ -445,6 +460,8 @@ int NNLorgParseApp::run_train()
                 // tag
                 std::cerr << "tag" << std::endl;
                 tagger.tag(s, *(parser.get_word_signature()));
+                network.set_words(s);
+
 
                 // create and initialise chart
                 std::cerr << "chart" << std::endl;

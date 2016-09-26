@@ -527,7 +527,7 @@ void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Producti
         int m = begin + daughters[0].number_of_leaves();
 
 
-        anchored_binaries.push_back(std::make_tuple(begin,m,end,Production(lhs,rhs,false)));
+        anchored_binaries.push_back(std::make_tuple(begin,end,m,Production(lhs,rhs,false)));
         daughters[0].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
                                           begin, m);
         daughters[1].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
