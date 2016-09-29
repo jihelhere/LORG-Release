@@ -266,6 +266,7 @@ int NNLorgParseApp::run_train()
 
 
         network.set_words(words);
+        network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
         // create and initialise chart
         std::cerr << "chart" << std::endl;
@@ -329,9 +330,7 @@ int NNLorgParseApp::run_train()
                        [&](const anchored_lexrule_type& al)
                        {
                          expp.clear();
-                         (void) network.compute_lexical_score(std::get<0>(al),
-                                                              &std::get<1>(al),
-                                                              expp);
+                         expp.push_back(network.lexical_rule_expression(std::get<1>(al).get_lhs(), std::get<1>(al).get_rhs0()));
                          //               ++c;
                          return - cnn::expr::sum(expp);
                        }
@@ -345,13 +344,13 @@ int NNLorgParseApp::run_train()
                        std::back_inserter(errs),
                        [&](const anchored_unirule_type& au)
                        {
-                         std::cerr << std::get<0>(au) << " " << std::get<1>(au) << " " << std::get<2>(au) << std::endl;
+                         //std::cerr << std::get<0>(au) << " " << std::get<1>(au) << " " << std::get<2>(au) << std::endl;
 
                          expp.clear();
-                         (void) network.compute_unary_score(std::get<0>(au),
-                                                            std::get<1>(au) -  std::get<0>(au) - 1,
-                                                            &std::get<2>(au),
-                                                            expp);
+                         expp.push_back(network.rule_expression(std::get<2>(au).get_lhs(),
+                                                                std::get<2>(au).get_rhs0(),
+                                                                SymbolTable::instance_nt().get_symbol_count()));
+
                          return - cnn::expr::sum(expp);
                        }
                        );
@@ -369,11 +368,17 @@ int NNLorgParseApp::run_train()
 
                          //std::cerr << std::get<0>(ab) << " " << std::get<1>(ab) << " " << std::get<2>(ab) << " " << std::get<3>(ab) << std::endl;
 
-                         (void) network.compute_binary_score(std::get<0>(ab),
-                                                             std::get<1>(ab),
-                                                             std::get<2>(ab),
-                                                             &std::get<3>(ab),
-                                                             expp);
+
+                         expp.push_back(network.rule_expression(std::get<3>(ab).get_lhs(),
+                                                                std::get<3>(ab).get_rhs0(),
+                                                                std::get<3>(ab).get_rhs1()
+                                                                ));
+
+                         // (void) network.compute_binary_score(std::get<0>(ab),
+                         //                                     std::get<1>(ab),
+                         //                                     std::get<2>(ab),
+                         //                                     &std::get<3>(ab),
+                         //                                     expp);
                          return - cnn::expr::sum(expp);
                        }
                        );
@@ -434,6 +439,7 @@ int NNLorgParseApp::run_train()
             //rewind test-input
             in->seekg (0, in->beg);
 
+
             std::vector<std::string> comments;
             while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
               clock_t sent_start = (verbose) ? clock() : 0;
@@ -461,6 +467,8 @@ int NNLorgParseApp::run_train()
                 std::cerr << "tag" << std::endl;
                 tagger.tag(s, *(parser.get_word_signature()));
                 network.set_words(s);
+              // should save values once and for all
+              network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
 
                 // create and initialise chart
@@ -594,11 +602,7 @@ LorgOptions NNLorgParseApp::get_options() const
   options.add_lexicon_options();
   options.add_grammar_positionals();
 
-
-
-
   return options;
-
 }
 
 

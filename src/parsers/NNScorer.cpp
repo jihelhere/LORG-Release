@@ -28,7 +28,7 @@ nn_scorer::nn_scorer(cnn::Model& m) :
     _p_b_lex(m.add_parameters({HIDDEN_SIZE})),
     _p_o_lex(m.add_parameters({1,HIDDEN_SIZE})),
 
-    _p_W_span(m.add_parameters({HIDDEN_SIZE, WORD_EMBEDDING_SIZE*3})),
+    _p_W_span(m.add_parameters({HIDDEN_SIZE, WORD_EMBEDDING_SIZE*1+NT_EMBEDDING_SIZE})),
     _p_b_span(m.add_parameters({HIDDEN_SIZE})),
     _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
 
@@ -62,8 +62,6 @@ void nn_scorer::clear()
   // other members are managed somewhere else!
 }
 
-
-
 void nn_scorer::set_gold(std::vector<anchored_binrule_type>& ancbin,
                          std::vector<anchored_unirule_type>& ancuni,
                          std::vector<anchored_lexrule_type>& anclex)
@@ -94,34 +92,12 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp,
 {
     auto r = static_cast<const Production*>(mp);
 
-    double v;
+    //std::cerr << *r << std::endl;
 
-    {
-      tbb::spin_mutex::scoped_lock lock(rule_mutex);
-    if (rules_expressions.count(r))
-    {
-      v = as_scalar(cg->get_value(rules_expressions[r].i));
-      expv.push_back(rules_expressions[r]);
-    }
-    else
-    {
+    double v = as_scalar(cg->get_value(rules_expressions.at(r).i));
+    expv.push_back(rules_expressions[r]);
 
-      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word,r->get_rhs0()),
-                                                        cnn::expr::lookup(*cg,_p_nts,r->get_lhs())});
-
-      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
-      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
-      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
-
-      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
-
-      cg->incremental_forward();
-      v = as_scalar(cg->get_value(out.i));
-
-      rules_expressions[r] = out;
-      expv.push_back(rules_expressions[r]);
-    }
-    }
+    //std::cerr << "after" << std::endl;
 
 
     if (gold and not anchored_lexicals.count(std::make_tuple(position,*r)))
@@ -129,44 +105,16 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp,
       v += 1.0;
     }
     return v;
-    //return 0.0;
-  }
+}
 
 
 double
-nn_scorer::compute_internal_rule_score(const Production* r, int rhs0, int rhs1, int lhs, std::vector<cnn::expr::Expression>& expp)
+nn_scorer::compute_internal_rule_score(const Production* r, std::vector<cnn::expr::Expression>& expp)
 {
-  double v;
 
-  {
-    tbb::spin_mutex::scoped_lock lock(rule_mutex);
-    if (rules_expressions.count(r))
-    {
-      expp.push_back(rules_expressions[r]);
-      v = as_scalar(cg->get_value(rules_expressions[r].i));
-    }
-    else
-    {
+  double v = as_scalar(cg->get_value(rules_expressions.at(r).i));
+  expp.push_back(rules_expressions[r]);
 
-      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,rhs0),
-                                                        cnn::expr::lookup(*cg,_p_nts,rhs1),
-                                                        cnn::expr::lookup(*cg,_p_nts,lhs)});
-
-
-      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
-      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
-      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
-
-      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
-
-      cg->incremental_forward();
-
-      v = as_scalar(cg->get_value(out.i));
-
-      rules_expressions[r] = out;
-      expp.push_back(rules_expressions[r]);
-    }
-  }
   return v;
 }
 
@@ -174,17 +122,18 @@ double
 nn_scorer::compute_internal_span_score(int begin, int begin_id,
                                        int end, int end_id,
                                        int medium, int medium_id,
+                                       int lhs,
                                        std::vector<cnn::expr::Expression>& e)
 {
   //  return 0.0;
 
   double v;
 
-  auto t = std::make_tuple(begin,end,medium);
+  //  auto t = std::make_tuple(begin,end,medium,lhs);
+  auto t = std::make_tuple(begin,lhs);
 
-
-  {
-    tbb::spin_mutex::scoped_lock lock(rule_mutex);
+   {
+     tbb::spin_mutex::scoped_lock lock(rule_mutex);
     if (spans_expressions.count(t))
     {
       //std::cerr << "case 0" << std::endl;
@@ -201,8 +150,9 @@ nn_scorer::compute_internal_span_score(int begin, int begin_id,
       //      std::cerr << "here2" << std::endl;
 
       cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word,begin_id),
-                                                        cnn::expr::lookup(*cg,_p_word,end_id),
-                                                        cnn::expr::lookup(*cg,_p_word,medium_id)});
+                                                        // cnn::expr::lookup(*cg,_p_word,end_id),
+                                                        // cnn::expr::lookup(*cg,_p_word,medium_id),
+                                                        cnn::expr::lookup(*cg,_p_nts,lhs)});
 
       //std::cerr << "here3" << std::endl;
 
@@ -214,7 +164,8 @@ nn_scorer::compute_internal_span_score(int begin, int begin_id,
 
       // std::cerr << "here4" << std::endl;
 
-      cg->incremental_forward();
+
+        cg->incremental_forward();
 
       //std::cerr << "here5" << std::endl;
 
@@ -227,7 +178,7 @@ nn_scorer::compute_internal_span_score(int begin, int begin_id,
 
       //      std::cerr << "here7" << std::endl;
     }
-  }
+    }
   return v;
 }
 
@@ -246,11 +197,7 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
     //std::cerr << *r << std::endl;
 
-    double v = compute_internal_rule_score(r,
-                                           r->get_rhs0(),
-                                           SymbolTable::instance_nt().get_symbol_count(),
-                                           r->get_lhs(),
-                                           expv);
+    double v = compute_internal_rule_score(r, expv);
 
     //std::cerr << "b4 un" << std::endl;
 
@@ -261,8 +208,9 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
     // v+= compute_internal_span_score(begin, words[begin].get_id(),
     //                                 end - 1, words[end - 1].get_id(),
     //                                 -1,-1,
+    //                                 r->get_lhs(),
     //                                 expv);
-    //    std::cerr << "after un" << std::endl;
+    //       std::cerr << "after un" << std::endl;
 
 
     if (gold and not anchored_unaries.count(std::make_tuple(begin,end,*r)))
@@ -282,10 +230,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 {
     auto r = static_cast<const Production*>(mp);
 
-    double v = compute_internal_rule_score(r,
-                                           r->get_rhs0(),
-                                           r->get_rhs1(),
-                                           r->get_lhs(), expp);
+    double v = compute_internal_rule_score(r, expp);
 
     //    std::cerr << "b4 bin" << std::endl;
 
@@ -295,6 +240,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
     // v+= compute_internal_span_score(s, words[s].get_id(),
     //                                 e - 1, words[e-1].get_id(),
     //                                 m, words[m].get_id(),
+    //                                 r->get_lhs(),
     //                                 expp);
     //    std::cerr << "after bin" << std::endl;
 
@@ -307,3 +253,62 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
     // }
     return v;
   }
+
+
+
+void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
+                                            const std::vector<Rule>& urules)
+{
+  for (const auto& r : brules)
+  {
+    rules_expressions[&r] = rule_expression(r.get_lhs(),
+                                            r.get_rhs0(),
+                                            r.get_rhs1());
+  }
+
+  for (const auto& r : urules)
+  {
+    rules_expressions[&r] = rule_expression(r.get_lhs(),
+                                            r.get_rhs0(),
+                                            SymbolTable::instance_nt().get_symbol_count());
+  }
+
+  for (const auto& w: words)
+  {
+    for (const auto mppt : w.get_rules())
+    {
+      auto ppt = static_cast<const Production*>(mppt);
+      if (not rules_expressions.count(ppt))
+        rules_expressions[ppt] = lexical_rule_expression(ppt->get_lhs(), ppt->get_rhs0());
+    }
+  }
+
+  cg->forward();
+}
+
+
+cnn::expr::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
+{
+  cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_nts,rhs0),
+                                                    cnn::expr::lookup(*cg,_p_nts,rhs1),
+                                                    cnn::expr::lookup(*cg,_p_nts,lhs)});
+
+  cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_int);
+  cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_int);
+  cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_int);
+
+  return o * cnn::expr::rectify(W*i + b);
+}
+
+
+cnn::expr::Expression nn_scorer::lexical_rule_expression(int lhs, int rhs0)
+{
+  cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg, _p_word, rhs0),
+                                                    cnn::expr::lookup(*cg, _p_nts, lhs)});
+
+      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
+      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
+      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
+
+      return o * cnn::expr::rectify(W*i + b);
+}

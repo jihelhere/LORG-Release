@@ -20,8 +20,9 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
   result.rules.resize(pre.size());
 
   std::transform(pre.begin(), pre.end(), result.rules.begin(),
-                 [](info e)
-                 {return transform<BinaryRule,info>(*e);}
+                 [](const BinaryRule* e)
+                 {return transform<BinaryRule,info>(*e);
+                 }
                  );
 
   result._begin = result.rules.begin();
@@ -30,7 +31,6 @@ void build_vector_rhs1(const std::vector<const BinaryRule*>& pre, vector_rhs1<in
 
   result.rules.shrink_to_fit();
 }
-
 
   template<class BinaryRule, typename info>
     void build_vector_rhs0(const std::vector<std::vector<const BinaryRule*> >& pre,

@@ -3,6 +3,7 @@
 
 #include "rules/MetaProduction.h"
 #include "rules/Production.h"
+#include "rules/Rule.h"
 #include <unordered_map>
 #include "utils/hash_impl.h"
 #include "Word.h"
@@ -80,7 +81,8 @@ struct nn_scorer
 
 
   std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
-  std::unordered_map<std::tuple<int,int,int>, cnn::expr::Expression> spans_expressions;
+  //  std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
+  std::unordered_map<std::tuple<int,int>, cnn::expr::Expression> spans_expressions;
   std::unordered_map<const Edge*, std::vector<cnn::expr::Expression>> edges_expressions;
 
 
@@ -116,20 +118,24 @@ struct nn_scorer
 
   double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp,
                               std::vector<cnn::expr::Expression>& expv);
-
   double
   compute_internal_span_score(int begin, int begin_id,
                               int end, int end_id,
                               int medium, int medium_id,
+                              int lhs,
                               std::vector<cnn::expr::Expression>& e);
 
   void register_expression(const Edge*ep, std::vector<cnn::expr::Expression>& expv);
 
   void clear();
+  void precompute_rule_expressions(const std::vector<Rule>& brules,
+                                   const std::vector<Rule>& urules);
+
+  cnn::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
+  cnn::expr::Expression lexical_rule_expression(int lhs, int rhs0);
 
  private:
   double
-  compute_internal_rule_score(const Production* r, int rhs0, int rhs1, int lhs, std::vector<cnn::expr::Expression>& epp);
-
+  compute_internal_rule_score(const Production* r, std::vector<cnn::expr::Expression>& epp);
 
 };

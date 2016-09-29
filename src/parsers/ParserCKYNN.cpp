@@ -253,9 +253,9 @@ void ParserCKYNN::get_candidates(const Cell& left_cell,
 
 	  //iterating through all the rules P -> L R, indexed by P, R and L fixed
 
-	  for(const auto& b : same_rhs1)
+	  for(const auto b : same_rhs1)
           {
-            double pruprob = pruprob1 + static_cast<const Rule*>(b)->get_probability();
+            double pruprob = pruprob1 + b->get_probability();
             if (pruprob < THRESHOLD)
               continue;
 
