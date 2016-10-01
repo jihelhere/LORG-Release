@@ -6,7 +6,7 @@ int main(int argc, char** argv)
   NNLorgParseApp app;
 
 
-  cnn::initialize(argc, argv);
+  cnn::Initialize(argc, argv);
   if (!app.init(argc,argv)) return -1;
 
   app.run();

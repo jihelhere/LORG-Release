@@ -4,7 +4,7 @@
 
 
 
-LorgApp::LorgApp() : verbose(false), in(NULL), out(NULL)
+LorgApp::LorgApp() : verbose(false), in(NULL), out(NULL), in_filename()
 #ifdef USE_THREADS
                      //, tbb_task_scheduler(tbb::task_scheduler_init::deferred)
 #endif

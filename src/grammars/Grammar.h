@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <unordered_set>
+
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -25,6 +27,9 @@ public:
   std::vector<Bin> binary_rules;
   std::vector<Un>  unary_rules;
   std::vector<Lex> lexical_rules;
+
+  std::unordered_set<int> lhs_int_set;
+  std::unordered_set<int> lhs_lex_set;
 
 public:
   Grammar();
@@ -93,6 +98,20 @@ void Grammar<Bin, Un, Lex>::init()
   std::sort(binary_rules.begin(),binary_rules.end());
   std::sort(unary_rules.begin(),unary_rules.end());
   std::sort(lexical_rules.begin(),lexical_rules.end());
+
+
+  for (const auto& b : binary_rules)
+  {
+    lhs_int_set.insert(b.get_lhs());
+  }
+  for (const auto& u : unary_rules)
+  {
+    lhs_int_set.insert(u.get_lhs());
+  }
+  for (const auto& l : lexical_rules)
+  {
+    lhs_lex_set.insert(l.get_lhs());
+  }
 }
 
 

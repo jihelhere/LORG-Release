@@ -26,6 +26,8 @@ protected:
   std::istream* in;
   std::ostream* out;
 
+  std::string in_filename;
+
   #ifdef USE_THREADS
   unsigned nbthreads;
   //  tbb::task_scheduler_init tbb_task_scheduler;

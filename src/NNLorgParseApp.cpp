@@ -267,6 +267,7 @@ int NNLorgParseApp::run_train()
 
         network.set_words(words);
         network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        network.precompute_span_expressions(grammar.lhs_int_set);
 
         // create and initialise chart
         std::cerr << "chart" << std::endl;
@@ -331,6 +332,7 @@ int NNLorgParseApp::run_train()
                        {
                          expp.clear();
                          expp.push_back(network.lexical_rule_expression(std::get<1>(al).get_lhs(), std::get<1>(al).get_rhs0()));
+
                          //               ++c;
                          return - cnn::expr::sum(expp);
                        }
@@ -350,6 +352,8 @@ int NNLorgParseApp::run_train()
                          expp.push_back(network.rule_expression(std::get<2>(au).get_lhs(),
                                                                 std::get<2>(au).get_rhs0(),
                                                                 SymbolTable::instance_nt().get_symbol_count()));
+                         expp.push_back(network.span_expression(std::get<2>(au).get_lhs(),
+                                                                words[std::get<0>(au)].get_id()));
 
                          return - cnn::expr::sum(expp);
                        }
@@ -374,6 +378,9 @@ int NNLorgParseApp::run_train()
                                                                 std::get<3>(ab).get_rhs1()
                                                                 ));
 
+                         expp.push_back(network.span_expression(std::get<3>(ab).get_lhs(),
+                                                                words[std::get<0>(ab)].get_id()));
+
                          // (void) network.compute_binary_score(std::get<0>(ab),
                          //                                     std::get<1>(ab),
                          //                                     std::get<2>(ab),
@@ -396,7 +403,7 @@ int NNLorgParseApp::run_train()
         network.cg->backward(s.i);
         // std::cerr << "db5c" << std::endl;
 
-        trainer.update();
+        trainer.update(1.0);
 
         // std::cerr << "db6" << std::endl;
 
@@ -437,8 +444,8 @@ int NNLorgParseApp::run_train()
             std::ofstream devstream(devss.str());
 
             //rewind test-input
-            in->seekg (0, in->beg);
-
+            delete in;
+            in = new std::ifstream(in_filename.c_str());
 
             std::vector<std::string> comments;
             while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
@@ -469,7 +476,7 @@ int NNLorgParseApp::run_train()
                 network.set_words(s);
               // should save values once and for all
               network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-
+              network.precompute_span_expressions(grammar.lhs_int_set);
 
                 // create and initialise chart
                 std::cerr << "chart" << std::endl;

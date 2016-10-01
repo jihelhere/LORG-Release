@@ -119,66 +119,22 @@ nn_scorer::compute_internal_rule_score(const Production* r, std::vector<cnn::exp
 }
 
 double
-nn_scorer::compute_internal_span_score(int begin, int begin_id,
-                                       int end, int end_id,
-                                       int medium, int medium_id,
+nn_scorer::compute_internal_span_score(int begin,
+                                       int end,
+                                       int medium,
                                        int lhs,
                                        std::vector<cnn::expr::Expression>& e)
 {
   //  return 0.0;
 
-  double v;
+
 
   //  auto t = std::make_tuple(begin,end,medium,lhs);
   auto t = std::make_tuple(begin,lhs);
 
-   {
-     tbb::spin_mutex::scoped_lock lock(rule_mutex);
-    if (spans_expressions.count(t))
-    {
-      //std::cerr << "case 0" << std::endl;
-      e.push_back(spans_expressions[t]);
-      v = as_scalar(cg->get_value(spans_expressions[t].i));
-    }
-    else
-    {
-      //std::cerr << "here1" << std::endl;
+  double v = as_scalar(cg->get_value(spans_expressions[t].i));
+  e.push_back(spans_expressions[t]);
 
-      if (medium == -1)
-        medium_id = SymbolTable::instance_word().get_symbol_count();
-
-      //      std::cerr << "here2" << std::endl;
-
-      cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word,begin_id),
-                                                        // cnn::expr::lookup(*cg,_p_word,end_id),
-                                                        // cnn::expr::lookup(*cg,_p_word,medium_id),
-                                                        cnn::expr::lookup(*cg,_p_nts,lhs)});
-
-      //std::cerr << "here3" << std::endl;
-
-      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_span);
-      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_span);
-      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_span);
-
-      cnn::expr::Expression out = o * cnn::expr::rectify(W*i + b);
-
-      // std::cerr << "here4" << std::endl;
-
-
-        cg->incremental_forward();
-
-      //std::cerr << "here5" << std::endl;
-
-      v = as_scalar(cg->get_value(out.i));
-
-      //      std::cerr << "here6" << std::endl;
-
-      spans_expressions[t] = out;
-      e.push_back(spans_expressions[t]);
-
-      //      std::cerr << "here7" << std::endl;
-    }
-    }
   return v;
 }
 
@@ -205,11 +161,11 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
     //std::cerr << "un: " << begin << " " << words[begin]  << (end -1) << " " << words[end-1] << std::endl;
 
-    // v+= compute_internal_span_score(begin, words[begin].get_id(),
-    //                                 end - 1, words[end - 1].get_id(),
-    //                                 -1,-1,
-    //                                 r->get_lhs(),
-    //                                 expv);
+    v+= compute_internal_span_score(begin,
+                                    end - 1,
+                                    -1,
+                                    r->get_lhs(),
+                                    expv);
     //       std::cerr << "after un" << std::endl;
 
 
@@ -237,12 +193,12 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
     //std::cerr << "bin: " << s << " " << words[s]  << (e-1) << " " << words[e-1]  << m << " " << words[m] << std::endl;
 
 
-    // v+= compute_internal_span_score(s, words[s].get_id(),
-    //                                 e - 1, words[e-1].get_id(),
-    //                                 m, words[m].get_id(),
-    //                                 r->get_lhs(),
-    //                                 expp);
-    //    std::cerr << "after bin" << std::endl;
+    v+= compute_internal_span_score(s,
+                                    e - 1,
+                                    m,
+                                    r->get_lhs(),
+                                    expp);
+    //       std::cerr << "after bin" << std::endl;
 
 
     if (gold and not anchored_binaries.count(std::make_tuple(s,e,m,*r)))
@@ -284,6 +240,34 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   }
 
   cg->forward();
+}
+
+
+void nn_scorer::precompute_span_expressions(const std::unordered_set<int>& lhs_set)
+{
+  for (auto lhs : lhs_set)
+  for (unsigned i = 0; i < words.size(); ++i)
+  {
+    const auto& word = words[i];
+
+    spans_expressions[std::make_tuple(i,lhs)] = span_expression(lhs, word.get_id());
+
+  }
+  cg->incremental_forward();
+}
+
+cnn::expr::Expression nn_scorer::span_expression(int lhs, int first_word_id)
+{
+   cnn::expr::Expression i = cnn::expr::concatenate({cnn::expr::lookup(*cg,_p_word, first_word_id),
+                                                     // cnn::expr::lookup(*cg,_p_word,end_id),
+                                                     // cnn::expr::lookup(*cg,_p_word,medium_id),
+                                                     cnn::expr::lookup(*cg,_p_nts,lhs)});
+
+      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_span);
+      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_span);
+      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_span);
+
+      return o * cnn::expr::rectify(W*i + b);
 }
 
 

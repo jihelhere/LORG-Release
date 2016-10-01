@@ -59,29 +59,29 @@ struct nn_scorer
 
 
   //internal rules FF
-  cnn::Parameter _p_W_int;
-  cnn::Parameter _p_b_int;
-  cnn::Parameter _p_o_int;
+  cnn::Parameters* _p_W_int;
+  cnn::Parameters* _p_b_int;
+  cnn::Parameters* _p_o_int;
 
   //lexical rules FF
-  cnn::Parameter _p_W_lex;
-  cnn::Parameter _p_b_lex;
-  cnn::Parameter _p_o_lex;
+  cnn::Parameters* _p_W_lex;
+  cnn::Parameters* _p_b_lex;
+  cnn::Parameters* _p_o_lex;
 
 
   //span FF
-  cnn::Parameter _p_W_span;
-  cnn::Parameter _p_b_span;
-  cnn::Parameter _p_o_span;
+  cnn::Parameters* _p_W_span;
+  cnn::Parameters* _p_b_span;
+  cnn::Parameters* _p_o_span;
 
 
   // embeddings for words and symbols
-  cnn::LookupParameter _p_word;
-  cnn::LookupParameter _p_nts;
+  cnn::LookupParameters* _p_word;
+  cnn::LookupParameters* _p_nts;
 
 
   std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
-  //  std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
+  //std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
   std::unordered_map<std::tuple<int,int>, cnn::expr::Expression> spans_expressions;
   std::unordered_map<const Edge*, std::vector<cnn::expr::Expression>> edges_expressions;
 
@@ -119,9 +119,9 @@ struct nn_scorer
   double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp,
                               std::vector<cnn::expr::Expression>& expv);
   double
-  compute_internal_span_score(int begin, int begin_id,
-                              int end, int end_id,
-                              int medium, int medium_id,
+  compute_internal_span_score(int begin,
+                              int end,
+                              int medium,
                               int lhs,
                               std::vector<cnn::expr::Expression>& e);
 
@@ -130,9 +130,14 @@ struct nn_scorer
   void clear();
   void precompute_rule_expressions(const std::vector<Rule>& brules,
                                    const std::vector<Rule>& urules);
+  void precompute_span_expressions(const std::unordered_set<int>& lhs);
 
   cnn::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
   cnn::expr::Expression lexical_rule_expression(int lhs, int rhs0);
+  cnn::expr::Expression span_expression(int lhs, int first_word_id);
+
+
+
 
  private:
   double

@@ -36,14 +36,14 @@ bool LorgParseApp::read_config(ConfigTable& configuration)
 
   // get input stream or read from stdin
   if(configuration.exists("test-data")) {
-    const std::string& input_filename = configuration.get_value<std::string>("test-data");
-    std::ifstream * instream = new std::ifstream(input_filename.c_str());
+    in_filename = configuration.get_value<std::string>("test-data");
+    std::ifstream * instream = new std::ifstream(in_filename.c_str());
     if(*instream) {
       in = instream;
-      if(verbose) std::clog << "Setting test file to " << input_filename << std::endl;
+      if(verbose) std::clog << "Setting test file to " << in_filename << std::endl;
     }
     else {
-      std::clog << "Could not open file " << input_filename << std::endl;
+      std::clog << "Could not open file " << in_filename << std::endl;
       return false;
     }
   }
