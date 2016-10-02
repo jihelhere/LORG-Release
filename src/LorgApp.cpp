@@ -26,6 +26,8 @@ bool LorgApp::init(int argc, char **argv)
 #ifdef USE_THREADS
   nbthreads = configuration.get_value<unsigned>("nbthreads");
   nbthreads = nbthreads ? nbthreads : tbb::task_scheduler_init::default_num_threads();
+
+  if (verbose) std::cerr << nbthreads << " threads" << std::endl;
 #endif
 
   return res;

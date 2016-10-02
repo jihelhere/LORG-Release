@@ -31,8 +31,6 @@ private:
   bool train;
   treebank_options tb_options;
 
-  unsigned nbthreads;
-
   int run_train();
 
   //not defined -> forbidden

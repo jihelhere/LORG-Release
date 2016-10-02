@@ -3,9 +3,9 @@
 #include "utils/SymbolTable.h"
 #include "rules/Production.h"
 
-#define WORD_EMBEDDING_SIZE 60
+#define WORD_EMBEDDING_SIZE 100
 #define NT_EMBEDDING_SIZE 20
-#define HIDDEN_SIZE 40
+#define HIDDEN_SIZE 80
 
 
 #ifdef USE_THREADS
@@ -13,7 +13,7 @@
 #include <tbb/spin_mutex.h>
 
 
-tbb::spin_mutex rule_mutex;
+//tbb::spin_mutex rule_mutex;
 tbb::spin_mutex expression_mutex;
 #endif
 

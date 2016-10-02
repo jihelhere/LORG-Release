@@ -619,12 +619,6 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   if(not LorgParseApp::read_config(configuration))
     return false;
 
-#ifdef USE_THREADS
-  nbthreads = configuration.get_value<unsigned>("nbthreads");
-#endif
-
-
-
   // if (configuration.exists("train")) {
   //   train = true;
 
