@@ -28,10 +28,14 @@
 #endif
 
 
-#include <cnn/cnn.h>
-#include <cnn/training.h>
+#include "cnn/cnn.h"
+#include "cnn/training.h"
 #include "cnn/expr.h"
 
+
+#include "cnn/rnn.h"
+#include "cnn/gru.h"
+#include "cnn/lstm.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -79,6 +83,10 @@ struct nn_scorer
   cnn::LookupParameters* _p_word;
   cnn::LookupParameters* _p_nts;
 
+
+  cnn::LSTMBuilder l2r_builder;
+  cnn::LSTMBuilder r2l_builder;
+  std::vector<cnn::expr::Expression> lstm_embeddings;
 
   std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
   //std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
@@ -132,11 +140,12 @@ struct nn_scorer
                                    const std::vector<Rule>& urules);
   void precompute_span_expressions(const std::unordered_set<int>& lhs);
 
+  void precompute_embeddings();
+
+
   cnn::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
-  cnn::expr::Expression lexical_rule_expression(int lhs, int rhs0);
-  cnn::expr::Expression span_expression(int lhs, int first_word_id);
-
-
+  cnn::expr::Expression lexical_rule_expression(int lhs, int word_position);
+  cnn::expr::Expression span_expression(int lhs, int word_position);
 
 
  private:
