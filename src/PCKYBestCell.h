@@ -367,11 +367,9 @@ void PCKYBestCell<MyEdge,probability_extractor>::add_word(const Word & word,
   for(const auto& r : word.get_rules())
   {
     //std::cerr << r << std::endl;
-    std::vector<cnn::expr::Expression> expp;
-    MyEdge e(r->get_lhs(), word_edge, scorer.compute_lexical_score(get_begin(), r,expp));
+    MyEdge e(r->get_lhs(), word_edge, scorer.compute_lexical_score(get_begin(), r));
     e.set_pruning_probability(static_cast<const Rule*>(r)->get_probability());
-    const auto& ep = add_edge(0, e);
-    scorer.register_expression(ep,expp);
+    (void) add_edge(0, e);
   }
 }
 

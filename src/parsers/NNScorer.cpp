@@ -6,17 +6,8 @@
 #define WORD_EMBEDDING_SIZE 100
 #define NT_EMBEDDING_SIZE 50
 #define HIDDEN_SIZE 100
+
 #define LSTM_HIDDEN_SIZE 150
-
-
-#ifdef USE_THREADS
-#include <tbb/mutex.h>
-#include <tbb/spin_mutex.h>
-
-
-//tbb::spin_mutex rule_mutex;
-tbb::spin_mutex expression_mutex;
-#endif
 
 nn_scorer::nn_scorer(cnn::Model& m) :
     cg(nullptr),
@@ -29,9 +20,9 @@ nn_scorer::nn_scorer(cnn::Model& m) :
     _p_b_lex(m.add_parameters({HIDDEN_SIZE})),
     _p_o_lex(m.add_parameters({1,HIDDEN_SIZE})),
 
-    _p_W_span(m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE+NT_EMBEDDING_SIZE})),
-    _p_b_span(m.add_parameters({HIDDEN_SIZE})),
-    _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
+    // _p_W_span(m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE+NT_EMBEDDING_SIZE})),
+    // _p_b_span(m.add_parameters({HIDDEN_SIZE})),
+    // _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
 
 
     _p_word(m.add_lookup_parameters(SymbolTable::instance_word().get_symbol_count()+1,
@@ -46,26 +37,15 @@ nn_scorer::nn_scorer(cnn::Model& m) :
 
 
     rules_expressions(),
-    spans_expressions(),
-    edges_expressions()
+    spans_expressions()
 
 {}
-
-void nn_scorer::register_expression(const Edge * ep,
-                                    std::vector<cnn::expr::Expression>& expv)
-{
-  {
-    tbb::spin_mutex::scoped_lock lock(expression_mutex);
-    edges_expressions[ep] = expv;
-  }
-}
 
 
 void nn_scorer::clear()
 {
   rules_expressions.clear();
   spans_expressions.clear();
-  edges_expressions.clear();
 
   // other members are managed somewhere else!
 }
@@ -95,18 +75,15 @@ void nn_scorer::unset_gold()
 
 
 
-double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp,
-                                        std::vector<cnn::expr::Expression>& expv)
+double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 {
     auto r = static_cast<const Production*>(mp);
 
     //std::cerr << *r << std::endl;
 
-    double v = as_scalar(cg->get_value(rules_expressions[r].i));
-    expv.push_back(rules_expressions[r]);
+    double v = rules_expressions[r].second;
 
     //std::cerr << "after" << std::endl;
-
 
     if (gold and not anchored_lexicals.count(std::make_tuple(position,*r)))
     {
@@ -117,12 +94,10 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp,
 
 
 double
-nn_scorer::compute_internal_rule_score(const Production* r, std::vector<cnn::expr::Expression>& expp)
+nn_scorer::compute_internal_rule_score(const Production* r)
 {
 
-  double v = as_scalar(cg->get_value(rules_expressions[r].i));
-  expp.push_back(rules_expressions[r]);
-
+  double v = rules_expressions[r].second;
   return v;
 }
 
@@ -130,8 +105,7 @@ double
 nn_scorer::compute_internal_span_score(int begin,
                                        int end,
                                        int medium,
-                                       int lhs,
-                                       std::vector<cnn::expr::Expression>& e)
+                                       int lhs)
 {
   //  return 0.0;
 
@@ -141,7 +115,6 @@ nn_scorer::compute_internal_span_score(int begin,
   auto t = std::make_tuple(begin,lhs);
 
   double v = as_scalar(cg->get_value(spans_expressions[t].i));
-  e.push_back(spans_expressions[t]);
 
   return v;
 }
@@ -153,15 +126,14 @@ void nn_scorer::set_words(const std::vector<Word>& w)
   words = w;
 }
 
-double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* mp,
-                                      std::vector<cnn::expr::Expression>& expv)
-  {
+double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* mp)
+{
 
     auto r = static_cast<const Production*>(mp);
 
     //std::cerr << *r << std::endl;
 
-    double v = compute_internal_rule_score(r, expv);
+    double v = compute_internal_rule_score(r);
 
     //std::cerr << "b4 un" << std::endl;
 
@@ -169,11 +141,12 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
     //std::cerr << "un: " << begin << " " << words[begin]  << (end -1) << " " << words[end-1] << std::endl;
 
-    v+= compute_internal_span_score(begin,
-                                    end - 1,
-                                    -1,
-                                    r->get_lhs(),
-                                    expv);
+    // v+= compute_internal_span_score(begin,
+    //                                 end - 1,
+    //                                 -1,
+    //                                 r->get_lhs(),
+    //                                 expv);
+
     //       std::cerr << "after un" << std::endl;
 
 
@@ -189,24 +162,23 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
   }
 
-double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction* mp,
-                                       std::vector<cnn::expr::Expression>& expp)
+double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction* mp)
 {
     auto r = static_cast<const Production*>(mp);
 
-    double v = compute_internal_rule_score(r, expp);
+    double v = compute_internal_rule_score(r);
 
     //    std::cerr << "b4 bin" << std::endl;
 
     //std::cerr << "bin: " << s << " " << words[s]  << (e-1) << " " << words[e-1]  << m << " " << words[m] << std::endl;
 
 
-    v+= compute_internal_span_score(s,
-                                    e - 1,
-                                    m,
-                                    r->get_lhs(),
-                                    expp);
-    //       std::cerr << "after bin" << std::endl;
+    // v+= compute_internal_span_score(s,
+    //                                 e - 1,
+    //                                 m,
+    //                                 r->get_lhs(),
+    //                                 expp);
+    //          std::cerr << "after bin" << std::endl;
 
 
     if (gold and not anchored_binaries.count(std::make_tuple(s,e,m,*r)))
@@ -218,23 +190,23 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
     return v;
   }
 
-
-
 void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
                                             const std::vector<Rule>& urules)
 {
   for (const auto& r : brules)
   {
-    rules_expressions[&r] = rule_expression(r.get_lhs(),
-                                            r.get_rhs0(),
-                                            r.get_rhs1());
+    auto e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
+    auto v = as_scalar(cg->get_value(e.i));
+    rules_expressions[&r] = std::make_pair(e,v);
   }
 
   for (const auto& r : urules)
   {
-    rules_expressions[&r] = rule_expression(r.get_lhs(),
-                                            r.get_rhs0(),
-                                            SymbolTable::instance_nt().get_symbol_count());
+    auto e =  rule_expression(r.get_lhs(),
+                              r.get_rhs0(),
+                              SymbolTable::instance_nt().get_symbol_count());
+    double v = as_scalar(cg->get_value(e.i));
+    rules_expressions[&r] = std::make_pair(e,v);
   }
 
   for (unsigned i = 0; i < words.size(); ++i)
@@ -243,7 +215,11 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
     {
       auto ppt = static_cast<const Production*>(mppt);
       if (not rules_expressions.count(ppt))
-        rules_expressions[ppt] = lexical_rule_expression(ppt->get_lhs(), i);
+      {
+        auto e = lexical_rule_expression(ppt->get_lhs(), i);
+        double v = as_scalar(cg->get_value(e.i));
+        rules_expressions[ppt] = std::make_pair(e,v);
+      }
     }
   }
 
@@ -308,12 +284,17 @@ void nn_scorer::precompute_embeddings()
   lstm_embeddings.clear();
 
 
-  std::vector<cnn::expr::Expression> embeddings, lstm_forward, lstm_backward;
+  std::vector<cnn::expr::Expression> embeddings;
+
   // base embeddings (could be avoided)
   for (const auto& w : words)
   {
+    //std::cerr << "set 1 embedding" << std::endl;
     embeddings.push_back(cnn::expr::lookup(*cg,_p_word, w.get_id()));
   }
+
+
+  std::vector<cnn::expr::Expression> lstm_forward, lstm_backward;
 
   // Build forward LSTM
   l2r_builder.new_graph(*cg);
@@ -336,5 +317,5 @@ void nn_scorer::precompute_embeddings()
   }
 
 
-
+  //  lstm_embeddings = embeddings;
 }

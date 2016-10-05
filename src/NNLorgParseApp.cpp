@@ -94,7 +94,6 @@ void collect_rules(const std::vector<PtbPsTree>& trees,
         lhs_counts[r.get_lhs()]++;
       else
         lhs_counts[r.get_lhs()] = 1;
-
     }
 
     for(const auto& l : lexicals)
@@ -190,10 +189,10 @@ int NNLorgParseApp::run_train()
 
   cnn::Model m;
 
-  //cnn::SimpleSGDTrainer trainer(&m);
+  cnn::SimpleSGDTrainer trainer(&m);
   // trainer.eta_decay = 0.08;
   //cnn::MomentumSGDTrainer trainer(&m);
-  cnn::AdamTrainer trainer(&m);
+  //cnn::AdamTrainer trainer(&m);
 
 
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
@@ -202,7 +201,9 @@ int NNLorgParseApp::run_train()
 
 
   ParserCKYNN::scorer network(m);
+
 #define ITERATIONS 30
+  //#define MINI_BATCH 10
 
   for (unsigned iteration = 0; iteration < ITERATIONS; ++iteration)
   {
@@ -216,17 +217,18 @@ int NNLorgParseApp::run_train()
 
     std::random_shuffle(std::begin(trees), std::end(trees));
 
-
     std::stringstream osref;
     osref << "train-ref-" << iteration << ".mrg";
     std::ofstream outref(osref.str());
+
+
+    //    auto mini_batch_idx = 0;
 
     for (const auto& tree : trees)
     {
       cnn::ComputationGraph cg;
       network.set_cg(cg);
       network.clear();
-
 
       const auto s = tree.yield();
 
@@ -237,13 +239,20 @@ int NNLorgParseApp::run_train()
         //std::cerr << "new tree" << std::endl;
         outref << tree << std::endl;
 
-        std::vector<anchored_binrule_type> anchored_binaries;
-        std::vector<anchored_unirule_type> anchored_unaries;
-        std::vector<anchored_lexrule_type> anchored_lexicals;
+        std::vector<anchored_binrule_type> anchored_binaries_vec;
+        std::vector<anchored_unirule_type> anchored_unaries_vec;
+        std::vector<anchored_lexrule_type> anchored_lexicals_vec;
 
-        tree.anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals);
+        tree.anchored_productions(anchored_binaries_vec, anchored_unaries_vec, anchored_lexicals_vec);
+        auto anchored_binaries = std::unordered_set<decltype(anchored_binaries_vec)::value_type>(anchored_binaries_vec.begin(),
+                                                                                                 anchored_binaries_vec.end());
+        auto anchored_unaries = std::unordered_set<decltype(anchored_unaries_vec)::value_type>(anchored_unaries_vec.begin(),
+                                                                                               anchored_unaries_vec.end());
+        auto anchored_lexicals = std::unordered_set<decltype(anchored_lexicals_vec)::value_type>(anchored_lexicals_vec.begin(),
+                                                                                                 anchored_lexicals_vec.end());
 
-        network.set_gold(anchored_binaries, anchored_unaries, anchored_lexicals);
+
+        network.set_gold(anchored_binaries_vec, anchored_unaries_vec, anchored_lexicals_vec);
 
         std::vector<Word> words;
         int i = -1;
@@ -262,24 +271,33 @@ int NNLorgParseApp::run_train()
         // if (verbose) std::cerr << '\n';
 
         // tag
+        //std::cerr << "tag" << std::endl;
         tagger.tag(words, *(parser.get_word_signature()));
 
 
+        //std::cerr << "set words" << std::endl;
         network.set_words(words);
+        //std::cerr << "set embeddings" << std::endl;
         network.precompute_embeddings();
+        //std::cerr << "set rule scores" << std::endl;
         network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-        network.precompute_span_expressions(grammar.lhs_int_set);
+        //network.precompute_span_expressions(grammar.lhs_int_set);
 
         // create and initialise chart
-        std::cerr << "chart" << std::endl;
+        //std::cerr << "chart" << std::endl;
         ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
 
-        std::cerr << "parse" << std::endl;
+        //std::cerr << "parse" << std::endl;
         parser.parse(chart, network);
 
         // get results
         std::cerr << "getting the best tree..." << std::endl;
         best_tree = chart.get_best_tree(start_symbol, 0);
+
+
+        std::vector<anchored_binrule_type> best_anchored_binaries_vec;
+        std::vector<anchored_unirule_type> best_anchored_unaries_vec;
+        std::vector<anchored_lexrule_type> best_anchored_lexicals_vec;
 
         if (not best_tree)
         {
@@ -287,12 +305,23 @@ int NNLorgParseApp::run_train()
           outhyp << "(())" << std::endl;
                               continue;
         }
+        else
+        {
+          std::cerr << *best_tree << '\n';
+          outhyp << *best_tree << std::endl;
 
-        std::cerr << *best_tree << '\n';
-        outhyp << *best_tree << std::endl;
+          best_tree->anchored_productions(best_anchored_binaries_vec,
+                                          best_anchored_unaries_vec,
+                                          best_anchored_lexicals_vec);
+        }
 
-        auto edges = chart.get_best_edges(start_symbol);
 
+        auto best_anchored_binaries = std::unordered_set<decltype(best_anchored_binaries_vec)::value_type>(best_anchored_binaries_vec.begin(),
+                                                                                                           best_anchored_binaries_vec.end());
+        auto best_anchored_unaries = std::unordered_set<decltype(best_anchored_unaries_vec)::value_type>(best_anchored_unaries_vec.begin(),
+                                                                                                         best_anchored_unaries_vec.end());
+        auto best_anchored_lexicals = std::unordered_set<decltype(best_anchored_lexicals_vec)::value_type>(best_anchored_lexicals_vec.begin(),
+                                                                                                           best_anchored_lexicals_vec.end());
 
         // std::cerr << "db1" << std::endl;
 
@@ -301,110 +330,138 @@ int NNLorgParseApp::run_train()
         //                [&](const decltype(edges)::value_type& ep){return network.expressions[ep];});
 
 
-        //        unsigned c = 0;
-        std::for_each(edges.begin(), edges.end(),
-                      [&](const decltype(edges)::value_type& ep)
-                      {
-                        if (network.edges_expressions.count(ep))
-                        {
-                          errs.insert(errs.end(),
-                                      network.edges_expressions[ep].begin(),
-                                      network.edges_expressions[ep].end());
-                          //                ++c;
-                        }
-                        else
-                          std::cerr << "edge is not scored" << std::endl;
-                      }
-                      );
 
-        //      std::cerr << "c " << c << std::endl;
+        //binary rules
+        for (const auto& ref_anc_bin : anchored_binaries)
+        {
+          if (not best_anchored_binaries.count(ref_anc_bin))
+          {
+            errs.push_back( - network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
+                                                      std::get<3>(ref_anc_bin).get_rhs0(),
+                                                      std::get<3>(ref_anc_bin).get_rhs1()
+                                                      ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<3>(ref_anc_bin)
+          //             << " (" << std::get<0>(ref_anc_bin) << "," << std::get<1>(ref_anc_bin) << "," << std::get<2>(ref_anc_bin) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
 
-
-        std::cerr << "db2" << std::endl;
-
-
-        //        c = 0;
-
-        std::vector<cnn::expr::Expression> expp;
-
-        std::transform(anchored_lexicals.begin(), anchored_lexicals.end(),
-                       std::back_inserter(errs),
-                       [&](const anchored_lexrule_type& al)
-                       {
-                         expp.clear();
-                         expp.push_back(network.lexical_rule_expression(std::get<1>(al).get_lhs(), std::get<0>(al)));
-
-                         //               ++c;
-                         return - cnn::expr::sum(expp);
-                       }
-                       );
-
-        // std::cerr << "c " << c << std::endl;
-        std::cerr << "db3" << std::endl;
+        for (const auto& best_anc_bin : best_anchored_binaries)
+        {
+          if (not anchored_binaries.count(best_anc_bin))
+          {
+            errs.push_back(network.rule_expression(std::get<3>(best_anc_bin).get_lhs(),
+                                                   std::get<3>(best_anc_bin).get_rhs0(),
+                                                   std::get<3>(best_anc_bin).get_rhs1()
+                                                   ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<3>(best_anc_bin)
+          //             << " (" << std::get<0>(best_anc_bin) <<"," << std::get<1>(best_anc_bin) << "," << std::get<2>(best_anc_bin) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
 
 
-        std::transform(anchored_unaries.begin(), anchored_unaries.end(),
-                       std::back_inserter(errs),
-                       [&](const anchored_unirule_type& au)
-                       {
-                         //std::cerr << std::get<0>(au) << " " << std::get<1>(au) << " " << std::get<2>(au) << std::endl;
+        //unary rules
+        for (const auto& ref_anc_un : anchored_unaries)
+        {
+          if (not best_anchored_unaries.count(ref_anc_un))
+          {
+            errs.push_back( - network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
+                                                      std::get<2>(ref_anc_un).get_rhs0(),
+                                                      SymbolTable::instance_nt().get_symbol_count()
+                                                      ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<2>(ref_anc_un)
+          //             << " (" << std::get<0>(ref_anc_un) <<"," <<  std::get<1>(ref_anc_un) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
 
-                         expp.clear();
-                         expp.push_back(network.rule_expression(std::get<2>(au).get_lhs(),
-                                                                std::get<2>(au).get_rhs0(),
-                                                                SymbolTable::instance_nt().get_symbol_count()));
-                         expp.push_back(network.span_expression(std::get<2>(au).get_lhs(),
-                                                                std::get<0>(au)));
-
-                         return - cnn::expr::sum(expp);
-                       }
-                       );
-
-
-        std::cerr << "db4" << std::endl;
-
-        // c = 0;
-        std::transform(anchored_binaries.begin(), anchored_binaries.end(),
-                       std::back_inserter(errs),
-                       [&](const anchored_binrule_type& ab)
-                       {
-                         //++c;
-                         expp.clear();
-
-                         //std::cerr << std::get<0>(ab) << " " << std::get<1>(ab) << " " << std::get<2>(ab) << " " << std::get<3>(ab) << std::endl;
-
-
-                         expp.push_back(network.rule_expression(std::get<3>(ab).get_lhs(),
-                                                                std::get<3>(ab).get_rhs0(),
-                                                                std::get<3>(ab).get_rhs1()
-                                                                ));
-
-                         expp.push_back(network.span_expression(std::get<3>(ab).get_lhs(),
-                                                                std::get<0>(ab)));
+        for (const auto& best_anc_un : best_anchored_unaries)
+        {
+          if (not anchored_unaries.count(best_anc_un))
+          {
+            errs.push_back(network.rule_expression(std::get<2>(best_anc_un).get_lhs(),
+                                                   std::get<2>(best_anc_un).get_rhs0(),
+                                                   SymbolTable::instance_nt().get_symbol_count()
+                                                   ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<2>(best_anc_un)
+          //             << " (" << std::get<0>(best_anc_un) <<"," <<  std::get<1>(best_anc_un) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
 
 
-                         return - cnn::expr::sum(expp);
-                       }
-                       );
+        //lexical rules
+        for (const auto& ref_anc_lex : anchored_lexicals)
+        {
+          if (not best_anchored_lexicals.count(ref_anc_lex))
+          {
+            errs.push_back( - network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
+                                                              std::get<0>(ref_anc_lex)
+                                                              ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<1>(ref_anc_lex)
+          //             << " (" << std::get<0>(ref_anc_lex) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
+
+        for (const auto& best_anc_lex : best_anchored_lexicals)
+        {
+          if (not anchored_lexicals.count(best_anc_lex))
+          {
+            errs.push_back(network.lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
+                                                          std::get<0>(best_anc_lex)
+                                                          ));
+          }
+          // else
+          // {
+          //   std::cerr << std::get<1>(best_anc_lex)
+          //             << " (" << std::get<0>(best_anc_lex) << ")"
+          //             << "was correctly retrieved";
+          // }
+        }
 
 
-        //     std::cerr << "c " << c << std::endl;
+                         // expp.push_back(network.span_expression(std::get<2>(au).get_lhs(),
+                         //                                        std::get<0>(au)));
+
+                         // expp.push_back(network.span_expression(std::get<3>(ab).get_lhs(),
+                         //                                        std::get<0>(ab)));
 
         std::cerr << "db5" << std::endl;
         //
-        cnn::expr::Expression s = cnn::expr::sum(errs);
-        // std::cerr << "db5a" << std::endl;
-        network.cg->incremental_forward();
-        loss += as_scalar(network.cg->get_value(s.i));
-        // std::cerr << "db5b" << std::endl;
-        network.cg->backward(s.i);
-        // std::cerr << "db5c" << std::endl;
 
-        trainer.update(1.0);
+        if (not errs.empty())
+        {
+          cnn::expr::Expression s = cnn::expr::sum(errs);
+          // std::cerr << "db5a" << std::endl;
+          network.cg->incremental_forward();
+          loss += as_scalar(network.cg->get_value(s.i));
+          // std::cerr << "db5b" << std::endl;
+          network.cg->backward(s.i);
+          // std::cerr << "db5c" << std::endl;
 
+          trainer.update(1.0);
+        }
         // std::cerr << "db6" << std::endl;
 
-        delete best_tree;
+        if (best_tree)
+          delete best_tree;
         // std::cerr << "db7" << std::endl;
       }
       // else
@@ -474,7 +531,7 @@ int NNLorgParseApp::run_train()
                 network.precompute_embeddings();
                 // should save values once and for all
                 network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-                network.precompute_span_expressions(grammar.lhs_int_set);
+                //network.precompute_span_expressions(grammar.lhs_int_set);
 
                 // create and initialise chart
                 std::cerr << "chart" << std::endl;

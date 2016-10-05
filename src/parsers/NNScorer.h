@@ -88,10 +88,9 @@ struct nn_scorer
   cnn::LSTMBuilder r2l_builder;
   std::vector<cnn::expr::Expression> lstm_embeddings;
 
-  std::unordered_map<const Production*, cnn::expr::Expression> rules_expressions;
+  std::unordered_map<const Production*, std::pair<cnn::expr::Expression,double>> rules_expressions;
   //std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
   std::unordered_map<std::tuple<int,int>, cnn::expr::Expression> spans_expressions;
-  std::unordered_map<const Edge*, std::vector<cnn::expr::Expression>> edges_expressions;
 
 
   std::unordered_set<anchored_binrule_type> anchored_binaries;
@@ -119,21 +118,13 @@ struct nn_scorer
 
 
 
-  double compute_lexical_score(int position, const MetaProduction* mp,
-                               std::vector<cnn::expr::Expression>& expv);
-  double compute_unary_score(int begin, int end, const MetaProduction* mp,
-                             std::vector<cnn::expr::Expression>& expv);
+  double compute_lexical_score(int position, const MetaProduction* mp);
+  double compute_unary_score(int begin, int end, const MetaProduction* mp);
 
-  double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp,
-                              std::vector<cnn::expr::Expression>& expv);
+  double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp);
+
   double
-  compute_internal_span_score(int begin,
-                              int end,
-                              int medium,
-                              int lhs,
-                              std::vector<cnn::expr::Expression>& e);
-
-  void register_expression(const Edge*ep, std::vector<cnn::expr::Expression>& expv);
+  compute_internal_span_score(int begin, int end, int medium, int lhs);
 
   void clear();
   void precompute_rule_expressions(const std::vector<Rule>& brules,
@@ -150,6 +141,6 @@ struct nn_scorer
 
  private:
   double
-  compute_internal_rule_score(const Production* r, std::vector<cnn::expr::Expression>& epp);
+  compute_internal_rule_score(const Production* r);
 
 };
