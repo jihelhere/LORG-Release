@@ -303,7 +303,7 @@ int NNLorgParseApp::run_train()
         {
           std::cerr << "NO SOLUTION" << std::endl;
           outhyp << "(())" << std::endl;
-                              continue;
+                              //continue;
         }
         else
         {
