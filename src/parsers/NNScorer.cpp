@@ -16,9 +16,13 @@ nn_scorer::nn_scorer(cnn::Model& m) :
     _p_b_int(m.add_parameters({HIDDEN_SIZE})),
     _p_o_int(m.add_parameters({1,HIDDEN_SIZE})),
 
-    _p_W_lex(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE+2*LSTM_HIDDEN_SIZE})),
+    _p_W_lex(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE+3*WORD_EMBEDDING_SIZE})),
     _p_b_lex(m.add_parameters({HIDDEN_SIZE})),
     _p_o_lex(m.add_parameters({1,HIDDEN_SIZE})),
+
+    // linear classifier with 2 simple features (POS and WORD, POS)
+    // _p_W_lex(m.add_parameters({1, SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
+    //                               + SymbolTable::instance_nt().get_symbol_count()})),
 
     // _p_W_span(m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE+NT_EMBEDDING_SIZE})),
     // _p_b_span(m.add_parameters({HIDDEN_SIZE})),
@@ -31,8 +35,8 @@ nn_scorer::nn_scorer(cnn::Model& m) :
                                    {NT_EMBEDDING_SIZE})),
 
 
-    l2r_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
-    r2l_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+    // l2r_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+    // r2l_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
 
 
 
@@ -81,7 +85,9 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 
     //std::cerr << *r << std::endl;
 
-    double v = rules_expressions[r].second;
+    //double v = rules_expressions.at(r).second;
+
+    double v = as_scalar(cg->get_value(lexical_rule_expression(mp->get_lhs(), position).i));
 
     //std::cerr << "after" << std::endl;
 
@@ -97,7 +103,7 @@ double
 nn_scorer::compute_internal_rule_score(const Production* r)
 {
 
-  double v = rules_expressions[r].second;
+  double v = rules_expressions.at(r);
   return v;
 }
 
@@ -197,7 +203,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   {
     auto e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
     auto v = as_scalar(cg->get_value(e.i));
-    rules_expressions[&r] = std::make_pair(e,v);
+    rules_expressions[&r] = v;
   }
 
   for (const auto& r : urules)
@@ -206,21 +212,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
                               r.get_rhs0(),
                               SymbolTable::instance_nt().get_symbol_count());
     double v = as_scalar(cg->get_value(e.i));
-    rules_expressions[&r] = std::make_pair(e,v);
-  }
-
-  for (unsigned i = 0; i < words.size(); ++i)
-  {
-    for (const auto mppt : words[i].get_rules())
-    {
-      auto ppt = static_cast<const Production*>(mppt);
-      if (not rules_expressions.count(ppt))
-      {
-        auto e = lexical_rule_expression(ppt->get_lhs(), i);
-        double v = as_scalar(cg->get_value(e.i));
-        rules_expressions[ppt] = std::make_pair(e,v);
-      }
-    }
+    rules_expressions[&r] = v;
   }
 
   cg->forward();
@@ -269,13 +261,31 @@ cnn::expr::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
 cnn::expr::Expression nn_scorer::lexical_rule_expression(int lhs, int word_position)
 {
   cnn::expr::Expression i = cnn::expr::concatenate({lstm_embeddings[word_position],
-                                                    cnn::expr::lookup(*cg, _p_nts, lhs)});
+                                                    cnn::expr::lookup(*cg, _p_nts, lhs)
+                                                    ,
+                                                    word_position == 0 ? cnn::expr::lookup(*cg, _p_word, SymbolTable::instance_word().get_symbol_count()) : lstm_embeddings[word_position-1],
+                                                    word_position == lstm_embeddings.size() - 1 ? cnn::expr::lookup(*cg, _p_word, SymbolTable::instance_word().get_symbol_count()) : lstm_embeddings[word_position+1]
+    });
 
-      cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
-      cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
-      cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
+  cnn::expr::Expression W = cnn::expr::parameter(*cg, _p_W_lex);
+  cnn::expr::Expression b = cnn::expr::parameter(*cg, _p_b_lex);
+  cnn::expr::Expression o = cnn::expr::parameter(*cg, _p_o_lex);
 
-      return o * cnn::expr::rectify(W*i + b);
+  return o * cnn::expr::rectify(W*i + b);
+
+
+  // linear classifier with 2 simple features (POS and WORD, POS)
+  // auto v = std::vector<float>(SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
+  //                             + SymbolTable::instance_nt().get_symbol_count(), 0.0);
+  // v[lhs * SymbolTable::instance_word().get_symbol_count() + words[word_position].get_id()] = 1.0;
+  // v[SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count() + lhs] = 1.0;
+
+  // cnn::expr::Expression i = cnn::expr::input(*cg,{SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
+  //                           + SymbolTable::instance_nt().get_symbol_count()}, v);
+
+  // return W * i;
+
+
 }
 
 // adapted from caio
@@ -294,28 +304,28 @@ void nn_scorer::precompute_embeddings()
   }
 
 
-  std::vector<cnn::expr::Expression> lstm_forward, lstm_backward;
+  // std::vector<cnn::expr::Expression> lstm_forward, lstm_backward;
 
-  // Build forward LSTM
-  l2r_builder.new_graph(*cg);
-  l2r_builder.start_new_sequence();
-  for (const Expression& input : embeddings)
-    lstm_forward.push_back(l2r_builder.add_input(input));
+  // // Build forward LSTM
+  // l2r_builder.new_graph(*cg);
+  // l2r_builder.start_new_sequence();
+  // for (const Expression& input : embeddings)
+  //   lstm_forward.push_back(l2r_builder.add_input(input));
 
-  // Build backward LSTM
-  r2l_builder.new_graph(*cg);
-  r2l_builder.start_new_sequence();
-  for (int i = embeddings.size() -1; i >= 0; --i)
-  {
-    lstm_backward.push_back(r2l_builder.add_input(embeddings[i]));
-  }
+  // // Build backward LSTM
+  // r2l_builder.new_graph(*cg);
+  // r2l_builder.start_new_sequence();
+  // for (int i = embeddings.size() -1; i >= 0; --i)
+  // {
+  //   lstm_backward.push_back(r2l_builder.add_input(embeddings[i]));
+  // }
 
-  for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
-  {
-    Expression e = cnn::expr::concatenate({lstm_backward[lstm_backward.size() - i - 1], lstm_forward[i]});
-    lstm_embeddings.push_back(e);
-  }
+  // for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
+  // {
+  //   Expression e = cnn::expr::concatenate({lstm_backward[lstm_backward.size() - i - 1], lstm_forward[i]});
+  //   lstm_embeddings.push_back(e);
+  // }
 
 
-  //  lstm_embeddings = embeddings;
+ lstm_embeddings = embeddings;
 }

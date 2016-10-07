@@ -86,9 +86,10 @@ struct nn_scorer
 
   cnn::LSTMBuilder l2r_builder;
   cnn::LSTMBuilder r2l_builder;
-  std::vector<cnn::expr::Expression> lstm_embeddings;
 
-  std::unordered_map<const Production*, std::pair<cnn::expr::Expression,double>> rules_expressions;
+
+  std::vector<cnn::expr::Expression> lstm_embeddings;
+  std::unordered_map<const Production*, double> rules_expressions;
   //std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
   std::unordered_map<std::tuple<int,int>, cnn::expr::Expression> spans_expressions;
 

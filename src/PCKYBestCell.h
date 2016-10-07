@@ -368,6 +368,7 @@ void PCKYBestCell<MyEdge,probability_extractor>::add_word(const Word & word,
   {
     //std::cerr << r << std::endl;
     MyEdge e(r->get_lhs(), word_edge, scorer.compute_lexical_score(get_begin(), r));
+    //MyEdge e(r->get_lhs(), word_edge, static_cast<const Rule*>(r)->get_probability());
     e.set_pruning_probability(static_cast<const Rule*>(r)->get_probability());
     (void) add_edge(0, e);
   }
