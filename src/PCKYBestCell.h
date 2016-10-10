@@ -48,7 +48,7 @@
   \brief represents a cell in a chart
   that only accepts new or more probable edges
 */
-#define UNARY_LENGTH 2
+#define UNARY_LENGTH 4
 
 template<class MyEdge, typename probability_extractor>
 class PCKYBestCell {
@@ -210,13 +210,6 @@ template<class MyEdge, typename probability_extractor>
 inline
 const MyEdge * PCKYBestCell<MyEdge,probability_extractor>::process_candidate(int s, const MyEdge& candidate)
 {
-  //  std::cout << max_size << std::endl;
-  //  std::cout << candidate.get_lhs() << std::endl;
-  assert(0 <= candidate.get_lhs());
-  // assert(candidate.get_probability() <= 0);
-  //  assert(candidate.get_lhs() <= (int) max_size);
-
-
   MyEdge ** current = &edges[s * max_size + candidate.get_lhs()];
 
   if(*current)

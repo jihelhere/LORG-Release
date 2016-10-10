@@ -169,7 +169,18 @@ int NNLorgParseApp::run_train()
                     std::vector<Rule>(lex.begin(),lex.end())
                     );
 
-  // std::cout << grammar << std::endl;
+  for (const auto& b : grammar.binary_rules)
+  {
+    std::cout << b << std::endl;
+  }
+  for (const auto& u : grammar.unary_rules)
+  {
+    std::cout << u << std::endl;
+  }
+  for (const auto& l : grammar.lexical_rules)
+  {
+    std::cout << l << std::endl;
+  }
 
 
   ParserCKYNN parser(grammar);

@@ -1,8 +1,9 @@
 #include "ParserCKYNN.h"
 #include "SimpleChartCKY.hpp"
 
-#define THRESHOLD -100000
-
+#define THRESHOLD -10000
+//(-std::numeric_limits<double>::infinity())
+// was -9 ??
 
 void ParserCKYNN::parse(Chart& chart, scorer& s) const
 {
@@ -12,7 +13,7 @@ void ParserCKYNN::parse(Chart& chart, scorer& s) const
   chart.opencells_apply(
       [&](Cell& cell)
       {
-        if (cell.get_end() == 0)
+        if (cell.get_end() == cell.get_begin())
           add_unary_init(cell, isroot, s);
       }
                          );
@@ -80,7 +81,7 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
   Edge candidate;
   candidate.set_right_child(NULL);
 
-  size_t size = cell.get_top() ? Cell::unary_length +1 : Cell::unary_length;
+  size_t size = isroot ? Cell::unary_length +1 : Cell::unary_length;
 
   do {
     const auto& p = accumulator.back();
@@ -88,7 +89,8 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
     const Edge * current_edge = p.second;
     accumulator.pop_back();
 
-
+    if (current_edge->get_pruning_probability() < THRESHOLD)
+      continue;
 
     if (current_height < size - 1)
     {

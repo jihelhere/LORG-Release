@@ -192,7 +192,7 @@ std::string daughters_to_string(const std::list<iterator>& daughters, const std:
   std::ostringstream treename;
   treename << '[';
   for(auto iter = daughters.rbegin(); iter != daughters.rend();++iter)
-    treename << '(' << *(*iter) <<')';
+    treename << '<' << *(*iter) <<'>';
   treename << ']';
 
   return treename.str();
@@ -209,7 +209,7 @@ n_daughters_left_to_string(const std::list<iterator>& daughters, const std::stri
   auto iter = daughters.rbegin();
   while(markov > 0 && iter != daughters.rend())
   {
-    treename << '(' << *(*iter) << ')';
+    treename << '<' << *(*iter) << '>';
     --markov;
     ++iter;
   }
@@ -230,7 +230,7 @@ n_daughters_right_to_string(const std::list<iterator>& daughters, const std::str
   auto iter = daughters.begin();
   while(markov > 0 && iter != daughters.end())
   {
-    treename << '(' << *(*iter) << ')';
+    treename << '<' << *(*iter) << '>';
     --markov;
     ++iter;
   }
@@ -398,17 +398,16 @@ void PtbPsTree::parent_annotate(unsigned level, bool annotate_pos)
 
 void PtbPsTree::productions(std::vector<Production>& internals, std::vector<Production>& lexicals) const
 {
-  typedef PtbPsTree::const_depth_first_iterator const_iterator;
   static SymbolTable& sym_tab_nt = SymbolTable::instance_nt();
   static SymbolTable& sym_tab_word = SymbolTable::instance_word();
 
-  for(const_iterator i(this->dfbegin()); i != this->dfend(); ++i)
+  for(auto i(this->dfbegin()); i != this->dfend(); ++i)
   {
     if(!i->leaf()) {
       int lhs = sym_tab_nt.insert(*i);
       std::vector<int> rhs;
 
-      const_iterator j = i;
+      auto j = i;
       j.down_first();
       if(j->leaf())
       {  //lexical rule
@@ -419,6 +418,7 @@ void PtbPsTree::productions(std::vector<Production>& internals, std::vector<Prod
       { // internal rule
         for(; j != this->dfend(); j.right())
           rhs.push_back(sym_tab_nt.insert(*j));
+
 
         internals.push_back(Production(lhs,rhs,false));
       }
