@@ -27,9 +27,9 @@ nn_scorer::nn_scorer(dynet::Model& m) :
     // _p_W_lex(m.add_parameters({1, SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
     //                               + SymbolTable::instance_nt().get_symbol_count()})),
 
-    // TODO : see relation with binarisation
-    _p_Wleft_span(m.add_parameters({HIDDEN_SIZE,  2*LSTM_HIDDEN_SIZE + NT_EMBEDDING_SIZE})),
-    _p_Wright_span(m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE})),
+
+    _p_Wleft_span(m.add_parameters({HIDDEN_SIZE,  2*LSTM_HIDDEN_SIZE + 1})),
+    _p_Wright_span(m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE + 1})),
     _p_b_span(m.add_parameters({HIDDEN_SIZE})),
     _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
 
@@ -113,7 +113,7 @@ nn_scorer::compute_internal_rule_score(const Production* r)
 double
 nn_scorer::compute_internal_span_score(int begin,
                                        int end,
-                                       int medium,
+                                       int /*medium*/,
                                        int lhs)
 {
   //  return 0.0;
@@ -121,7 +121,9 @@ nn_scorer::compute_internal_span_score(int begin,
 
 
   //  auto t = std::make_tuple(begin,end,medium,lhs);
-  auto t = std::make_tuple(begin,end,lhs);
+  auto t = std::make_tuple(begin,end,
+                           SymbolTable::instance_nt().translate(lhs)[0] == '[' ? 0 : 1
+                           );
 
   double v = spans_expressions.at(t);
 
@@ -145,8 +147,6 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
     double v = compute_internal_rule_score(r);
 
     //std::cerr << "b4 un" << std::endl;
-
-
 
     //std::cerr << "un: " << begin << " " << words[begin]  << (end -1) << " " << words[end-1] << std::endl;
 
@@ -174,22 +174,10 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 
     double v = compute_internal_rule_score(r);
 
-    //    std::cerr << "b4 bin" << std::endl;
+    if (e - s > 2) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
 
-    //std::cerr << "bin: " << s << " " << words[s]  << (e-1) << " " << words[e-1]  << m << " " << words[m] << std::endl;
+    if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r))) v += 1.0;
 
-
-    if (e - s > 2)
-      v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
-    //          std::cerr << "after bin" << std::endl;
-
-
-    if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r)))
-      v += 1.0;
-    // else
-    // {
-    //   std::cerr << "gold binary: " << *r << " " << s << " " << e << " " << m << std::endl;
-    // }
     return v;
   }
 
@@ -214,51 +202,60 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
 }
 
 
-void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_set)
+void nn_scorer::precompute_span_expressions(const std::vector<int>& /*lhs_set*/)
 {
   dynet::expr::Expression Wleft = dynet::expr::parameter(*cg, _p_Wleft_span);
+  dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
 
-  std::vector<std::vector<dynet::expr::Expression>> lefts;
-  for (unsigned l = 0; l < lhs_set.size(); ++l)
+  std::vector<std::vector<dynet::expr::Expression>> lefts, rights;
+  for (unsigned l = 0; l < 2; ++l)
   {
     lefts.push_back(std::vector<dynet::expr::Expression>());
+    rights.push_back(std::vector<dynet::expr::Expression>());
     for (unsigned i = 0; i < words->size(); ++i)
-      lefts[l].push_back(Wleft * dynet::expr::concatenate({lstm_embeddings[i],
-                                                           dynet::expr::lookup(*cg,_p_nts,lhs_set[l])}));
+    {
+      auto e = dynet::expr::concatenate({lstm_embeddings[i],
+                                         dynet::expr::input(*cg, l)});
+      //if (i < words->size() - 2)
+      lefts[l].push_back(Wleft * e);
+      //if (i >= 2)
+      rights[l].push_back(Wright * e);
+    }
   }
-
-  dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
-  std::vector<dynet::expr::Expression> rights;
-  for (unsigned i = 0; i < words->size(); ++i)
-    rights.push_back(Wright * lstm_embeddings[i]);
 
   dynet::expr::Expression b = dynet::expr::parameter(*cg, _p_b_span);
   dynet::expr::Expression o = dynet::expr::parameter(*cg, _p_o_span);
 
-  for (unsigned l = 0; l < lhs_set.size(); ++l)
+  for (unsigned l = 0; l < 2; ++l)
     for (unsigned i = 0; i < words->size(); ++i)
-      for (unsigned j = i+2; j < words->size(); ++j)
+      for (unsigned j = i; j < words->size(); ++j)
       {
-        auto e = o * dynet::expr::rectify(lefts[l][i] + rights[j] + b);
-        spans_expressions[std::make_tuple(i,j,lhs_set[l])] = as_scalar(cg->get_value(e.i));
+        auto e = o * dynet::expr::rectify(lefts[l][i] + rights[l][j] + b);
+        spans_expressions[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(e.i));
       }
 }
 
 dynet::expr::Expression nn_scorer::span_expression(int lhs, int word_position_begin, int word_position_end)
 {
-  // std::cerr << lstm_embeddings.size() << std::endl;
+  std::cerr << lstm_embeddings.size() << std::endl;
   // std::cerr << word_position_end << std::endl;
 
   //std::cerr << lhs << SymbolTable::instance_nt().translate(lhs) << std::endl;
 
-
   dynet::expr::Expression Wleft = dynet::expr::parameter(*cg, _p_Wleft_span);
   dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
 
-  dynet::expr::Expression i_left = Wleft * dynet::expr::concatenate({lstm_embeddings[word_position_begin],
-                                                                     dynet::expr::lookup(*cg,_p_nts,lhs)});
-  dynet::expr::Expression i_right = Wright * lstm_embeddings[word_position_end];
 
+  // seems that we cannot access ptbpstree namespace...
+  auto art = SymbolTable::instance_nt().translate(lhs)[0] == '[' ? 0.0 : 1.0;
+
+
+  // todo do we need this information on both ends ?
+  dynet::expr::Expression i_left = Wleft * dynet::expr::concatenate({lstm_embeddings[word_position_begin],
+                                                                     dynet::expr::input(*cg, art)});
+
+  dynet::expr::Expression i_right = Wright * dynet::expr::concatenate({lstm_embeddings[word_position_end],
+                                                                       dynet::expr::input(*cg, art)});
 
   dynet::expr::Expression b = dynet::expr::parameter(*cg, _p_b_span);
   dynet::expr::Expression o = dynet::expr::parameter(*cg, _p_o_span);
