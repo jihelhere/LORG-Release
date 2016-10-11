@@ -28,14 +28,14 @@
 #endif
 
 
-#include "cnn/cnn.h"
-#include "cnn/training.h"
-#include "cnn/expr.h"
+#include "dynet/dynet.h"
+#include "dynet/training.h"
+#include "dynet/expr.h"
 
 
-#include "cnn/rnn.h"
-#include "cnn/gru.h"
-#include "cnn/lstm.h"
+#include "dynet/rnn.h"
+#include "dynet/gru.h"
+#include "dynet/lstm.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -59,63 +59,58 @@ typedef std::tuple<int,Production> anchored_lexrule_type;
 
 struct nn_scorer
 {
-  cnn::ComputationGraph * cg;
+  dynet::ComputationGraph * cg;
 
 
   //internal rules FF
-  cnn::Parameters* _p_W_int;
-  cnn::Parameters* _p_b_int;
-  cnn::Parameters* _p_o_int;
+  dynet::Parameter _p_W_int;
+  dynet::Parameter _p_b_int;
+  dynet::Parameter _p_o_int;
 
   //lexical rules FF
-  cnn::Parameters* _p_W_lex;
-  cnn::Parameters* _p_b_lex;
-  cnn::Parameters* _p_o_lex;
-
+  dynet::Parameter _p_W_lex;
+  dynet::Parameter _p_b_lex;
+  dynet::Parameter _p_o_lex;
 
   //span FF
-  cnn::Parameters* _p_W_span;
-  cnn::Parameters* _p_b_span;
-  cnn::Parameters* _p_o_span;
-
+  dynet::Parameter _p_Wleft_span;
+  dynet::Parameter _p_Wright_span;
+  dynet::Parameter _p_b_span;
+  dynet::Parameter _p_o_span;
 
   // embeddings for words and symbols
-  cnn::LookupParameters* _p_word;
-  cnn::LookupParameters* _p_nts;
+  dynet::LookupParameter _p_word;
+  dynet::LookupParameter _p_nts;
 
+  dynet::LSTMBuilder l2r_builder;
+  dynet::LSTMBuilder r2l_builder;
 
-  cnn::LSTMBuilder l2r_builder;
-  cnn::LSTMBuilder r2l_builder;
-
-
-  std::vector<cnn::expr::Expression> lstm_embeddings;
+  std::vector<dynet::expr::Expression> lstm_embeddings;
   std::unordered_map<const Production*, double> rules_expressions;
-  //std::unordered_map<std::tuple<int,int,int,int>, cnn::expr::Expression> spans_expressions;
-  std::unordered_map<std::tuple<int,int>, cnn::expr::Expression> spans_expressions;
+  std::unordered_map<std::tuple<int,int,int>, double> spans_expressions;
 
-
-  std::unordered_set<anchored_binrule_type> anchored_binaries;
-  std::unordered_set<anchored_unirule_type> anchored_unaries;
-  std::unordered_set<anchored_lexrule_type> anchored_lexicals;
+  const std::unordered_set<anchored_binrule_type>* anchored_binaries;
+  const std::unordered_set<anchored_unirule_type>* anchored_unaries;
+  const std::unordered_set<anchored_lexrule_type>* anchored_lexicals;
   bool gold;
 
 
-  std::vector<Word> words;
+  const std::vector<Word>* words;
 
 
-  nn_scorer(cnn::Model& m);
+  nn_scorer(dynet::Model& m);
 
-  void set_cg(cnn::ComputationGraph& g) {cg = &g;};
+  void set_cg(dynet::ComputationGraph& g) {cg = &g;};
 
 
-  void set_gold(std::vector<anchored_binrule_type>& ancbin,
-                std::vector<anchored_unirule_type>& ancuni,
-                std::vector<anchored_lexrule_type>& anclex);
+  void set_gold(std::unordered_set<anchored_binrule_type>& ancbin,
+                std::unordered_set<anchored_unirule_type>& ancuni,
+                std::unordered_set<anchored_lexrule_type>& anclex);
 
   void unset_gold();
 
 
-  void set_words(const std::vector<Word>& w); //todo : a ref/pointer to an existing vector ?
+  void set_words(const std::vector<Word>& w);
 
 
 
@@ -130,14 +125,14 @@ struct nn_scorer
   void clear();
   void precompute_rule_expressions(const std::vector<Rule>& brules,
                                    const std::vector<Rule>& urules);
-  void precompute_span_expressions(const std::unordered_set<int>& lhs);
+  void precompute_span_expressions(const std::vector<int>& lhs);
 
   void precompute_embeddings();
 
 
-  cnn::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
-  cnn::expr::Expression lexical_rule_expression(int lhs, int word_position);
-  cnn::expr::Expression span_expression(int lhs, int word_position);
+  dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
+  dynet::expr::Expression lexical_rule_expression(int lhs, int word_position);
+  dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end);
 
 
  private:

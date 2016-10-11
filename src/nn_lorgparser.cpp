@@ -1,12 +1,12 @@
 #include "NNLorgParseApp.h"
-#include <cnn/cnn.h>
+#include <dynet/dynet.h>
 
 int main(int argc, char** argv)
 {
   NNLorgParseApp app;
 
 
-  cnn::Initialize(argc, argv);
+  dynet::initialize(argc, argv);
   if (!app.init(argc,argv)) return -1;
 
   app.run();

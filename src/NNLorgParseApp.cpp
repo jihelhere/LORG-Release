@@ -11,9 +11,7 @@
 
 #include "training/TreebankFactory.h"
 
-
 #include "lexicon/WordSignatureFactory.h"
-
 
 #include "parsers/ParserCKYNN.h"
 
@@ -169,20 +167,6 @@ int NNLorgParseApp::run_train()
                     std::vector<Rule>(lex.begin(),lex.end())
                     );
 
-  for (const auto& b : grammar.binary_rules)
-  {
-    std::cout << b << std::endl;
-  }
-  for (const auto& u : grammar.unary_rules)
-  {
-    std::cout << u << std::endl;
-  }
-  for (const auto& l : grammar.lexical_rules)
-  {
-    std::cout << l << std::endl;
-  }
-
-
   ParserCKYNN parser(grammar);
 
 #ifdef USE_THREADS
@@ -194,15 +178,12 @@ int NNLorgParseApp::run_train()
   std::vector<bracketing> brackets;
 
 
-  // for (const auto& r : grammar.unary_rules) std::cerr << r << std::endl;
-  // for (const auto& r : grammar.lexical_rules) std::cerr << r << std::endl;
+  dynet::Model m;
 
-  cnn::Model m;
-
-  //cnn::SimpleSGDTrainer trainer(&m);
+  //dynet::SimpleSGDTrainer trainer(&m);
   // trainer.eta_decay = 0.08;
-  //cnn::MomentumSGDTrainer trainer(&m);
-  cnn::AdamTrainer trainer(&m);
+  //dynet::MomentumSGDTrainer trainer(&m);
+  dynet::AdamTrainer trainer(&m);
 
 
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
@@ -212,8 +193,13 @@ int NNLorgParseApp::run_train()
 
   ParserCKYNN::scorer network(m);
 
+  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+
+
+
+
 #define ITERATIONS 30
-#define MINI_BATCH 10
+#define MINI_BATCH 200
 
   for (unsigned iteration = 0; iteration < ITERATIONS; ++iteration)
   {
@@ -231,21 +217,18 @@ int NNLorgParseApp::run_train()
     osref << "train-ref-" << iteration << ".mrg";
     std::ofstream outref(osref.str());
 
-
-
-
     auto tree_idx = 0U;
     while (tree_idx < trees.size())
     {
 
-      cnn::ComputationGraph cg;
+      dynet::ComputationGraph cg;
       network.set_cg(cg);
       network.clear();
 
       //std::cerr << "set rule scores" << std::endl;
       network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
-      std::vector<cnn::expr::Expression> errs;
+      std::vector<dynet::expr::Expression> errs;
 
       for (auto mini_batch_idx = 0; mini_batch_idx < MINI_BATCH and tree_idx < trees.size(); ++ mini_batch_idx)
       {
@@ -258,23 +241,14 @@ int NNLorgParseApp::run_train()
         if (s.size() <= max_length)
         {
           if (verbose) std::cerr << tree << std::endl;
-          //std::cerr << "new tree" << std::endl;
           outref << tree << std::endl;
 
-          std::vector<anchored_binrule_type> anchored_binaries_vec;
-          std::vector<anchored_unirule_type> anchored_unaries_vec;
-          std::vector<anchored_lexrule_type> anchored_lexicals_vec;
+          std::unordered_set<anchored_binrule_type> anchored_binaries;
+          std::unordered_set<anchored_unirule_type> anchored_unaries;
+          std::unordered_set<anchored_lexrule_type> anchored_lexicals;
 
-          tree.anchored_productions(anchored_binaries_vec, anchored_unaries_vec, anchored_lexicals_vec);
-          auto anchored_binaries = std::unordered_set<decltype(anchored_binaries_vec)::value_type>(anchored_binaries_vec.begin(),
-                                                                                                   anchored_binaries_vec.end());
-          auto anchored_unaries = std::unordered_set<decltype(anchored_unaries_vec)::value_type>(anchored_unaries_vec.begin(),
-                                                                                                 anchored_unaries_vec.end());
-          auto anchored_lexicals = std::unordered_set<decltype(anchored_lexicals_vec)::value_type>(anchored_lexicals_vec.begin(),
-                                                                                                   anchored_lexicals_vec.end());
-
-
-          network.set_gold(anchored_binaries_vec, anchored_unaries_vec, anchored_lexicals_vec);
+          tree.anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals);
+          network.set_gold(anchored_binaries, anchored_unaries, anchored_lexicals);
 
           std::vector<Word> words;
           int i = -1;
@@ -293,7 +267,7 @@ int NNLorgParseApp::run_train()
 
           //std::cerr << "set embeddings" << std::endl;
           network.precompute_embeddings();
-          //network.precompute_span_expressions(grammar.lhs_int_set);
+          network.precompute_span_expressions(lhs_int_vec);
 
           // create and initialise chart
           //std::cerr << "chart" << std::endl;
@@ -306,10 +280,9 @@ int NNLorgParseApp::run_train()
           std::cerr << "getting the best tree..." << std::endl;
           best_tree = chart.get_best_tree(start_symbol, 0);
 
-
-          std::vector<anchored_binrule_type> best_anchored_binaries_vec;
-          std::vector<anchored_unirule_type> best_anchored_unaries_vec;
-          std::vector<anchored_lexrule_type> best_anchored_lexicals_vec;
+          std::unordered_set<anchored_binrule_type> best_anchored_binaries;
+          std::unordered_set<anchored_unirule_type> best_anchored_unaries;
+          std::unordered_set<anchored_lexrule_type> best_anchored_lexicals;
 
           if (not best_tree)
           {
@@ -321,18 +294,10 @@ int NNLorgParseApp::run_train()
             std::cerr << *best_tree << '\n';
             outhyp << *best_tree << std::endl;
 
-            best_tree->anchored_productions(best_anchored_binaries_vec,
-                                            best_anchored_unaries_vec,
-                                            best_anchored_lexicals_vec);
+            best_tree->anchored_productions(best_anchored_binaries,
+                                            best_anchored_unaries,
+                                            best_anchored_lexicals);
           }
-
-
-          auto best_anchored_binaries = std::unordered_set<decltype(best_anchored_binaries_vec)::value_type>(best_anchored_binaries_vec.begin(),
-                                                                                                             best_anchored_binaries_vec.end());
-          auto best_anchored_unaries = std::unordered_set<decltype(best_anchored_unaries_vec)::value_type>(best_anchored_unaries_vec.begin(),
-                                                                                                           best_anchored_unaries_vec.end());
-          auto best_anchored_lexicals = std::unordered_set<decltype(best_anchored_lexicals_vec)::value_type>(best_anchored_lexicals_vec.begin(),
-                                                                                                             best_anchored_lexicals_vec.end());
 
 
           //binary rules
@@ -344,6 +309,12 @@ int NNLorgParseApp::run_train()
                                                         std::get<3>(ref_anc_bin).get_rhs0(),
                                                         std::get<3>(ref_anc_bin).get_rhs1()
                                                         ));
+
+              if(std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2)
+                errs.push_back( - network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
+                                                          std::get<0>(ref_anc_bin),
+                                                          std::get<1>(ref_anc_bin) -1
+                                                          ));
             }
             // else
             // {
@@ -361,6 +332,11 @@ int NNLorgParseApp::run_train()
                                                      std::get<3>(best_anc_bin).get_rhs0(),
                                                      std::get<3>(best_anc_bin).get_rhs1()
                                                      ));
+              if(std::get<1>(best_anc_bin) - std::get<0>(best_anc_bin) > 2)
+                errs.push_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
+                                                        std::get<0>(best_anc_bin),
+                                                        std::get<1>(best_anc_bin) - 1
+                                                        ));
             }
             // else
             // {
@@ -380,6 +356,11 @@ int NNLorgParseApp::run_train()
                                                         std::get<2>(ref_anc_un).get_rhs0(),
                                                         SymbolTable::instance_nt().get_symbol_count()
                                                         ));
+              if(std::get<1>(ref_anc_un) - std::get<0>(ref_anc_un) > 2)
+                errs.push_back( - network.span_expression(std::get<2>(ref_anc_un).get_lhs(),
+                                                          std::get<0>(ref_anc_un),
+                                                          std::get<1>(ref_anc_un) -1
+                                                          ));
             }
             // else
             // {
@@ -397,6 +378,12 @@ int NNLorgParseApp::run_train()
                                                      std::get<2>(best_anc_un).get_rhs0(),
                                                      SymbolTable::instance_nt().get_symbol_count()
                                                      ));
+
+              if(std::get<1>(best_anc_un) - std::get<0>(best_anc_un) > 2)
+                errs.push_back( network.span_expression(std::get<2>(best_anc_un).get_lhs(),
+                                                        std::get<0>(best_anc_un),
+                                                        std::get<1>(best_anc_un) -1
+                                                        ));
             }
             // else
             // {
@@ -439,14 +426,6 @@ int NNLorgParseApp::run_train()
             //             << "was correctly retrieved";
             // }
           }
-
-
-          // expp.push_back(network.span_expression(std::get<2>(au).get_lhs(),
-          //                                        std::get<0>(au)));
-
-          // expp.push_back(network.span_expression(std::get<3>(ab).get_lhs(),
-          //                                        std::get<0>(ab)));
-
         }
         if (best_tree)
           delete best_tree;
@@ -454,9 +433,9 @@ int NNLorgParseApp::run_train()
 
       if (not errs.empty())
       {
-        cnn::expr::Expression s = cnn::expr::sum(errs);
+        dynet::expr::Expression s = dynet::expr::sum(errs);
         // std::cerr << "db5a" << std::endl;
-        network.cg->incremental_forward();
+        network.cg->incremental_forward(s);
         loss += as_scalar(network.cg->get_value(s.i));
         // std::cerr << "db5b" << std::endl;
         network.cg->backward(s.i);
@@ -476,101 +455,93 @@ int NNLorgParseApp::run_train()
 
     std::stringstream mout;
     mout << "model-" << iteration;
-                        std::ofstream ms(mout.str());
-                        boost::archive::text_oarchive oa(ms);
+    std::ofstream ms(mout.str());
+    boost::archive::text_oarchive oa(ms);
 
-                        oa << m;
+    oa << m;
 
-                              ///////////// process dev file
-                              {
+    ///////////// process dev file
+    {
+      std::vector<Word> s;
+      std::vector< bracketing > brackets;
+      std::string test_sentence;
+      int count = 0;
 
-                                std::vector<Word> s;
-                                std::vector< bracketing > brackets;
-                                std::string test_sentence;
-                                int count = 0;
+      int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
-                                int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+      //clock_t parse_start = (verbose) ? clock() : 0;
 
-                                //clock_t parse_start = (verbose) ? clock() : 0;
+      std::stringstream devss;
+      devss << "dev-hyp-" << iteration;
+      std::ofstream devstream(devss.str());
 
-                                std::stringstream devss;
-                                devss << "dev-hyp-" << iteration;
-                                std::ofstream devstream(devss.str());
+      //rewind test-input
+      delete in;
+      in = new std::ifstream(in_filename.c_str());
 
-                                //rewind test-input
-                                delete in;
-                                in = new std::ifstream(in_filename.c_str());
-
-                                std::vector<std::string> comments;
-                                while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
-                                  clock_t sent_start = (verbose) ? clock() : 0;
-
-                                  // should be "extra-verbose"
-                                  if(verbose) {
-                                    std::clog << "Tokens: ";
-                                    for(std::vector<Word>::const_iterator i = s.begin(); i != s.end(); i++)
-                                      std::clog << "<" << i->get_form() << ">";
-                                    std::clog << "\n";
-                                  }
-
-                                  cnn::ComputationGraph cg;
-                                  network.set_cg(cg);
-                                  network.unset_gold();
-                                  network.clear();
-
-                                  // the pointer to the solution
-                                  PtbPsTree*  best_tree = nullptr;
-
-                                  // check length of input sentence
-                                  if(s.size() <= max_length) {
-
-                                    // tag
-                                    std::cerr << "tag" << std::endl;
-                                    tagger.tag(s, *(parser.get_word_signature()));
-                                    network.set_words(s);
-                                    network.precompute_embeddings();
-                                    // should save values once and for all
-                                    network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-                                    //network.precompute_span_expressions(grammar.lhs_int_set);
-
-                                    // create and initialise chart
-                                    std::cerr << "chart" << std::endl;
-                                    ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, network);
-
-                                    // parse
-                                    std::cerr << "parse" << std::endl;
-                                    parser.parse(chart, network);
-
-                                    // get results
-                                    std::cerr << "results" << std::endl;
-                                    best_tree = chart.get_best_tree(start_symbol, 0);
-                                  }
-
-                                  //FIXME get real prob
-                                  std::vector<std::pair<PtbPsTree*, double> > solutions = {{best_tree, 1.0}};
+      std::vector<std::string> comments;
+      while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
+        clock_t sent_start = (verbose) ? clock() : 0;
 
 
-                                  parse_solution * p_typed =
-                                      parse_solution::factory.create_object(parse_solution::UNIX,
-                                                                            parse_solution(test_sentence, ++count,
-                                                                                           s.size(), solutions,
-                                                                                           (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
-                                                                                           verbose, comments,false)
-                                                                            );
-                                  p_typed->print(devstream);
-                                  delete p_typed;
+        dynet::ComputationGraph cg;
+        network.set_cg(cg);
+        network.unset_gold();
+        network.clear();
+
+        // the pointer to the solution
+        PtbPsTree*  best_tree = nullptr;
+
+        // check length of input sentence
+        if(s.size() <= max_length) {
+
+          // tag
+          //std::cerr << "tag" << std::endl;
+          tagger.tag(s, *(parser.get_word_signature()));
+          network.set_words(s);
+          network.precompute_embeddings();
+          // should save values once and for all
+          network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+          network.precompute_span_expressions(lhs_int_vec);
+
+          // create and initialise chart
+          //std::cerr << "chart" << std::endl;
+          ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, network);
+
+          // parse
+          //std::cerr << "parse" << std::endl;
+          parser.parse(chart, network);
+
+          // get results
+          //std::cerr << "results" << std::endl;
+          best_tree = chart.get_best_tree(start_symbol, 0);
+        }
+
+        //FIXME get real prob
+        std::vector<std::pair<PtbPsTree*, double> > solutions = {{best_tree, 1.0}};
 
 
-                                  delete best_tree;
-                                  s.clear();
-                                  brackets.clear();
+        parse_solution * p_typed =
+            parse_solution::factory.create_object(parse_solution::UNIX,
+                                                  parse_solution(test_sentence, ++count,
+                                                                 s.size(), solutions,
+                                                                 (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
+                                                                 verbose, comments,false)
+                                                  );
+        p_typed->print(devstream);
+        delete p_typed;
 
 
-                                }
-                              }
+        delete best_tree;
+        s.clear();
+        brackets.clear();
+
+
+      }
+    }
   }
 
-        return 0;
+  return 0;
 
 }
 

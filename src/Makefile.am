@@ -278,7 +278,7 @@ nn_lorgparser_SOURCES = nn_lorgparser.cpp \
 	parsers/NNScorer.h parsers/NNScorer.cpp \
 	lexicon/BasicLexicon.cpp lexicon/LexiconFactory.cpp rules/LexicalRule.cpp rules/LexicalRuleTraining.cpp edges/AnnotationInfo.cpp lexicon/BerkeleyLexicon.cpp lexicon/Lexicon.cpp
 
-nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(CNN_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
+nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
 nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer
 # nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
@@ -293,5 +293,5 @@ nn_lorgparser_CPPFLAGS+=-DUSE_THREADS
 endif
 
 
-nn_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(CNN_LDFLAGS)
+nn_lorgparser_LDADD = $(BOOST_LDFLAGS)  $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) $(TBB_LDFLAGS) $(TBB_LIBS) $(DYNET_LDFLAGS)
 #nn_lorgparser_LDADD = $(BOOST_LDFLAGS) $(BOOST_REGEX_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) -lprofiler

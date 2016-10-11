@@ -11,6 +11,8 @@
 #include "LorgConstants.h"
 #include "RandomGenerator.h"
 
+#include "utils/hash_impl.h"
+
 namespace {
 
     inline
@@ -473,20 +475,19 @@ void PtbPsTree::collect_internal_counts(std::map<Production, double> & binary_co
 
 
 
-void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
-                                     std::vector<std::tuple<int,int,Production>>& anchored_unaries,
-                                     std::vector<std::tuple<int,Production>>& anchored_lexicals) const
+void PtbPsTree::anchored_productions(std::unordered_set<std::tuple<int,int,int,Production>>& anchored_binaries,
+                                     std::unordered_set<std::tuple<int,int,Production>>& anchored_unaries,
+                                     std::unordered_set<std::tuple<int,Production>>& anchored_lexicals) const
 {
   return anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
                               0, number_of_leaves());
 
 }
-void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Production>>& anchored_binaries,
-                                     std::vector<std::tuple<int,int,Production>>& anchored_unaries,
-                                     std::vector<std::tuple<int,Production>>& anchored_lexicals,
+void PtbPsTree::anchored_productions(std::unordered_set<std::tuple<int,int,int,Production>>& anchored_binaries,
+                                     std::unordered_set<std::tuple<int,int,Production>>& anchored_unaries,
+                                     std::unordered_set<std::tuple<int,Production>>& anchored_lexicals,
                                      int begin, int end) const
 {
-  typedef PtbPsTree::const_depth_first_iterator const_iterator;
   static SymbolTable& sym_tab_nt = SymbolTable::instance_nt();
   static SymbolTable& sym_tab_word = SymbolTable::instance_word();
 
@@ -496,12 +497,12 @@ void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Producti
     int lhs = sym_tab_nt.insert(*i);
     std::vector<int> rhs;
 
-    const_iterator j = i;
+    auto j = i;
     j.down_first();
     if(j->leaf())
     {  //lexical rule
       rhs.push_back(sym_tab_word.insert(*j));
-      anchored_lexicals.push_back(std::make_tuple(begin,Production(lhs,rhs,true)));
+      anchored_lexicals.insert(std::make_tuple(begin,Production(lhs,rhs,true)));
     }
     else
     { // internal rule
@@ -516,7 +517,7 @@ void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Producti
       }
       if (rhs.size() == 1) //unary rule
       {
-        anchored_unaries.push_back(std::make_tuple(begin,end,Production(lhs,rhs,false)));
+        anchored_unaries.insert(std::make_tuple(begin,end,Production(lhs,rhs,false)));
         daughters[0].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
                                           begin,end);
       }
@@ -527,7 +528,7 @@ void PtbPsTree::anchored_productions(std::vector<std::tuple<int,int,int,Producti
         int m = begin + daughters[0].number_of_leaves();
 
 
-        anchored_binaries.push_back(std::make_tuple(begin,end,m,Production(lhs,rhs,false)));
+        anchored_binaries.insert(std::make_tuple(begin,end,m,Production(lhs,rhs,false)));
         daughters[0].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,
                                           begin, m);
         daughters[1].anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals,

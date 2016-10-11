@@ -25,12 +25,6 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
-
-#include <cnn/cnn.h>
-#include <cnn/training.h>
-#include "cnn/expr.h"
-
-
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #pragma clang diagnostic pop
@@ -48,7 +42,7 @@
   \brief represents a cell in a chart
   that only accepts new or more probable edges
 */
-#define UNARY_LENGTH 4
+#define UNARY_LENGTH 2
 
 template<class MyEdge, typename probability_extractor>
 class PCKYBestCell {
@@ -225,7 +219,15 @@ const MyEdge * PCKYBestCell<MyEdge,probability_extractor>::process_candidate(int
   {
     if (s > 0)
     {
-      MyEdge ** previous = &edges[(s-1) * max_size + candidate.get_lhs()];
+      int sp = 0;
+      MyEdge ** previous = nullptr;
+      while (sp != s)
+      {
+        previous = &edges[sp * max_size + candidate.get_lhs()];
+        if (*previous) break;
+        ++sp;
+      }
+
       if(*previous)
       {
         if (candidate.get_probability() > (*previous)->get_probability())
