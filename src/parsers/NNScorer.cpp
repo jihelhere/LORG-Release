@@ -237,7 +237,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& /*lhs_set*/)
 
 dynet::expr::Expression nn_scorer::span_expression(int lhs, int word_position_begin, int word_position_end)
 {
-  std::cerr << lstm_embeddings.size() << std::endl;
+  //std::cerr << lstm_embeddings.size() << std::endl;
   // std::cerr << word_position_end << std::endl;
 
   //std::cerr << lhs << SymbolTable::instance_nt().translate(lhs) << std::endl;

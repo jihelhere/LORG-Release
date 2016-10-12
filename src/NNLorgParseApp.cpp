@@ -502,7 +502,7 @@ int NNLorgParseApp::run_train()
           network.precompute_embeddings();
           // should save values once and for all
           network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-          //network.precompute_span_expressions(lhs_int_vec);
+          network.precompute_span_expressions(lhs_int_vec);
 
           // create and initialise chart
           //std::cerr << "chart" << std::endl;
