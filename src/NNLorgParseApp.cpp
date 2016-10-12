@@ -63,6 +63,8 @@ void write_symboltable(const SymbolTable& st, const std::string& filename)
   }
 }
 
+
+// extract a MLE pcfg from (binarized) trees
 void collect_rules(const std::vector<PtbPsTree>& trees,
                    std::unordered_set<Rule>& bin,
                    std::unordered_set<Rule>& un,
