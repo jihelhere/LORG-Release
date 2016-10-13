@@ -2,9 +2,8 @@
 #pragma once
 #include "LorgParseApp.h"
 
-//#include "grammars/Grammar.h"
-//#include "rules/Rule.h"
-//#include "parsers/ParserCKYBest.h"
+#include "parsers/ParserCKYNN.h"
+
 
 #include "training/Treebank.h"
 
@@ -33,8 +32,21 @@ private:
 
   unsigned cutoff;
 
-
   int run_train();
+
+  std::pair<std::vector<dynet::expr::Expression>,
+            std::pair<std::string,std::string>>
+  train_instance(const PtbPsTree& tree,
+                 const ParserCKYNN& parser,
+                 const Tagger& tagger,
+                 ParserCKYNN::scorer& network,
+                 int start_symbol
+                 // ,
+                 // std::ofstream& outref,
+                 // std::ofstream& outhyp
+                 );
+
+
 
   //not defined -> forbidden
   NNLorgParseApp(const NNLorgParseApp&);

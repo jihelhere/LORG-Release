@@ -7,7 +7,10 @@
 #include <iostream>
 #include <unordered_set>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
 #include "boost/regex.hpp"
+#pragma clang diagnostic pop
 
 #include "rules/Production.h"
 

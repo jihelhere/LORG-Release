@@ -60,7 +60,10 @@ public:
 
 protected:
   bool
-  rules_for_unary_exist(int rhs_id) const {return !unary_rhs_2_rules[rhs_id].empty();}
+  rules_for_unary_exist(int rhs_id) const
+  {
+    return (unsigned(rhs_id) < unary_rhs_2_rules.size()) and
+        (not unary_rhs_2_rules[rhs_id].empty());}
 
   void remove_lex_rule(Lex* l);
 

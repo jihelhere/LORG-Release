@@ -61,7 +61,6 @@ struct nn_scorer
 {
   dynet::ComputationGraph * cg;
 
-
   //internal rules FF
   dynet::Parameter _p_W_int;
   dynet::Parameter _p_b_int;
@@ -82,8 +81,8 @@ struct nn_scorer
   dynet::LookupParameter _p_word;
   dynet::LookupParameter _p_nts;
 
-  dynet::LSTMBuilder l2r_builder;
-  dynet::LSTMBuilder r2l_builder;
+  // dynet::LSTMBuilder l2r_builder;
+  // dynet::LSTMBuilder r2l_builder;
 
   std::vector<dynet::expr::Expression> lstm_embeddings;
   std::unordered_map<const Production*, double> rules_expressions;
@@ -99,6 +98,8 @@ struct nn_scorer
 
 
   nn_scorer(dynet::Model& m);
+
+  ~nn_scorer() {};
 
   void set_cg(dynet::ComputationGraph& g) {cg = &g;};
 
@@ -125,7 +126,7 @@ struct nn_scorer
   void clear();
   void precompute_rule_expressions(const std::vector<Rule>& brules,
                                    const std::vector<Rule>& urules);
-  void precompute_span_expressions(const std::vector<int>& lhs);
+  void precompute_span_expressions();
 
   void precompute_embeddings();
 

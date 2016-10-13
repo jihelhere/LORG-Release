@@ -279,14 +279,16 @@ nn_lorgparser_SOURCES = nn_lorgparser.cpp \
 	lexicon/BasicLexicon.cpp lexicon/LexiconFactory.cpp rules/LexicalRule.cpp rules/LexicalRuleTraining.cpp edges/AnnotationInfo.cpp lexicon/BerkeleyLexicon.cpp lexicon/Lexicon.cpp
 
 nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
-nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer -march=native -Wall -Wextra -pedantic
+#nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DEIGEN_FAST_MATH
+nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer -Weffc++
+#nn_lorgparser_CXXFLAGS= -O2 -g -pg -Wall -ftemplate-depth=512
 # nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 
 
 #flags for debugging
 #nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) -I.
-#nn_lorgparser_CXXFLAGS= -O2 -g -pg -Wall -ftemplate-depth=512
+
 
 if WANT_TBB
 nn_lorgparser_CPPFLAGS+=-DUSE_THREADS

@@ -7,24 +7,34 @@
 Edge::~Edge()
 {}
 
-Edge::Edge(): lhs(), left(NULL), right(NULL), probability(-10000000), lex(false),
+Edge::Edge(): lhs(), left(NULL), right(NULL), probability(-std::numeric_limits<double>::infinity()),
+              pruning_probability(-std::numeric_limits<double>::infinity()),
+              lex(false),
               word_form(nullptr) {}
 
 Edge::Edge(int l,const Edge * r, const double& p):
-    lhs(l), left(r), right(NULL), probability(p), lex(false), word_form(nullptr)
+    lhs(l), left(r), right(NULL), probability(p),
+    pruning_probability(-std::numeric_limits<double>::infinity()),
+    lex(false), word_form(nullptr)
 {}
 
 Edge::Edge(int l,const Edge * r1,const Edge * r2, const double& p):
-    lhs(l), left(r1), right(r2), probability(p), lex(false), word_form(nullptr)
+    lhs(l), left(r1), right(r2), probability(p),
+    pruning_probability(-std::numeric_limits<double>::infinity()),
+    lex(false), word_form(nullptr)
 {}
 
 Edge::Edge(int lh, const double& p, bool le, const std::string* wf):
-    lhs(lh), left(NULL), right(NULL), probability(p), lex(le), word_form(wf)
+    lhs(lh), left(NULL), right(NULL), probability(p),
+    pruning_probability(-std::numeric_limits<double>::infinity()),
+    lex(le), word_form(wf)
 {}
 
 
 Edge::Edge(const Edge& e) :
-  lhs(e.lhs), left(e.left), right(e.right), probability(e.probability),lex(e.lex)
+  lhs(e.lhs), left(e.left), right(e.right), probability(e.probability),
+  pruning_probability(e.pruning_probability),
+  lex(e.lex)
 {}
 
 

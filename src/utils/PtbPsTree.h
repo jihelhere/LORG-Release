@@ -2,18 +2,20 @@
 #ifndef PTBPSTREE_H
 #define PTBPSTREE_H
 
-#include "PsTree.h"
-
 #include <tuple>
 #include <unordered_map>
+#include <iostream>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
 #include <boost/regex.hpp>
+#pragma clang diagnostic pop
 #pragma clang diagnostic pop
 
 
-#include <iostream>
+#include "PsTree.h"
 
 enum Bin_Direction {LEFT, RIGHT, NONE, RAND};
 typedef int HorizMarkov; // negative value for infinite horizontal markovisation

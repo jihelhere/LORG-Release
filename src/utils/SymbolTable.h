@@ -18,7 +18,10 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
 #include <boost/regex.hpp>
+#pragma clang diagnostic pop
 #pragma clang diagnostic pop
 
 #include <boost/serialization/map.hpp>
