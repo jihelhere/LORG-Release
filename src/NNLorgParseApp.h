@@ -34,8 +34,9 @@ private:
 
   int run_train();
 
-  std::pair<std::vector<dynet::expr::Expression>,
-            std::pair<std::string,std::string>>
+  std::pair<
+    std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
+    std::pair<std::string,std::string>>
   train_instance(const PtbPsTree& tree,
                  const ParserCKYNN& parser,
                  const Tagger& tagger,

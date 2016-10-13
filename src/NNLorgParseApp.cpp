@@ -119,8 +119,10 @@ void collect_rules(const std::vector<PtbPsTree>& trees,
 
 
 // TODO: separate parsing and training
-std::pair<std::vector<dynet::expr::Expression>,
-          std::pair<std::string,std::string>>
+
+std::pair<
+  std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
+  std::pair<std::string,std::string>>
 NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const ParserCKYNN& parser,
                                const Tagger& tagger,
@@ -129,7 +131,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 {
   network.spans_expressions.clear();
 
-  std::vector<dynet::expr::Expression> local_errs;
+  std::vector<dynet::expr::Expression> local_corrects, local_errs;
   std::stringstream ssref,sshyp;
 
   const auto s = tree.yield();
@@ -205,10 +207,10 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_binaries.count(ref_anc_bin))
       {
-        local_errs.push_back( - network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
-                                                        std::get<3>(ref_anc_bin).get_rhs0(),
-                                                        std::get<3>(ref_anc_bin).get_rhs1()
-                                                        ));
+        local_corrects.push_back( network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
+                                                          std::get<3>(ref_anc_bin).get_rhs0(),
+                                                          std::get<3>(ref_anc_bin).get_rhs1()
+                                                          ));
 
         // if(std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2)
         //   local_errs.push_back( - network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
@@ -240,10 +242,10 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_unaries.count(ref_anc_un))
       {
-        local_errs.push_back( - network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
-                                                        std::get<2>(ref_anc_un).get_rhs0(),
-                                                        SymbolTable::instance_nt().get_symbol_count()
-                                                        ));
+        local_corrects.push_back( network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
+                                                          std::get<2>(ref_anc_un).get_rhs0(),
+                                                          SymbolTable::instance_nt().get_symbol_count()
+                                                          ));
         // if(std::get<1>(ref_anc_un) - std::get<0>(ref_anc_un) > 2)
         //   local_errs.push_back( - network.span_expression(std::get<2>(ref_anc_un).get_lhs(),
         //                                                   std::get<0>(ref_anc_un),
@@ -275,9 +277,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_lexicals.count(ref_anc_lex))
       {
-        local_errs.push_back( - network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
-                                                                std::get<0>(ref_anc_lex)
-                                                                ));
+        local_corrects.push_back( network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
+                                                                  std::get<0>(ref_anc_lex)
+                                                                  ));
       }
     }
 
@@ -293,7 +295,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
   }
   if (best_tree) delete best_tree;
 
-  return std::make_pair(local_errs, std::make_pair(ssref.str(), sshyp.str()));
+  return std::make_pair(
+      std::make_pair(local_corrects,local_errs),
+      std::make_pair(ssref.str(), sshyp.str()));
 }
 
 
@@ -411,6 +415,7 @@ int NNLorgParseApp::run_train()
       auto segment = (upper_bound - lower_bound) / nbthreads;
 
 
+      std::vector<std::vector<dynet::expr::Expression>> thread_corrects(nbthreads);
       std::vector<std::vector<dynet::expr::Expression>> thread_errs(nbthreads);
       std::vector<std::vector<std::pair<std::string,std::string>>> thread_treestrings(nbthreads);
       std::vector<std::thread> threads;
@@ -427,11 +432,14 @@ int NNLorgParseApp::run_train()
                                           tagger, networks[i],
                                           start_symbol
                                           );
-                auto& local_errs = res.first;
+                auto& local_corrects = res.first.first;
+                auto& local_errs = res.first.second;
                 auto& strpair = res.second;
 
+                if (not local_corrects.empty())
+                  thread_corrects[i].insert(thread_corrects[i].end(), local_corrects.begin(), local_corrects.end());
                 if (not local_errs.empty())
-                  thread_errs[i].push_back(dynet::expr::sum(local_errs));
+                  thread_errs[i].insert(thread_errs[i].end(), local_errs.begin(), local_errs.end());
 
 
                 thread_treestrings[i].push_back(strpair);
@@ -458,8 +466,12 @@ int NNLorgParseApp::run_train()
 
       for (unsigned thidx = 0; thidx < nbthreads; ++thidx)
       {
+        if (not thread_corrects[thidx].empty())
+          errs.push_back(- dynet::expr::sum(thread_corrects[thidx]));
+
         if (not thread_errs[thidx].empty())
           errs.push_back(dynet::expr::sum(thread_errs[thidx]));
+
 
         for (const auto& p : thread_treestrings[thidx])
         {
