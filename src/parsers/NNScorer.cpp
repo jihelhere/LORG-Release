@@ -8,9 +8,9 @@
 #include <mutex>
 
 
-#define WORD_EMBEDDING_SIZE 50
-#define NT_EMBEDDING_SIZE 20
-#define HIDDEN_SIZE 80
+#define WORD_EMBEDDING_SIZE 100
+#define NT_EMBEDDING_SIZE 50
+#define HIDDEN_SIZE 100
 
 //#define LSTM_HIDDEN_SIZE 100
 
