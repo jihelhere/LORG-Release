@@ -280,7 +280,8 @@ nn_lorgparser_SOURCES = nn_lorgparser.cpp \
 
 nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
 #nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DEIGEN_FAST_MATH
-nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer -Weffc++
+nn_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -fomit-frame-pointer
+#-Weffc++ too many warnings with old boost libs...
 #nn_lorgparser_CXXFLAGS= -O2 -g -pg -Wall -ftemplate-depth=512
 # nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #nn_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer

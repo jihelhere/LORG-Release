@@ -359,14 +359,11 @@ int NNLorgParseApp::run_train()
   // clock_t parse_start = (verbose) ? clock() : 0;
 
 
-
+    std::vector<ParserCKYNN::scorer> networks;
+    for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
+      networks.push_back(ParserCKYNN::scorer(m));
 
   //  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
-
-  std::vector<ParserCKYNN::scorer> networks;
-  for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-    networks.push_back(ParserCKYNN::scorer(m));
-
 
   // TODO: command line options
   constexpr unsigned iterations = 30;
@@ -390,7 +387,6 @@ int NNLorgParseApp::run_train()
 
     unsigned nb_chunks = trees.size() / mini_batch_size;
     if (nb_chunks * mini_batch_size < trees.size()) ++ nb_chunks;
-
 
     for (unsigned chunk = 0; chunk < nb_chunks; ++ chunk)
     {
@@ -493,7 +489,7 @@ int NNLorgParseApp::run_train()
         //std::cerr << "here 5" << std::endl;
         std::cerr << loss << std::endl;
         //std::cerr << "here 6" << std::endl;
-        trainer.update();
+        trainer.update(1.0);
         //std::cerr << "here 7" << std::endl;
       }
     }
@@ -529,17 +525,15 @@ int NNLorgParseApp::run_train()
       delete in;
       in = new std::ifstream(in_filename.c_str());
 
-      ParserCKYNN::scorer network(m);
-
       std::vector<std::string> comments;
       while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
         clock_t sent_start = (verbose) ? clock() : 0;
 
 
-        dynet::ComputationGraph cg;
-        network.set_cg(cg);
-        network.unset_gold();
-        network.clear();
+        dynet::ComputationGraph cgdev;
+        networks[0].set_cg(cgdev);
+        networks[0].unset_gold();
+        networks[0].clear();
 
         // the pointer to the solution
         PtbPsTree*  best_tree = nullptr;
@@ -550,19 +544,19 @@ int NNLorgParseApp::run_train()
           // tag
           //std::cerr << "tag" << std::endl;
           tagger.tag(s, *(parser.get_word_signature()));
-          network.set_words(s);
-          network.precompute_embeddings();
+          networks[0].set_words(s);
+          networks[0].precompute_embeddings();
           // should save values once and for all
-          network.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-          //network.precompute_span_expressions();
+          networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+          //networks[0].precompute_span_expressions();
 
           // create and initialise chart
           //std::cerr << "chart" << std::endl;
-          ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, network);
+          ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, networks[0]);
 
           // parse
           //std::cerr << "parse" << std::endl;
-          parser.parse(chart, network);
+          parser.parse(chart, networks[0]);
 
           // get results
           //std::cerr << "results" << std::endl;

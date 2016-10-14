@@ -12,7 +12,7 @@
 #define NT_EMBEDDING_SIZE 20
 #define HIDDEN_SIZE 80
 
-#define LSTM_HIDDEN_SIZE 100
+//#define LSTM_HIDDEN_SIZE 100
 
 // for concurrent accesses to the cg
 std::mutex cg_mutex;
@@ -348,7 +348,7 @@ void nn_scorer::precompute_embeddings()
     embeddings.push_back(dynet::expr::lookup(*cg,_p_word, w.get_id()));
   }
 
-  std::vector<dynet::expr::Expression> lstm_forward, lstm_backward;
+  // std::vector<dynet::expr::Expression> lstm_forward, lstm_backward;
 
   // // Build forward LSTM
   // static_cast<dynet::LSTMBuilder*>(&l2r_builder)->new_graph(*cg);
