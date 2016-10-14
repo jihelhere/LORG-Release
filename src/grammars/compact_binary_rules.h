@@ -59,7 +59,7 @@ namespace compact_binary_rules {
     template<class BinaryRule>
     static vector_brules convert(const std::vector<BinaryRule>&);
   };
-};
+}
 
 namespace std {
   template<typename info>

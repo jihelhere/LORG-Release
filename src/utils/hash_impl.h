@@ -42,4 +42,4 @@ struct hash<std::tuple<TTypes...>>
     return operator()<sizeof...(TTypes), TTypes...>(value);
   }
 };
-};
+}
