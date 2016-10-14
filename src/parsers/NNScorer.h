@@ -61,28 +61,30 @@ struct nn_scorer
 {
   dynet::ComputationGraph * cg;
 
+  static bool model_initialized;
+
   //internal rules FF
-  dynet::Parameter _p_W_int;
-  dynet::Parameter _p_b_int;
-  dynet::Parameter _p_o_int;
+  static dynet::Parameter _p_W_int;
+  static dynet::Parameter _p_b_int;
+  static dynet::Parameter _p_o_int;
 
   //lexical rules FF
-  dynet::Parameter _p_W_lex;
-  dynet::Parameter _p_b_lex;
-  dynet::Parameter _p_o_lex;
+  static dynet::Parameter _p_W_lex;
+  static dynet::Parameter _p_b_lex;
+  static dynet::Parameter _p_o_lex;
 
   //span FF
-  dynet::Parameter _p_Wleft_span;
-  dynet::Parameter _p_Wright_span;
-  dynet::Parameter _p_b_span;
-  dynet::Parameter _p_o_span;
+  static dynet::Parameter _p_Wleft_span;
+  static dynet::Parameter _p_Wright_span;
+  static dynet::Parameter _p_b_span;
+  static dynet::Parameter _p_o_span;
 
   // embeddings for words and symbols
-  dynet::LookupParameter _p_word;
-  dynet::LookupParameter _p_nts;
+  static dynet::LookupParameter _p_word;
+  static dynet::LookupParameter _p_nts;
 
-  // dynet::LSTMBuilder l2r_builder;
-  // dynet::LSTMBuilder r2l_builder;
+  // static dynet::LSTMBuilder l2r_builder;
+  // static dynet::LSTMBuilder r2l_builder;
 
   std::vector<dynet::expr::Expression> lstm_embeddings;
   std::unordered_map<const Production*, double> rules_expressions;

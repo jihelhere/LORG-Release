@@ -14,34 +14,61 @@
 
 //#define LSTM_HIDDEN_SIZE 100
 
-// for concurrent accesses to the cg
+// for concurrent accesses to the cg and the model
 std::mutex cg_mutex;
+
+bool nn_scorer::model_initialized = false;
+dynet::Parameter nn_scorer::_p_W_int;
+dynet::Parameter nn_scorer::_p_b_int;
+dynet::Parameter nn_scorer::_p_o_int;
+
+dynet::Parameter nn_scorer::_p_W_lex;
+dynet::Parameter nn_scorer::_p_b_lex;
+dynet::Parameter nn_scorer::_p_o_lex;
+
+dynet::Parameter nn_scorer::_p_Wleft_span;
+dynet::Parameter nn_scorer::_p_Wright_span;
+dynet::Parameter nn_scorer::_p_b_span;
+dynet::Parameter nn_scorer::_p_o_span;
+
+dynet::LookupParameter nn_scorer::_p_word;
+dynet::LookupParameter nn_scorer::_p_nts;
+
+
 
 
 
 nn_scorer::nn_scorer(dynet::Model& m) :
     cg(nullptr),
+    rules_expressions(),
+    spans_expressions(),
+    words(nullptr)
 
-    _p_W_int(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE*3})),
-    _p_b_int(m.add_parameters({HIDDEN_SIZE})),
-    _p_o_int(m.add_parameters({1,HIDDEN_SIZE})),
+{
+  std::lock_guard<std::mutex> guard(cg_mutex);
 
-    _p_W_lex(m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE+
+  if (not model_initialized)
+  {
+  _p_W_int = m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE*3});
+  _p_b_int = m.add_parameters({HIDDEN_SIZE});
+  _p_o_int = m.add_parameters({1,HIDDEN_SIZE});
+
+  _p_W_lex = m.add_parameters({HIDDEN_SIZE, NT_EMBEDDING_SIZE+
                                3 * WORD_EMBEDDING_SIZE
                                //2*LSTM_HIDDEN_SIZE
-        })),
-    _p_b_lex(m.add_parameters({HIDDEN_SIZE})),
-    _p_o_lex(m.add_parameters({1,HIDDEN_SIZE})),
+    });
+  _p_b_lex = m.add_parameters({HIDDEN_SIZE});
+  _p_o_lex = m.add_parameters({1,HIDDEN_SIZE});
 
-    // linear classifier with 2 simple features (POS and WORD, POS)
-    // _p_W_lex(m.add_parameters({1, SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
-    //                               + SymbolTable::instance_nt().get_symbol_count()})),
+  // linear classifier with 2 simple features (POS and WORD, POS)
+  // _p_W_lex(m.add_parameters({1, SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
+  //                               + SymbolTable::instance_nt().get_symbol_count()})),
 
 
-    // _p_Wleft_span(m.add_parameters({HIDDEN_SIZE,
-    //                                 //2*LSTM_HIDDEN_SIZE
-    //                                 WORD_EMBEDDING_SIZE
-    //                                 + 1})),
+  // _p_Wleft_span = m.add_parameters({HIDDEN_SIZE,
+  //                                   //  2*LSTM_HIDDEN_SIZE
+  //                                   //  WORD_EMBEDDING_SIZE
+  //                                   //                                 + 1})),
     // _p_Wright_span(m.add_parameters({HIDDEN_SIZE,
     //                                  //2*LSTM_HIDDEN_SIZE
     //                                  WORD_EMBEDDING_SIZE
@@ -50,24 +77,18 @@ nn_scorer::nn_scorer(dynet::Model& m) :
     // _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
 
 
-    _p_word(m.add_lookup_parameters(SymbolTable::instance_word().get_symbol_count()+1,
-                                    {WORD_EMBEDDING_SIZE})),
-    _p_nts(m.add_lookup_parameters(SymbolTable::instance_nt().get_symbol_count()+1,
-                                   {NT_EMBEDDING_SIZE})),
+  _p_word = m.add_lookup_parameters(SymbolTable::instance_word().get_symbol_count()+1,
+                                    {WORD_EMBEDDING_SIZE});
+  _p_nts = m.add_lookup_parameters(SymbolTable::instance_nt().get_symbol_count()+1,
+                                   {NT_EMBEDDING_SIZE});
 
 
-    // l2r_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
-    // r2l_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+  // l2r_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+  // r2l_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+  model_initialized = true;
+  }
 
-
-
-
-    rules_expressions(),
-    spans_expressions(),
-
-    words(nullptr)
-
-{}
+}
 
 
 void nn_scorer::clear()
