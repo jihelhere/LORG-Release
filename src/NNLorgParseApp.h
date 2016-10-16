@@ -31,6 +31,8 @@ private:
   treebank_options tb_options;
 
   unsigned cutoff;
+  unsigned batch_size;
+
 
   int run_train();
 

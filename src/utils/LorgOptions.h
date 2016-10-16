@@ -199,6 +199,20 @@ class LorgOptions
     options.add(parser_opts);
   }
 
+
+  void add_nn_parser_options()
+  {
+    // option for the simpler parser
+    po::options_description parser_opts("neural parser options");
+    parser_opts.add_options()
+        ("grammar,g", po::value<std::string>(), "sets the grammar for the simple parser")
+        ("batch-size", po::value<unsigned>()->default_value(unsigned(10)), "size of batch")
+        ;
+    options.add(parser_opts);
+  }
+
+
+
   void add_parser_positionals()
   {
     positionals.add("test-data", 1);

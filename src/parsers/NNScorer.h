@@ -83,8 +83,8 @@ struct nn_scorer
   static dynet::LookupParameter _p_word;
   static dynet::LookupParameter _p_nts;
 
-  // static dynet::LSTMBuilder l2r_builder;
-  // static dynet::LSTMBuilder r2l_builder;
+  static dynet::LSTMBuilder l2r_builder;
+  static dynet::LSTMBuilder r2l_builder;
 
   std::vector<dynet::expr::Expression> lstm_embeddings;
   std::unordered_map<const Production*, double> rules_expressions;

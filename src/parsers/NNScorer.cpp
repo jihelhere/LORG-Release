@@ -12,7 +12,7 @@
 #define NT_EMBEDDING_SIZE 50
 #define HIDDEN_SIZE 100
 
-//#define LSTM_HIDDEN_SIZE 100
+#define LSTM_HIDDEN_SIZE 150
 
 // for concurrent accesses to the cg and the model
 std::mutex cg_mutex;
@@ -35,6 +35,8 @@ dynet::LookupParameter nn_scorer::_p_word;
 dynet::LookupParameter nn_scorer::_p_nts;
 
 
+dynet::LSTMBuilder nn_scorer::l2r_builder;
+dynet::LSTMBuilder nn_scorer::r2l_builder;
 
 
 
@@ -65,16 +67,16 @@ nn_scorer::nn_scorer(dynet::Model& m) :
   //                               + SymbolTable::instance_nt().get_symbol_count()})),
 
 
-  // _p_Wleft_span = m.add_parameters({HIDDEN_SIZE,
-  //                                   //  2*LSTM_HIDDEN_SIZE
-  //                                   //  WORD_EMBEDDING_SIZE
-  //                                   //                                 + 1})),
-    // _p_Wright_span(m.add_parameters({HIDDEN_SIZE,
-    //                                  //2*LSTM_HIDDEN_SIZE
-    //                                  WORD_EMBEDDING_SIZE
-    //                                  + 1})),
-    // _p_b_span(m.add_parameters({HIDDEN_SIZE})),
-    // _p_o_span(m.add_parameters({1,HIDDEN_SIZE})),
+  _p_Wleft_span = m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE
+                                    //WORD_EMBEDDING_SIZE
+                                    + 1
+    });
+  _p_Wright_span = m.add_parameters({HIDDEN_SIZE, 2*LSTM_HIDDEN_SIZE
+                                     //WORD_EMBEDDING_SIZE
+                                     + 1
+    });
+  _p_b_span = m.add_parameters({HIDDEN_SIZE});
+  _p_o_span = m.add_parameters({1,HIDDEN_SIZE});
 
 
   _p_word = m.add_lookup_parameters(SymbolTable::instance_word().get_symbol_count()+1,
@@ -83,11 +85,12 @@ nn_scorer::nn_scorer(dynet::Model& m) :
                                    {NT_EMBEDDING_SIZE});
 
 
-  // l2r_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
-  // r2l_builder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m),
+  l2r_builder = dynet::LSTMBuilder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m);
+  r2l_builder = dynet::LSTMBuilder(2, WORD_EMBEDDING_SIZE, LSTM_HIDDEN_SIZE, &m);
+
+
   model_initialized = true;
   }
-
 }
 
 
@@ -215,7 +218,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 
     double v = compute_internal_rule_score(r);
 
-    // if (e - s > 2) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
+    if (e - s > 2) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
 
     if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r))) v += 1.0;
 
@@ -245,6 +248,8 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
 
 void nn_scorer::precompute_span_expressions()
 {
+  std::lock_guard<std::mutex> guard(cg_mutex);
+
   dynet::expr::Expression Wleft = dynet::expr::parameter(*cg, _p_Wleft_span);
   dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
 
@@ -283,13 +288,13 @@ dynet::expr::Expression nn_scorer::span_expression(int lhs, int word_position_be
 
   //std::cerr << lhs << SymbolTable::instance_nt().translate(lhs) << std::endl;
 
-  dynet::expr::Expression Wleft = dynet::expr::parameter(*cg, _p_Wleft_span);
-  dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
-
-
   // seems that we cannot access ptbpstree namespace...
   auto art = SymbolTable::instance_nt().translate(lhs)[0] == '[' ? 0.0 : 1.0;
 
+  std::lock_guard<std::mutex> guard(cg_mutex);
+
+  dynet::expr::Expression Wleft = dynet::expr::parameter(*cg, _p_Wleft_span);
+  dynet::expr::Expression Wright = dynet::expr::parameter(*cg, _p_Wright_span);
 
   // todo do we need this information on both ends ?
   dynet::expr::Expression i_left = Wleft * dynet::expr::concatenate({lstm_embeddings[word_position_begin],
@@ -322,16 +327,16 @@ dynet::expr::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
 
 dynet::expr::Expression nn_scorer::lexical_rule_expression(int lhs, int word_idx)
 {
-  int pad = SymbolTable::instance_word().get_symbol_count();
+  // static int pad = SymbolTable::instance_word().get_symbol_count();
 
 
   std::lock_guard<std::mutex> guard(cg_mutex);
 
   dynet::expr::Expression i = dynet::expr::concatenate({lstm_embeddings[word_idx],
                                                         dynet::expr::lookup(*cg, _p_nts, lhs)
-                                                        ,
-                                                        word_idx == 0 ? dynet::expr::lookup(*cg, _p_word, pad) : lstm_embeddings[word_idx-1],
-                                                        word_idx == lstm_embeddings.size() - 1 ? dynet::expr::lookup(*cg, _p_word, pad) : lstm_embeddings[word_idx+1]
+                                                        // ,
+                                                        // word_idx == 0 ? dynet::expr::lookup(*cg, _p_word, pad) : lstm_embeddings[word_idx-1],
+                                                        // word_idx == lstm_embeddings.size() - 1 ? dynet::expr::lookup(*cg, _p_word, pad) : lstm_embeddings[word_idx+1]
     });
 
   dynet::expr::Expression W = dynet::expr::parameter(*cg, _p_W_lex);
@@ -360,7 +365,6 @@ void nn_scorer::precompute_embeddings()
 {
   lstm_embeddings.clear();
 
-
   std::lock_guard<std::mutex> guard(cg_mutex);
 
   std::vector<dynet::expr::Expression> embeddings;
@@ -369,30 +373,32 @@ void nn_scorer::precompute_embeddings()
     embeddings.push_back(dynet::expr::lookup(*cg,_p_word, w.get_id()));
   }
 
-  // std::vector<dynet::expr::Expression> lstm_forward, lstm_backward;
 
-  // // Build forward LSTM
-  // static_cast<dynet::LSTMBuilder*>(&l2r_builder)->new_graph(*cg);
-  // l2r_builder.start_new_sequence();
-  //  for (const Expression& input : embeddings)
-  // {
-  //   lstm_forward.push_back(l2r_builder.add_input(input));
-  // }
+  //lstm_embeddings = embeddings;
 
-  // // Build backward LSTM
-  // r2l_builder.new_graph(*cg);
-  // r2l_builder.start_new_sequence();
-  // for (int i = embeddings.size() -1; i >= 0; --i)
-  // {
-  //   lstm_backward.push_back(r2l_builder.add_input(embeddings[i]));
-  // }
 
-  // for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
-  // {
-  //   Expression e = dynet::expr::concatenate({lstm_backward[lstm_backward.size() - i - 1], lstm_forward[i]});
+  std::vector<dynet::expr::Expression> lstm_forward, lstm_backward;
 
-  //   lstm_embeddings.push_back(e);
-  // }
+  // Build forward LSTM
+  static_cast<dynet::LSTMBuilder*>(&l2r_builder)->new_graph(*cg);
+  l2r_builder.start_new_sequence();
+   for (const Expression& input : embeddings)
+  {
+    lstm_forward.push_back(l2r_builder.add_input(input));
+  }
 
-  lstm_embeddings = embeddings;
+  // Build backward LSTM
+  r2l_builder.new_graph(*cg);
+  r2l_builder.start_new_sequence();
+  for (int i = embeddings.size() -1; i >= 0; --i)
+  {
+    lstm_backward.push_back(r2l_builder.add_input(embeddings[i]));
+  }
+
+  for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
+  {
+    Expression e = dynet::expr::concatenate({lstm_backward[lstm_backward.size() - i - 1], lstm_forward[i]});
+
+    lstm_embeddings.push_back(e);
+  }
 }
