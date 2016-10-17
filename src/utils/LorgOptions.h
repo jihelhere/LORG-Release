@@ -205,8 +205,10 @@ class LorgOptions
     // option for the simpler parser
     po::options_description parser_opts("neural parser options");
     parser_opts.add_options()
-        ("grammar,g", po::value<std::string>(), "sets the grammar for the simple parser")
         ("batch-size", po::value<unsigned>()->default_value(unsigned(10)), "size of batch")
+        ("iterations", po::value<unsigned>()->default_value(unsigned(30)), "number of iterations")
+        ("lstm-level", po::value<unsigned>()->default_value(unsigned(0)), "number of lstm levels (0 for no lstm)")
+        ("span-level", po::value<unsigned>()->default_value(unsigned(0)), "span information (0 for no span)")
         ;
     options.add(parser_opts);
   }

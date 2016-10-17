@@ -83,23 +83,25 @@ struct nn_scorer
   static dynet::LookupParameter _p_word;
   static dynet::LookupParameter _p_nts;
 
-  static dynet::LSTMBuilder l2r_builder;
-  static dynet::LSTMBuilder r2l_builder;
+  static std::vector<dynet::LSTMBuilder> l2r_builders;
+  static std::vector<dynet::LSTMBuilder> r2l_builders;
 
   std::vector<dynet::expr::Expression> lstm_embeddings;
-  std::unordered_map<const Production*, double> rules_expressions;
-  std::unordered_map<std::tuple<int,int,int>, double> spans_expressions;
+  std::unordered_map<const Production*, double> rule_scores;
+  std::unordered_map<std::tuple<int,int,int>, double> span_scores;
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
   const std::unordered_set<anchored_unirule_type>* anchored_unaries;
   const std::unordered_set<anchored_lexrule_type>* anchored_lexicals;
   bool gold;
+  unsigned lexical_level;
+  unsigned span_level;
+
 
 
   const std::vector<Word>* words;
 
-
-  nn_scorer(dynet::Model& m);
+  nn_scorer(dynet::Model& m, unsigned lex_level, unsigned span_level);
 
   ~nn_scorer() {};
 
@@ -134,7 +136,7 @@ struct nn_scorer
 
 
   dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
-  dynet::expr::Expression lexical_rule_expression(int lhs, int word_position);
+  dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
   dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end);
 
 

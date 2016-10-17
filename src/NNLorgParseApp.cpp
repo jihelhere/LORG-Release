@@ -33,7 +33,6 @@ NNLorgParseApp::NNLorgParseApp()
     : LorgParseApp(), train(true)
 {}
 
-
 NNLorgParseApp::~NNLorgParseApp()
 {}
 
@@ -129,7 +128,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                ParserCKYNN::scorer& network,
                                int start_symbol)
 {
-  network.spans_expressions.clear();
+  network.span_scores.clear();
 
   std::vector<dynet::expr::Expression> local_corrects, local_errs;
   std::stringstream ssref,sshyp;
@@ -150,7 +149,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
     network.set_gold(anchored_binaries, anchored_unaries, anchored_lexicals);
 
-
     std::vector<Word> words;
     for (auto i = 0U; i < s.size(); ++i)
     {
@@ -167,7 +165,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //std::cerr << "set embeddings" << std::endl;
     network.precompute_embeddings();
 
-    network.precompute_span_expressions();
+    if (span_level > 0) network.precompute_span_expressions();
 
     // create and initialise chart
     //std::cerr << "chart" << std::endl;
@@ -212,11 +210,11 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                           std::get<3>(ref_anc_bin).get_rhs1()
                                                           ));
 
-        if(std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2)
+        if((span_level > 0) and (std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2))
           local_corrects.push_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
-                                                        std::get<0>(ref_anc_bin),
-                                                        std::get<1>(ref_anc_bin) -1
-                                                        ));
+                                                            std::get<0>(ref_anc_bin),
+                                                            std::get<1>(ref_anc_bin) -1
+                                                            ));
       }
     }
 
@@ -229,7 +227,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                      std::get<3>(best_anc_bin).get_rhs1()
                                                      ));
 
-        if(std::get<1>(best_anc_bin) - std::get<0>(best_anc_bin) > 2)
+        if((span_level > 0) and (std::get<1>(best_anc_bin) - std::get<0>(best_anc_bin) > 2))
           local_errs.push_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
                                                         std::get<0>(best_anc_bin),
                                                         std::get<1>(best_anc_bin) - 1
@@ -247,11 +245,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                           std::get<2>(ref_anc_un).get_rhs0(),
                                                           SymbolTable::instance_nt().get_symbol_count()
                                                           ));
-        // if(std::get<1>(ref_anc_un) - std::get<0>(ref_anc_un) > 2)
-        //   local_errs.push_back( - network.span_expression(std::get<2>(ref_anc_un).get_lhs(),
-        //                                                   std::get<0>(ref_anc_un),
-        //                                                   std::get<1>(ref_anc_un) -1
-        //                                                   ));
       }
     }
 
@@ -263,12 +256,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                      std::get<2>(best_anc_un).get_rhs0(),
                                                      SymbolTable::instance_nt().get_symbol_count()
                                                      ));
-
-        // if(std::get<1>(best_anc_un) - std::get<0>(best_anc_un) > 2)
-        //   local_errs.push_back( network.span_expression(std::get<2>(best_anc_un).get_lhs(),
-        //                                                 std::get<0>(best_anc_un),
-        //                                                 std::get<1>(best_anc_un) -1
-        //                                                 ));
       }
     }
 
@@ -309,9 +296,6 @@ int NNLorgParseApp::run_train()
   json_parse_solution::init();
 
   if(verbose) std::clog << "Start learning process.\n";
-
-  // initialise treebank from configuration
-  // initialise training grammar from treebank
 
   Treebank<PtbPsTree> tb(tb_options, verbose);
 
@@ -362,12 +346,9 @@ int NNLorgParseApp::run_train()
 
     std::vector<ParserCKYNN::scorer> networks;
     for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-      networks.push_back(ParserCKYNN::scorer(m));
+      networks.push_back(ParserCKYNN::scorer(m, lstm_level, span_level));
 
   //  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
-
-  // TODO: command line options
-  constexpr unsigned iterations = 30;
 
   for (unsigned iteration = 0; iteration < iterations; ++iteration)
   {
@@ -402,7 +383,7 @@ int NNLorgParseApp::run_train()
       {
         networks[thidx].set_cg(cg);
         networks[thidx].clear();
-        //std::cerr << "set rule scores" << std::endl;
+
         networks[thidx].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
       }
       auto lower_bound = chunk * batch_size;
@@ -423,11 +404,11 @@ int NNLorgParseApp::run_train()
             {
               for(auto idx = mi; idx < ma; ++idx)
               {
-                std::cerr << '|' ;
                 auto res = train_instance(trees[idx], parser,
                                           tagger, networks[i],
                                           start_symbol
                                           );
+                if (verbose) std::cerr << '|' ;
                 auto& local_corrects = res.first.first;
                 auto& local_errs = res.first.second;
                 auto& strpair = res.second;
@@ -485,9 +466,9 @@ int NNLorgParseApp::run_train()
         //std::cerr << "here 3" << std::endl;
         cg.backward(s.i);
         //std::cerr << "here 4" << std::endl;
-        loss = as_scalar(cg.get_value(s.i)) / batch_size;
+        loss += as_scalar(cg.get_value(s.i));
         //std::cerr << "here 5" << std::endl;
-        std::cerr << loss << std::endl;
+        //std::cerr << loss << std::endl;
         //std::cerr << "here 6" << std::endl;
         trainer.update(1.0);
         //std::cerr << "here 7" << std::endl;
@@ -548,7 +529,7 @@ int NNLorgParseApp::run_train()
           networks[0].precompute_embeddings();
           // should save values once and for all
           networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-          networks[0].precompute_span_expressions();
+          if (span_level > 0) networks[0].precompute_span_expressions();
 
           // create and initialise chart
           //std::cerr << "chart" << std::endl;
@@ -700,22 +681,11 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
     return false;
   }
 
-  // }
-  // else {
-  //   train = false;
-  // }
-
-
   // get training grammar
   if(configuration.exists("grammar")) {
     const std::string& training_filename = configuration.get_value<std::string>("grammar");
     if(verbose)
       std::cerr << "Setting grammar to " << training_filename << ".\n";
-
-    //create grammar of rules and associated probs from training file
-    //grammar = new Grammar<Rule,Rule,Rule>(training_filename);
-    // should check if the grammar is correctly built
-
   }
   else {
     //std::cerr << "grammar wasn't set." << std::endl;
@@ -726,6 +696,9 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   ws = WordSignatureFactory::create_wordsignature(configuration);
 
   batch_size =  configuration.get_value<unsigned>("batch-size");
+  iterations = configuration.get_value<unsigned>("iterations");
+  lstm_level = configuration.get_value<unsigned>("lstm-level");
+  span_level = configuration.get_value<unsigned>("span-level");
 
   return true;
 }

@@ -32,7 +32,9 @@ private:
 
   unsigned cutoff;
   unsigned batch_size;
-
+  unsigned iterations;
+  unsigned lstm_level;
+  unsigned span_level;
 
   int run_train();
 
