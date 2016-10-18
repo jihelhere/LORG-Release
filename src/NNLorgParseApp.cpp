@@ -499,7 +499,7 @@ int NNLorgParseApp::run_train()
       //clock_t parse_start = (verbose) ? clock() : 0;
 
       std::stringstream devss;
-      devss << "dev-hyp-" << iteration;
+      devss << train_output_name << "-dev-hyp-" << iteration;
       std::ofstream devstream(devss.str());
 
       //rewind test-input
