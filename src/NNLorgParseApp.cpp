@@ -357,13 +357,13 @@ int NNLorgParseApp::run_train()
     double loss = 0.0;
 
     std::stringstream oshyp;
-    oshyp << "train-hyp-" << iteration << ".mrg";
+    oshyp << train_output_name << "-train-hyp-" << iteration << ".mrg";
     std::ofstream outhyp(oshyp.str());
 
     std::random_shuffle(std::begin(trees), std::end(trees));
 
     std::stringstream osref;
-    osref << "train-ref-" << iteration << ".mrg";
+    osref << train_output_name << "-train-ref-" << iteration << ".mrg";
     std::ofstream outref(osref.str());
 
     unsigned nb_chunks = trees.size() / batch_size;
@@ -481,7 +481,7 @@ int NNLorgParseApp::run_train()
     trainer.update_epoch();
 
     std::stringstream mout;
-    mout << "model-" << iteration;
+    mout << train_output_name << "-model-" << iteration;
     std::ofstream ms(mout.str());
     boost::archive::text_oarchive oa(ms);
 
@@ -683,9 +683,9 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
 
   // get training grammar
   if(configuration.exists("grammar")) {
-    const std::string& training_filename = configuration.get_value<std::string>("grammar");
+    train_output_name = configuration.get_value<std::string>("grammar");
     if(verbose)
-      std::cerr << "Setting grammar to " << training_filename << ".\n";
+      std::cerr << "Setting grammar to " << train_output_name << ".\n";
   }
   else {
     //std::cerr << "grammar wasn't set." << std::endl;

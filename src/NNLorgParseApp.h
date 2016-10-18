@@ -36,6 +36,9 @@ private:
   unsigned lstm_level;
   unsigned span_level;
 
+  std::string train_output_name;
+
+
   int run_train();
 
   std::pair<
