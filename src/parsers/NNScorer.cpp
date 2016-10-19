@@ -7,7 +7,6 @@
 
 #include <mutex>
 
-
 #define WORD_EMBEDDING_SIZE 100
 #define NT_EMBEDDING_SIZE 50
 #define HIDDEN_SIZE 200
@@ -80,16 +79,18 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level) :
 
 
     unsigned lex_input_dim = 0;
-    unsigned span_input_dim = 0;
+    unsigned span_input_dim_base = 0;
     switch (lex_level) {
       case 0: {
-        span_input_dim = WORD_EMBEDDING_SIZE + 1;
         lex_input_dim = 3*WORD_EMBEDDING_SIZE;
+        span_input_dim_base = WORD_EMBEDDING_SIZE + 1;
+
         break;
       }
       default:
-        span_input_dim = 2*LSTM_HIDDEN_SIZE + 1;
         lex_input_dim = 2*LSTM_HIDDEN_SIZE;
+        span_input_dim_base = 2*LSTM_HIDDEN_SIZE + 1;
+
         break;
     }
 
@@ -109,6 +110,23 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level) :
 
     if (span_level > 0)
     {
+      unsigned span_input_dim = 0;
+      switch (span_level) {
+        case 1: { // only the span
+          span_level = span_input_dim;
+          break;
+        }
+        case 2: { // the span + natural/artificial nt
+          span_level = span_input_dim + 1;
+          break;
+        }
+        default: { // the span + nt embeddding
+          span_level = span_input_dim + NT_EMBEDDING_SIZE;
+          break;
+        }
+      }
+
+
       _p_Wleft_span = m.add_parameters({HIDDEN_SIZE, span_input_dim });
       _p_Wright_span = m.add_parameters({HIDDEN_SIZE, span_input_dim });
       _p_b_span = m.add_parameters({HIDDEN_SIZE});
@@ -270,62 +288,144 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
 }
 
 
-void nn_scorer::precompute_span_expressions()
+void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
   auto Wleft  = de::parameter(*cg, _p_Wleft_span);
   auto Wright = de::parameter(*cg, _p_Wright_span);
-
-  std::vector<std::vector<de::Expression>> lefts, rights;
-  for (unsigned l = 0; l < 2; ++l)
-  {
-    lefts.push_back(std::vector<de::Expression>());
-    rights.push_back(std::vector<de::Expression>());
-    for (unsigned i = 0; i < words->size(); ++i)
-    {
-      auto e = de::concatenate({lstm_embeddings[i],
-                                de::input(*cg, l)});
-
-      //if (i < words->size() - 2)
-      lefts[l].push_back(Wleft * e);
-      //if (i >= 2)
-      rights[l].push_back(Wright * e);
-    }
-  }
-
   auto b = de::parameter(*cg, _p_b_span);
   auto o = de::parameter(*cg, _p_o_span);
 
-  for (unsigned l = 0; l < 2; ++l)
-    for (unsigned i = 0; i < words->size(); ++i)
-      for (unsigned j = i; j < words->size(); ++j)
+
+
+  switch (span_level) {
+    case 1: {
+      std::vector<de::Expression> lefts, rights;
+      for (unsigned i = 0; i < words->size(); ++i)
       {
-        auto e = o * de::rectify(lefts[l][i] + rights[l][j] + b);
-        span_scores[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(e.i));
+        auto e = lstm_embeddings[i];
+        //if (i < words->size() - 2)
+        lefts.push_back(Wleft * e);
+        //if (i >= 2)
+        rights.push_back(Wright * e);
       }
+
+      for (unsigned i = 0; i < words->size(); ++i)
+        for (unsigned j = i; j < words->size(); ++j)
+        {
+          auto e = o * de::rectify(lefts[i] + rights[j] + b);
+          span_scores[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(e.i));
+        }
+
+      break;
+    }
+    case 2: {
+      std::vector<std::vector<de::Expression>> lefts, rights;
+
+      for (unsigned l = 0; l < 2; ++l)
+      {
+        lefts.push_back(std::vector<de::Expression>());
+        rights.push_back(std::vector<de::Expression>());
+        for (unsigned i = 0; i < words->size(); ++i)
+        {
+          auto e = de::concatenate({lstm_embeddings[i],
+                                    de::input(*cg, l)});
+
+          //if (i < words->size() - 2)
+          lefts[l].push_back(Wleft * e);
+          //if (i >= 2)
+          rights[l].push_back(Wright * e);
+        }
+      }
+
+      for (unsigned l = 0; l < 2; ++l)
+        for (unsigned i = 0; i < words->size(); ++i)
+          for (unsigned j = i; j < words->size(); ++j)
+          {
+            auto e = o * de::rectify(lefts[l][i] + rights[l][j] + b);
+            span_scores[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(e.i));
+          }
+
+
+      break;
+    }
+    default:
+      std::vector<std::vector<de::Expression>> lefts, rights;
+
+      for (unsigned l = 0; l < lhs_int.size(); ++l)
+      {
+        lefts.push_back(std::vector<de::Expression>());
+        rights.push_back(std::vector<de::Expression>());
+        for (unsigned i = 0; i < words->size(); ++i)
+        {
+          auto e = de::concatenate({lstm_embeddings[i],
+                                    de::lookup(*cg, _p_word, lhs_int[l])});
+          //if (i < words->size() - 2)
+          lefts[l].push_back(Wleft * e);
+          //if (i >= 2)
+          rights[l].push_back(Wright * e);
+        }
+      }
+
+      for (unsigned l =0;l < lhs_int.size(); ++l)
+        for (unsigned i = 0; i < words->size(); ++i)
+          for (unsigned j = i; j < words->size(); ++j)
+          {
+            auto e = o * de::rectify(lefts[l][i] + rights[l][j] + b);
+            span_scores[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(e.i));
+          }
+      break;
+  }
+
+
+
+
 }
 
 de::Expression nn_scorer::span_expression(int lhs, int begin, int end)
 {
-  auto type_symbol = not_artificial(lhs);
-
   std::lock_guard<std::mutex> guard(cg_mutex);
 
   auto Wleft  = de::parameter(*cg, _p_Wleft_span);
   auto Wright = de::parameter(*cg, _p_Wright_span);
-
-  // todo do we need this information on both ends ?
-  auto i_left = Wleft * de::concatenate({lstm_embeddings[begin],
-                                         de::input(*cg, type_symbol)});
-
-  auto i_right = Wright * de::concatenate({lstm_embeddings[end],
-                                           de::input(*cg, type_symbol)});
-
   auto b = de::parameter(*cg, _p_b_span);
   auto o = de::parameter(*cg, _p_o_span);
 
-  return o * de::rectify(i_left + i_right + b);
+
+  switch (span_level) {
+    case 1: {
+      auto i_left = Wleft * lstm_embeddings[begin];
+      auto i_right = Wright * lstm_embeddings[end];
+
+      return o * de::rectify(i_left + i_right + b);
+      break;
+    }
+    case 2:
+      {
+        auto type_symbol = not_artificial(lhs);
+        // todo do we need this information on both ends ?
+        auto i_left = Wleft * de::concatenate({lstm_embeddings[begin],
+                                               de::input(*cg, type_symbol)});
+
+        auto i_right = Wright * de::concatenate({lstm_embeddings[end],
+                                                 de::input(*cg, type_symbol)});
+
+
+        return o * de::rectify(i_left + i_right + b);
+        break;
+      }
+    default:
+        // todo do we need this information on both ends ?
+        auto i_left = Wleft * de::concatenate({lstm_embeddings[begin],
+                                               de::lookup(*cg, _p_word, lhs)});
+
+        auto i_right = Wright * de::concatenate({lstm_embeddings[end],
+                                                 de::lookup(*cg, _p_word, lhs)});
+
+        return o * de::rectify(i_left + i_right + b);
+      break;
+  }
 }
 
 de::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)

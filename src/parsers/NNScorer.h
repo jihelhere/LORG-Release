@@ -130,7 +130,7 @@ struct nn_scorer
   void clear();
   void precompute_rule_expressions(const std::vector<Rule>& brules,
                                    const std::vector<Rule>& urules);
-  void precompute_span_expressions();
+  void precompute_span_expressions(const std::vector<int>& lhs_int);
 
   void precompute_embeddings();
 

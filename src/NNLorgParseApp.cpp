@@ -117,8 +117,48 @@ void collect_rules(const std::vector<PtbPsTree>& trees,
 
 
 
-// TODO: separate parsing and training
 
+
+// Assume that rule scores are already precomputed
+PtbPsTree *
+NNLorgParseApp::parse_instance(const std::vector<Word>& words,
+                               const ParserCKYNN& parser,
+                               ParserCKYNN::scorer& network,
+                               int start_symbol,
+                               const std::vector<int>& lhs_int_vec)
+{
+
+  PtbPsTree*  best_tree = nullptr;
+
+  //std::cerr << "set words" << std::endl;
+  network.set_words(words);
+
+  //std::cerr << "set embeddings" << std::endl;
+  network.precompute_embeddings();
+
+  if (span_level > 0)
+  {
+    network.span_scores.clear();
+    network.precompute_span_expressions(lhs_int_vec);
+  }
+
+  // create and initialise chart
+  //std::cerr << "chart" << std::endl;
+  std::vector<bracketing> brackets;
+
+  ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
+
+
+  //std::cerr << "parse" << std::endl;
+  parser.parse(chart, network);
+
+  best_tree = chart.get_best_tree(start_symbol, 0);
+
+
+  return best_tree;
+}
+
+//////
 std::pair<
   std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
   std::pair<std::string,std::string>>
@@ -126,28 +166,27 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const ParserCKYNN& parser,
                                const Tagger& tagger,
                                ParserCKYNN::scorer& network,
-                               int start_symbol)
+                               int start_symbol,
+                               const std::vector<int>& lhs_int_vec)
 {
-  network.span_scores.clear();
-
   std::vector<dynet::expr::Expression> local_corrects, local_errs;
   std::stringstream ssref,sshyp;
 
-  const auto s = tree.yield();
+  std::unordered_set<anchored_binrule_type> anchored_binaries;
+  std::unordered_set<anchored_unirule_type> anchored_unaries;
+  std::unordered_set<anchored_lexrule_type> anchored_lexicals;
 
+
+  tree.anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals);
+  network.set_gold(anchored_binaries, anchored_unaries, anchored_lexicals);
+
+  const auto s = tree.yield();
   PtbPsTree*  best_tree = nullptr;
+
   if (s.size() <= max_length)
   {
     //std::cerr << tree << std::endl;
     ssref << tree << std::endl;
-
-    std::unordered_set<anchored_binrule_type> anchored_binaries;
-    std::unordered_set<anchored_unirule_type> anchored_unaries;
-    std::unordered_set<anchored_lexrule_type> anchored_lexicals;
-
-    tree.anchored_productions(anchored_binaries, anchored_unaries, anchored_lexicals);
-
-    network.set_gold(anchored_binaries, anchored_unaries, anchored_lexicals);
 
     std::vector<Word> words;
     for (auto i = 0U; i < s.size(); ++i)
@@ -158,26 +197,13 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //std::cerr << "tag" << std::endl;
     tagger.tag(words, *(parser.get_word_signature()));
 
-
-    //std::cerr << "set words" << std::endl;
-    network.set_words(words);
-
-    //std::cerr << "set embeddings" << std::endl;
-    network.precompute_embeddings();
-
-    if (span_level > 0) network.precompute_span_expressions();
-
-    // create and initialise chart
-    //std::cerr << "chart" << std::endl;
-    std::vector<bracketing> brackets;
-
-    ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
+    best_tree = parse_instance(words,
+                               parser,
+                               network,
+                               start_symbol,
+                               lhs_int_vec);
 
 
-    //std::cerr << "parse" << std::endl;
-    parser.parse(chart, network);
-
-    best_tree = chart.get_best_tree(start_symbol, 0);
 
     std::unordered_set<anchored_binrule_type> best_anchored_binaries;
     std::unordered_set<anchored_unirule_type> best_anchored_unaries;
@@ -344,11 +370,11 @@ int NNLorgParseApp::run_train()
   // clock_t parse_start = (verbose) ? clock() : 0;
 
 
-    std::vector<ParserCKYNN::scorer> networks;
-    for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-      networks.push_back(ParserCKYNN::scorer(m, lstm_level, span_level));
+  std::vector<ParserCKYNN::scorer> networks;
+  for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
+    networks.push_back(ParserCKYNN::scorer(m, lstm_level, span_level));
 
-  //  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
   for (unsigned iteration = 0; iteration < iterations; ++iteration)
   {
@@ -406,7 +432,8 @@ int NNLorgParseApp::run_train()
               {
                 auto res = train_instance(trees[idx], parser,
                                           tagger, networks[i],
-                                          start_symbol
+                                          start_symbol,
+                                          lhs_int_vec
                                           );
                 if (verbose) std::cerr << '|' ;
                 auto& local_corrects = res.first.first;
@@ -506,7 +533,13 @@ int NNLorgParseApp::run_train()
       delete in;
       in = new std::ifstream(in_filename.c_str());
 
+
+      auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+
       std::vector<std::string> comments;
+
+
+
       while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
         clock_t sent_start = (verbose) ? clock() : 0;
 
@@ -514,7 +547,7 @@ int NNLorgParseApp::run_train()
         dynet::ComputationGraph cgdev;
         networks[0].set_cg(cgdev);
         networks[0].unset_gold();
-        networks[0].clear();
+        //networks[0].clear();
 
         // the pointer to the solution
         PtbPsTree*  best_tree = nullptr;
@@ -522,26 +555,15 @@ int NNLorgParseApp::run_train()
         // check length of input sentence
         if(s.size() <= max_length) {
 
+
           // tag
           //std::cerr << "tag" << std::endl;
           tagger.tag(s, *(parser.get_word_signature()));
-          networks[0].set_words(s);
-          networks[0].precompute_embeddings();
-          // should save values once and for all
+
+          // could be moved before loop
           networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-          if (span_level > 0) networks[0].precompute_span_expressions();
 
-          // create and initialise chart
-          //std::cerr << "chart" << std::endl;
-          ParserCKYNN::Chart chart(s,parser.get_nonterm_count(),brackets, networks[0]);
-
-          // parse
-          //std::cerr << "parse" << std::endl;
-          parser.parse(chart, networks[0]);
-
-          // get results
-          //std::cerr << "results" << std::endl;
-          best_tree = chart.get_best_tree(start_symbol, 0);
+          best_tree = parse_instance(s, parser, networks[0], start_symbol, lhs_int_vec);
         }
 
         //FIXME get real prob
@@ -670,15 +692,20 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   if(not LorgParseApp::read_config(configuration))
     return false;
 
-  // if (configuration.exists("train")) {
-  //   train = true;
-
-  if (configuration.exists("treebank")) {
-    tb_options = TreebankFactory::read_config(configuration);
+  if (configuration.exists("train")) {
+    train_mode = configuration.get_value<bool>("train");
   }
-  else {
-    std::cerr << "treebank was not set. Exiting...\n";
-    return false;
+
+  if train_mode
+  {
+    if (configuration.exists("treebank")) {
+      tb_options = TreebankFactory::read_config(configuration);
+    }
+    else
+    {
+      std::cerr << "treebank was not set. Exiting...\n";
+      return false;
+    }
   }
 
   // get training grammar

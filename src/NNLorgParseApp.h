@@ -48,11 +48,16 @@ private:
                  const ParserCKYNN& parser,
                  const Tagger& tagger,
                  ParserCKYNN::scorer& network,
-                 int start_symbol
-                 // ,
-                 // std::ofstream& outref,
-                 // std::ofstream& outhyp
+                 int start_symbol,
+                 const std::vector<int>& lhs_int_vec
                  );
+
+  PtbPsTree *
+  parse_instance(const std::vector<Word>& words,
+                 const ParserCKYNN& parser,
+                 ParserCKYNN::scorer& network,
+                 int start_symbol,
+                 const std::vector<int>& lhs_int_vec);
 
 
 
