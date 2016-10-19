@@ -43,18 +43,10 @@ std::vector<d::LSTMBuilder> nn_scorer::r2l_builders;
 
 
 inline bool
-is_not_artificial(int lhs)
+is_artificial(int lhs)
 {
-  return SymbolTable::instance_nt().translate(lhs)[0] != '[' ;
+  return SymbolTable::instance_nt().translate(lhs)[0] = '[' ;
 }
-
-inline double
-not_artificial(int lhs)
-{
-  return is_not_artificial(lhs) ? 0.0 : 1.0;
-}
-
-
 
 
 nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level) :
@@ -226,7 +218,7 @@ nn_scorer::compute_internal_span_score(int begin,
 {
 
   //  auto t = std::make_tuple(begin,end,medium,lhs);
-  auto t = std::make_tuple(begin,end, is_not_artificial(lhs));
+  auto t = std::make_tuple(begin,end, is_artificial(lhs) ? 0 : 1);
 
   double v = span_scores.at(t);
 
@@ -395,37 +387,34 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end)
 
   switch (span_level) {
     case 1: {
-      auto i_left = Wleft * lstm_embeddings[begin];
-      auto i_right = Wright * lstm_embeddings[end];
-
-      return o * de::rectify(i_left + i_right + b);
+      auto i_left = lstm_embeddings[begin];
+      auto i_right = lstm_embeddings[end];
+      return o * de::rectify(Wleft * i_left + Wright * i_right + b);
       break;
     }
     case 2:
       {
-        auto type_symbol = not_artificial(lhs);
+        auto type_symbol = is_artificial(lhs) ? 0.0 : 1.0;
         // todo do we need this information on both ends ?
-        auto i_left = Wleft * de::concatenate({lstm_embeddings[begin],
-                                               de::input(*cg, type_symbol)});
+        auto i_left = de::concatenate({lstm_embeddings[begin],
+                                       de::input(*cg, type_symbol)});
 
-        auto i_right = Wright * de::concatenate({lstm_embeddings[end],
-                                                 de::input(*cg, type_symbol)});
-
-
-        return o * de::rectify(i_left + i_right + b);
+        auto i_right = de::concatenate({lstm_embeddings[end],
+                                        de::input(*cg, type_symbol)});
+        return o * de::rectify(Wleft * i_left + Wright * i_right + b);
         break;
       }
     default:
         // todo do we need this information on both ends ?
-        auto i_left = Wleft * de::concatenate({lstm_embeddings[begin],
-                                               de::lookup(*cg, _p_word, lhs)});
+        auto i_left = de::concatenate({lstm_embeddings[begin],
+                                       de::lookup(*cg, _p_word, lhs)});
 
-        auto i_right = Wright * de::concatenate({lstm_embeddings[end],
-                                                 de::lookup(*cg, _p_word, lhs)});
-
-        return o * de::rectify(i_left + i_right + b);
-      break;
+        auto i_right = de::concatenate({lstm_embeddings[end],
+                                        de::lookup(*cg, _p_word, lhs)});
+        return o * de::rectify(Wleft * i_left + Wright * i_right + b);
+        break;
   }
+
 }
 
 de::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)

@@ -37,7 +37,7 @@ private:
   unsigned span_level;
 
   std::string train_output_name;
-
+  bool train_mode;
 
   int run_train();
 
