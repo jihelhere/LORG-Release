@@ -45,7 +45,7 @@ std::vector<d::LSTMBuilder> nn_scorer::r2l_builders;
 inline bool
 is_artificial(int lhs)
 {
-  return SymbolTable::instance_nt().translate(lhs)[0] = '[' ;
+  return SymbolTable::instance_nt().translate(lhs)[0] == '[' ;
 }
 
 
