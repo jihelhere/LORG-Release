@@ -75,14 +75,13 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level) :
     switch (lex_level) {
       case 0: {
         lex_input_dim = 3*WORD_EMBEDDING_SIZE;
-        span_input_dim_base = WORD_EMBEDDING_SIZE + 1;
+        span_input_dim_base = WORD_EMBEDDING_SIZE;
 
         break;
       }
       default:
         lex_input_dim = 2*LSTM_HIDDEN_SIZE;
-        span_input_dim_base = 2*LSTM_HIDDEN_SIZE + 1;
-
+        span_input_dim_base = 2*LSTM_HIDDEN_SIZE;
         break;
     }
 
@@ -105,19 +104,18 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level) :
       unsigned span_input_dim = 0;
       switch (span_level) {
         case 1: { // only the span
-          span_level = span_input_dim;
+          span_input_dim = span_input_dim_base;
           break;
         }
         case 2: { // the span + natural/artificial nt
-          span_level = span_input_dim + 1;
+          span_input_dim = span_input_dim_base + 1;
           break;
         }
         default: { // the span + nt embeddding
-          span_level = span_input_dim + NT_EMBEDDING_SIZE;
+          span_input_dim = span_input_dim_base + NT_EMBEDDING_SIZE;
           break;
         }
       }
-
 
       _p_Wleft_span = m.add_parameters({HIDDEN_SIZE, span_input_dim });
       _p_Wright_span = m.add_parameters({HIDDEN_SIZE, span_input_dim });
@@ -218,10 +216,26 @@ nn_scorer::compute_internal_span_score(int begin,
 {
 
   //  auto t = std::make_tuple(begin,end,medium,lhs);
-  auto t = std::make_tuple(begin,end, is_artificial(lhs) ? 0 : 1);
+  double v;
+  int lhs_info = 0;
+  switch (span_level) {
+    case 1: {
+      lhs_info = 0;
+      break;
+    }
+    case 2: {
+      lhs_info = is_artificial(lhs) ? 0 : 1;
+      break;
+    }
+    case 3: {
+      lhs_info = lhs;
+      break;
+    }
+    default:
+      break;
+  }
 
-  double v = span_scores.at(t);
-
+  v = span_scores.at(std::make_tuple(begin,end, lhs_info));
   return v;
 }
 
