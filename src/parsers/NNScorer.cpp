@@ -366,7 +366,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         for (unsigned i = 0; i < words->size(); ++i)
         {
           auto e = de::concatenate({lstm_embeddings[i],
-                                    de::lookup(*cg, _p_word, lhs_int[l])});
+                                    de::lookup(*cg, _p_nts, lhs_int[l])});
           //if (i < words->size() - 2)
           lefts[l].push_back(Wleft * e);
           //if (i >= 2)
@@ -421,10 +421,10 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end)
     default:
         // todo do we need this information on both ends ?
         auto i_left = de::concatenate({lstm_embeddings[begin],
-                                       de::lookup(*cg, _p_word, lhs)});
+                                       de::lookup(*cg, _p_nts, lhs)});
 
         auto i_right = de::concatenate({lstm_embeddings[end],
-                                        de::lookup(*cg, _p_word, lhs)});
+                                        de::lookup(*cg, _p_nts, lhs)});
         return o * de::rectify(Wleft * i_left + Wright * i_right + b);
         break;
   }

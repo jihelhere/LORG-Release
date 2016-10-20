@@ -698,6 +698,7 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
 
   if (train_mode)
   {
+
     if (configuration.exists("treebank")) {
       tb_options = TreebankFactory::read_config(configuration);
     }
