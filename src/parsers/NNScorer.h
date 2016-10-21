@@ -74,8 +74,7 @@ struct nn_scorer
   static dynet::Parameter _p_o_lex;
 
   //span FF
-  static dynet::Parameter _p_Wleft_span;
-  static dynet::Parameter _p_Wright_span;
+  static dynet::Parameter _p_W_span;
   static dynet::Parameter _p_b_span;
   static dynet::Parameter _p_o_span;
 
@@ -101,7 +100,11 @@ struct nn_scorer
 
   const std::vector<Word>* words;
 
-  nn_scorer(dynet::Model& m, unsigned lex_level, unsigned span_level);
+  nn_scorer(dynet::Model& m, unsigned lex_level, unsigned span_level,
+            unsigned word_embedding_size,
+            unsigned nt_embedding_size,
+            unsigned hidden_size,
+            unsigned lstm_hidden_size);
 
   ~nn_scorer() {};
 

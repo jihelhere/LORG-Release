@@ -36,6 +36,12 @@ private:
   unsigned lstm_level;
   unsigned span_level;
 
+  unsigned word_embedding_size;
+  unsigned nt_embedding_size;
+  unsigned hidden_size;
+  unsigned lstm_hidden_size;
+
+
   std::string train_output_name;
   bool train_mode;
 

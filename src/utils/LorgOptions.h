@@ -210,6 +210,10 @@ class LorgOptions
         ("lstm-level", po::value<unsigned>()->default_value(0U), "number of lstm levels (0 for no lstm)")
         ("span-level", po::value<unsigned>()->default_value(0U), "span information (0 for no span)")
         ("train",      po::value<bool>()->default_value(true), "train or test")
+        ("word-embedding-size", po::value<unsigned>()->default_value(100), "size of word embeddings")
+        ("nt-embedding-size", po::value<unsigned>()->default_value(50), "size of non-terminal embeddings")
+        ("hidden-size", po::value<unsigned>()->default_value(200), "size of feed forward hidden layer")
+        ("lstm-hidden-size", po::value<unsigned>()->default_value(200), "size of lstm hidden layer")
         ;
     options.add(parser_opts);
   }

@@ -231,13 +231,13 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_binaries.count(ref_anc_bin))
       {
-        local_corrects.push_back( network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
+        local_corrects.emplace_back( network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
                                                           std::get<3>(ref_anc_bin).get_rhs0(),
                                                           std::get<3>(ref_anc_bin).get_rhs1()
                                                           ));
 
         if((span_level > 0) and (std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2))
-          local_corrects.push_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
+          local_corrects.emplace_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
                                                             std::get<0>(ref_anc_bin),
                                                             std::get<1>(ref_anc_bin) -1
                                                             ));
@@ -248,13 +248,13 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not anchored_binaries.count(best_anc_bin))
       {
-        local_errs.push_back(network.rule_expression(std::get<3>(best_anc_bin).get_lhs(),
+        local_errs.emplace_back(network.rule_expression(std::get<3>(best_anc_bin).get_lhs(),
                                                      std::get<3>(best_anc_bin).get_rhs0(),
                                                      std::get<3>(best_anc_bin).get_rhs1()
                                                      ));
 
         if((span_level > 0) and (std::get<1>(best_anc_bin) - std::get<0>(best_anc_bin) > 2))
-          local_errs.push_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
+          local_errs.emplace_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
                                                         std::get<0>(best_anc_bin),
                                                         std::get<1>(best_anc_bin) - 1
                                                         ));
@@ -267,7 +267,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_unaries.count(ref_anc_un))
       {
-        local_corrects.push_back( network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
+        local_corrects.emplace_back( network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
                                                           std::get<2>(ref_anc_un).get_rhs0(),
                                                           SymbolTable::instance_nt().get_symbol_count()
                                                           ));
@@ -278,7 +278,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not anchored_unaries.count(best_anc_un))
       {
-        local_errs.push_back(network.rule_expression(std::get<2>(best_anc_un).get_lhs(),
+        local_errs.emplace_back(network.rule_expression(std::get<2>(best_anc_un).get_lhs(),
                                                      std::get<2>(best_anc_un).get_rhs0(),
                                                      SymbolTable::instance_nt().get_symbol_count()
                                                      ));
@@ -291,7 +291,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_lexicals.count(ref_anc_lex))
       {
-        local_corrects.push_back( network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
+        local_corrects.emplace_back( network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
                                                                   std::get<0>(ref_anc_lex)
                                                                   ));
       }
@@ -301,7 +301,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not anchored_lexicals.count(best_anc_lex))
       {
-        local_errs.push_back(network.lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
+        local_errs.emplace_back(network.lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
                                                              std::get<0>(best_anc_lex)
                                                              ));
       }
@@ -372,9 +372,14 @@ int NNLorgParseApp::run_train()
 
   std::vector<ParserCKYNN::scorer> networks;
   for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-    networks.push_back(ParserCKYNN::scorer(m, lstm_level, span_level));
+    networks.emplace_back(m, lstm_level, span_level,
+                          word_embedding_size,
+                          nt_embedding_size,
+                          hidden_size,
+                          lstm_hidden_size
+                          );
 
-  auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+  auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
   for (unsigned iteration = 0; iteration < iterations; ++iteration)
   {
@@ -383,13 +388,29 @@ int NNLorgParseApp::run_train()
     double loss = 0.0;
 
     std::stringstream oshyp;
-    oshyp << train_output_name << "-train-hyp-" << iteration << ".mrg";
+    oshyp << train_output_name
+          << "-b" << batch_size
+          << "-s" << span_level
+          << "-l" << lstm_level
+          << "-w" << word_embedding_size
+          << "-n" << nt_embedding_size
+          << "-h" << hidden_size
+          << "-lh" << lstm_hidden_size
+          << "-train-hyp-" << iteration << ".mrg";
     std::ofstream outhyp(oshyp.str());
 
     std::random_shuffle(std::begin(trees), std::end(trees));
 
     std::stringstream osref;
-    osref << train_output_name << "-train-ref-" << iteration << ".mrg";
+    osref << train_output_name
+          << "-b" << batch_size
+          << "-s" << span_level
+          << "-l" << lstm_level
+          << "-w" << word_embedding_size
+          << "-n" << nt_embedding_size
+          << "-h" << hidden_size
+          << "-lh" << lstm_hidden_size
+          << "-train-ref-" << iteration << ".mrg";
     std::ofstream outref(osref.str());
 
     unsigned nb_chunks = trees.size() / batch_size;
@@ -446,7 +467,7 @@ int NNLorgParseApp::run_train()
                   thread_errs[i].insert(thread_errs[i].end(), local_errs.begin(), local_errs.end());
 
 
-                thread_treestrings[i].push_back(strpair);
+                thread_treestrings[i].emplace_back(strpair);
               }
             };
 
@@ -459,7 +480,7 @@ int NNLorgParseApp::run_train()
 
 
         //f(thidx,mi,ma);
-        threads.push_back(std::thread(f,thidx,mi,ma));
+        threads.emplace_back(std::thread(f,thidx,mi,ma));
       }
       for (auto& thread : threads)
       {
@@ -471,10 +492,10 @@ int NNLorgParseApp::run_train()
       for (unsigned thidx = 0; thidx < nbthreads; ++thidx)
       {
         if (not thread_corrects[thidx].empty())
-          errs.push_back(- dynet::expr::sum(thread_corrects[thidx]));
+          errs.emplace_back(- dynet::expr::sum(thread_corrects[thidx]));
 
         if (not thread_errs[thidx].empty())
-          errs.push_back(dynet::expr::sum(thread_errs[thidx]));
+          errs.emplace_back(dynet::expr::sum(thread_errs[thidx]));
 
 
         for (const auto& p : thread_treestrings[thidx])
@@ -508,7 +529,15 @@ int NNLorgParseApp::run_train()
     trainer.update_epoch();
 
     std::stringstream mout;
-    mout << train_output_name << "-model-" << iteration;
+    mout << train_output_name
+          << "-b" << batch_size
+          << "-s" << span_level
+          << "-l" << lstm_level
+          << "-w" << word_embedding_size
+          << "-n" << nt_embedding_size
+          << "-h" << hidden_size
+          << "-lh" << lstm_hidden_size
+         << "-model-" << iteration;
     std::ofstream ms(mout.str());
     boost::archive::text_oarchive oa(ms);
 
@@ -516,9 +545,6 @@ int NNLorgParseApp::run_train()
 
     ///////////// process dev file
     {
-      std::vector<Word> s;
-      std::vector< bracketing > brackets;
-      std::string test_sentence;
       int count = 0;
 
       int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
@@ -526,66 +552,105 @@ int NNLorgParseApp::run_train()
       //clock_t parse_start = (verbose) ? clock() : 0;
 
       std::stringstream devss;
-      devss << train_output_name << "-dev-hyp-" << iteration;
+      devss << train_output_name
+            << "-b" << batch_size
+            << "-s" << span_level
+            << "-l" << lstm_level
+            << "-w" << word_embedding_size
+            << "-n" << nt_embedding_size
+            << "-h" << hidden_size
+            << "-lh" << lstm_hidden_size
+            << "-dev-hyp-" << iteration;
       std::ofstream devstream(devss.str());
 
       //rewind test-input
       delete in;
       in = new std::ifstream(in_filename.c_str());
 
+      auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
-      auto lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+      // this is moved here and si sequential
+      // bc a mutex is needed
+      for (unsigned i = 0; i < nbthreads; ++i)
+      {
+        dynet::ComputationGraph cg;
+        networks[i].set_cg(cg);
+        networks[i].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+      }
 
-      std::vector<std::string> comments;
 
+      std::vector<std::vector<Word>> s(nbthreads);
+      std::vector<std::vector< bracketing>> brackets(nbthreads);
+      std::vector<std::vector<std::pair<PtbPsTree*,double>>> solutions(nbthreads, {{nullptr,1.0}});
 
-
-      while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
-        clock_t sent_start = (verbose) ? clock() : 0;
-
+      bool allvalid = true;
+      while(allvalid)
+      {
 
         dynet::ComputationGraph cgdev;
-        networks[0].set_cg(cgdev);
-        networks[0].unset_gold();
-        //networks[0].clear();
-
-        // the pointer to the solution
-        PtbPsTree*  best_tree = nullptr;
-
-        // check length of input sentence
-        if(s.size() <= max_length) {
 
 
-          // tag
-          //std::cerr << "tag" << std::endl;
-          tagger.tag(s, *(parser.get_word_signature()));
 
-          // could be moved before loop
-          networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        std::vector<std::string> test_sentence(nbthreads);
+        std::vector<std::vector<std::string>> comments(nbthreads);
 
-          best_tree = parse_instance(s, parser, networks[0], start_symbol, lhs_int_vec);
+        std::vector<bool> valid_sentence(nbthreads, true);
+
+        std::vector<clock_t> clock_start(nbthreads,0);
+        std::vector<clock_t> clock_end(nbthreads,0);
+
+        std::vector<std::thread> threads;
+
+        for (unsigned i = 0; i < nbthreads; ++i)
+        {
+          networks[i].set_cg(cgdev);
+          networks[i].unset_gold();
+
+          valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);
+          allvalid = allvalid and valid_sentence[i];
+
+          auto f = [&](unsigned idx)
+                   {
+                     if (not valid_sentence[idx]) return;
+                     clock_start[idx] = (verbose) ? clock() : 0;
+
+                     // check length of input sentence
+                     if(s[idx].size() <= max_length)
+                     {
+                       tagger.tag(s[idx], *(parser.get_word_signature()));
+                       solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol, lhs_int_vec);
+                     }
+                     clock_end[idx] = (verbose) ? clock() : 0;
+                   };
+          //f(i);
+          threads.emplace_back(std::thread(f,i));
         }
 
-        //FIXME get real prob
-        std::vector<std::pair<PtbPsTree*, double> > solutions = {{best_tree, 1.0}};
+        for (auto& thread : threads)
+          thread.join();
+
+        for (unsigned i = 0; i < nbthreads; ++i)
+        {
+          if (valid_sentence[i])
+          {
+            auto* p_typed =
+                parse_solution::factory.create_object(parse_solution::UNIX,
+                                                      parse_solution(test_sentence[i], ++count,
+                                                                     s[i].size(), solutions[i],
+                                                                     (verbose) ? clock_end[i] -clock_start[i] / double(CLOCKS_PER_SEC) : 0,
+                                                                     verbose, comments[i],false)
+                                                      );
+            p_typed->print(devstream);
+            delete p_typed;
+          }
 
 
-        parse_solution * p_typed =
-            parse_solution::factory.create_object(parse_solution::UNIX,
-                                                  parse_solution(test_sentence, ++count,
-                                                                 s.size(), solutions,
-                                                                 (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
-                                                                 verbose, comments,false)
-                                                  );
-        p_typed->print(devstream);
-        delete p_typed;
+          delete solutions[i][0].first;
+          solutions[i][0].first = nullptr;
+          s[i].clear();
+          brackets[i].clear();
 
-
-        delete best_tree;
-        s.clear();
-        brackets.clear();
-
-
+        }
       }
     }
   }
@@ -598,10 +663,6 @@ int NNLorgParseApp::run_train()
   int NNLorgParseApp::run()
   {
     if (train) return run_train();
-    // else
-    //   return run_parse();
-
-
 
     if(verbose) std::clog << "Start parsing process.\n";
 
@@ -727,6 +788,11 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   iterations = configuration.get_value<unsigned>("iterations");
   lstm_level = configuration.get_value<unsigned>("lstm-level");
   span_level = configuration.get_value<unsigned>("span-level");
+
+  word_embedding_size = configuration.get_value<unsigned>("word-embedding-size");
+  nt_embedding_size = configuration.get_value<unsigned>("nt-embedding-size");
+  hidden_size = configuration.get_value<unsigned>("hidden-size");
+  lstm_hidden_size = configuration.get_value<unsigned>("lstm-hidden-size");
 
   return true;
 }
