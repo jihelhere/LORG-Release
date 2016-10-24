@@ -426,13 +426,21 @@ int NNLorgParseApp::run_train()
       // collect errors for the mini batch
       std::vector<dynet::expr::Expression> errs;
 
-      for (unsigned thidx = 0; thidx < nbthreads; ++thidx)
+      networks[0].set_cg(cg);
+      networks[0].clear();
+      networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+
+
+      for (unsigned thidx = 1; thidx < nbthreads; ++thidx)
       {
         networks[thidx].set_cg(cg);
         networks[thidx].clear();
 
-        networks[thidx].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        networks[thidx].rule_scores = networks[0].rule_scores;
       }
+
+
+
       auto lower_bound = chunk * batch_size;
       auto upper_bound = std::min<unsigned long>(trees.size(), (chunk+1)*batch_size);
 
@@ -571,12 +579,17 @@ int NNLorgParseApp::run_train()
 
       // this is moved here and si sequential
       // bc a mutex is needed
-      for (unsigned i = 0; i < nbthreads; ++i)
       {
         dynet::ComputationGraph cg;
-        networks[i].set_cg(cg);
-        networks[i].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        networks[0].set_cg(cg);
+        networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
       }
+      for (unsigned i = 1; i < nbthreads; ++i)
+      {
+        networks[i].rule_scores = networks[0].rule_scores;
+      }
+
+
 
 
       std::vector<std::vector<Word>> s(nbthreads);

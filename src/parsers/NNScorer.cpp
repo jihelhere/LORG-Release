@@ -38,9 +38,6 @@ d::LookupParameter nn_scorer::_p_nts;
 std::vector<d::LSTMBuilder> nn_scorer::l2r_builders;
 std::vector<d::LSTMBuilder> nn_scorer::r2l_builders;
 
-
-
-
 inline bool
 is_artificial(int lhs)
 {
