@@ -490,3 +490,19 @@ void nn_scorer::precompute_embeddings()
     }
   }
 }
+
+void nn_scorer::set_dropout()
+{
+  for (auto& l: l2r_builders)
+    l.set_dropout(0.5);
+  for (auto& l: r2l_builders)
+    l.set_dropout(0.5);
+}
+
+void nn_scorer::unset_dropout()
+{
+  for (auto& l: l2r_builders)
+    l.disable_dropout();
+  for (auto& l: r2l_builders)
+    l.disable_dropout();
+}

@@ -429,6 +429,7 @@ int NNLorgParseApp::run_train()
       networks[0].set_cg(cg);
       networks[0].clear();
       networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+      networks[0].set_dropout();
 
 
       for (unsigned thidx = 1; thidx < nbthreads; ++thidx)
@@ -437,6 +438,8 @@ int NNLorgParseApp::run_train()
         networks[thidx].clear();
 
         networks[thidx].rule_scores = networks[0].rule_scores;
+
+        networks[thidx].set_dropout();
       }
 
 
@@ -445,6 +448,8 @@ int NNLorgParseApp::run_train()
       auto upper_bound = std::min<unsigned long>(trees.size(), (chunk+1)*batch_size);
 
       auto segment = (upper_bound - lower_bound) / nbthreads;
+      if ((lower_bound + nbthreads * segment) < upper_bound)
+        ++ segment;
 
 
       std::vector<std::vector<dynet::expr::Expression>> thread_corrects(nbthreads);
@@ -457,6 +462,8 @@ int NNLorgParseApp::run_train()
         auto f =
             [&](unsigned i, unsigned mi, unsigned ma)
             {
+              if (ma > upper_bound)
+                ma = upper_bound;
               for(auto idx = mi; idx < ma; ++idx)
               {
                 auto res = train_instance(trees[idx], parser,
@@ -490,6 +497,7 @@ int NNLorgParseApp::run_train()
         //f(thidx,mi,ma);
         threads.emplace_back(std::thread(f,thidx,mi,ma));
       }
+
       for (auto& thread : threads)
       {
         thread.join();
@@ -583,13 +591,13 @@ int NNLorgParseApp::run_train()
         dynet::ComputationGraph cg;
         networks[0].set_cg(cg);
         networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        networks[0].unset_dropout();
       }
       for (unsigned i = 1; i < nbthreads; ++i)
       {
         networks[i].rule_scores = networks[0].rule_scores;
+        networks[i].unset_dropout();
       }
-
-
 
 
       std::vector<std::vector<Word>> s(nbthreads);
