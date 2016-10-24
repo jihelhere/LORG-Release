@@ -493,16 +493,18 @@ void nn_scorer::precompute_embeddings()
 
 void nn_scorer::set_dropout()
 {
-  for (auto& l: l2r_builders)
-    l.set_dropout(0.5);
-  for (auto& l: r2l_builders)
-    l.set_dropout(0.5);
+  if (lexical_level > 0)
+  {
+    l2r_builders[lexical_level-1].set_dropout(0.5);
+    r2l_builders[lexical_level-1].set_dropout(0.5);
+  }
 }
 
 void nn_scorer::unset_dropout()
 {
-  for (auto& l: l2r_builders)
-    l.disable_dropout();
-  for (auto& l: r2l_builders)
-    l.disable_dropout();
+    if (lexical_level > 0)
+  {
+    l2r_builders[lexical_level-1].disable_dropout();
+    r2l_builders[lexical_level-1].disable_dropout();
+  }
 }
