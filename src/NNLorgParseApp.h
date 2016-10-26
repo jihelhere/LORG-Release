@@ -27,7 +27,6 @@ private:
   WordSignature * ws;
 
 
-  bool train;
   treebank_options tb_options;
 
   unsigned cutoff;
@@ -40,6 +39,7 @@ private:
   unsigned nt_embedding_size;
   unsigned hidden_size;
   unsigned lstm_hidden_size;
+  float dropout;
 
 
   std::string train_output_name;

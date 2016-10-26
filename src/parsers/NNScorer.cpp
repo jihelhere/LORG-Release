@@ -491,18 +491,18 @@ void nn_scorer::precompute_embeddings()
   }
 }
 
-void nn_scorer::set_dropout()
+void nn_scorer::set_dropout(float d)
 {
   if (lexical_level > 0)
   {
-    l2r_builders[lexical_level-1].set_dropout(0.5);
-    r2l_builders[lexical_level-1].set_dropout(0.5);
+    l2r_builders[lexical_level-1].set_dropout(d);
+    r2l_builders[lexical_level-1].set_dropout(d);
   }
 }
 
 void nn_scorer::unset_dropout()
 {
-    if (lexical_level > 0)
+  if (lexical_level > 0)
   {
     l2r_builders[lexical_level-1].disable_dropout();
     r2l_builders[lexical_level-1].disable_dropout();

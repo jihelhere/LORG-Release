@@ -30,7 +30,7 @@
 #endif
 
 NNLorgParseApp::NNLorgParseApp()
-    : LorgParseApp(), train(true)
+    : LorgParseApp()
 {}
 
 NNLorgParseApp::~NNLorgParseApp()
@@ -396,6 +396,7 @@ int NNLorgParseApp::run_train()
           << "-n" << nt_embedding_size
           << "-h" << hidden_size
           << "-lh" << lstm_hidden_size
+          << "-d" << dropout
           << "-train-hyp-" << iteration << ".mrg";
     std::ofstream outhyp(oshyp.str());
 
@@ -410,6 +411,7 @@ int NNLorgParseApp::run_train()
           << "-n" << nt_embedding_size
           << "-h" << hidden_size
           << "-lh" << lstm_hidden_size
+          << "-d" << dropout
           << "-train-ref-" << iteration << ".mrg";
     std::ofstream outref(osref.str());
 
@@ -429,7 +431,7 @@ int NNLorgParseApp::run_train()
       networks[0].set_cg(cg);
       networks[0].clear();
       networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-      networks[0].set_dropout();
+      networks[0].set_dropout(dropout);
 
 
       for (unsigned thidx = 1; thidx < nbthreads; ++thidx)
@@ -439,7 +441,7 @@ int NNLorgParseApp::run_train()
 
         networks[thidx].rule_scores = networks[0].rule_scores;
 
-        networks[thidx].set_dropout();
+        networks[thidx].set_dropout(dropout);
       }
 
 
@@ -512,7 +514,7 @@ int NNLorgParseApp::run_train()
 
         if (not thread_errs[thidx].empty())
           errs.emplace_back(dynet::expr::sum(thread_errs[thidx]));
-
+        loss += thread_errs[thidx].size();
 
         for (const auto& p : thread_treestrings[thidx])
         {
@@ -553,6 +555,7 @@ int NNLorgParseApp::run_train()
           << "-n" << nt_embedding_size
           << "-h" << hidden_size
           << "-lh" << lstm_hidden_size
+         << "-d" << dropout
          << "-model-" << iteration;
     std::ofstream ms(mout.str());
     boost::archive::text_oarchive oa(ms);
@@ -576,6 +579,7 @@ int NNLorgParseApp::run_train()
             << "-n" << nt_embedding_size
             << "-h" << hidden_size
             << "-lh" << lstm_hidden_size
+            << "-d" << dropout
             << "-dev-hyp-" << iteration;
       std::ofstream devstream(devss.str());
 
@@ -683,7 +687,7 @@ int NNLorgParseApp::run_train()
 
   int NNLorgParseApp::run()
   {
-    if (train) return run_train();
+    if (train_mode) return run_train();
 
     if(verbose) std::clog << "Start parsing process.\n";
 
@@ -814,6 +818,7 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   nt_embedding_size = configuration.get_value<unsigned>("nt-embedding-size");
   hidden_size = configuration.get_value<unsigned>("hidden-size");
   lstm_hidden_size = configuration.get_value<unsigned>("lstm-hidden-size");
+  dropout = configuration.get_value<float>("dropout");
 
   return true;
 }
