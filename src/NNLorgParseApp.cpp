@@ -1,10 +1,7 @@
 #include <algorithm>
 #include <thread>
 
-
-
 #include "NNLorgParseApp.h"
-
 
 #include "ParseSolution.h"
 #include "utils/LorgConstants.h"

@@ -266,7 +266,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 
   double v = compute_internal_rule_score(r);
 
-  if ((span_level > 0) and (e - s > 2)) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
+  if ((span_level > 0) and (e - s > 2)) v+= compute_internal_span_score(s, e, m, r->get_lhs());
 
   if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r))) v += 1.0;
 
