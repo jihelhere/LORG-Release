@@ -124,7 +124,7 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
         candidate.set_lhs(lhs);
         candidate.set_pruning_probability(pruning_probability);
         double prob = current_edge->get_probability() +
-                      s.compute_unary_score(cell.get_begin(), cell.get_end(), rulep);
+                      s.compute_unary_score(cell.get_begin(), cell.get_end() + 1, rulep);
         //static_cast<const Rule*>(rulep)->get_probability();
         candidate.set_probability(prob);
 
@@ -263,7 +263,7 @@ void ParserCKYNN::get_candidates(const Cell& left_cell,
 
             double prob = prob1 +
                           s.compute_binary_score(result_cell.get_begin(),
-                                                 result_cell.get_end(),
+                                                 result_cell.get_end() + 1,
                                                  right_cell.get_begin(),
                                                  b);
             //                          b->get_probability();
