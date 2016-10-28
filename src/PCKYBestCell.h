@@ -150,7 +150,7 @@ public:
   void set_word_edge(const MyEdge * we);
   const MyEdge * get_word_edge() const;
 
-  void add_word(const Word & word, probability_extractor& scorer);
+  void add_word(const Word& word, probability_extractor& scorer);
 
 
   /**
@@ -159,7 +159,8 @@ public:
      \param cell the cell object to write
     \return the used ostream
   */
-  friend std::ostream& operator<<(std::ostream& out, const PCKYBestCell& cell);
+  template<class E, typename p>
+  friend std::ostream& operator<<(std::ostream& out, const PCKYBestCell<E,p>& cell);
 
 
   static void set_max_size(unsigned size);
