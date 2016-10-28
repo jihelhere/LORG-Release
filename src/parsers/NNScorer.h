@@ -78,14 +78,19 @@ struct nn_scorer
   static dynet::Parameter _p_b_span;
   static dynet::Parameter _p_o_span;
 
-  // embeddings for words and symbols
+  // embeddings for letters, words and grammar symbols
+  static dynet::LookupParameter _p_letter;
   static dynet::LookupParameter _p_word;
   static dynet::LookupParameter _p_nts;
 
-  static std::vector<dynet::LSTMBuilder> l2r_builders;
-  static std::vector<dynet::LSTMBuilder> r2l_builders;
+  static std::vector<dynet::LSTMBuilder> word_l2r_builders;
+  static std::vector<dynet::LSTMBuilder> word_r2l_builders;
 
-  std::vector<dynet::expr::Expression> lstm_embeddings;
+  static dynet::LSTMBuilder letter_l2r_builder;
+  static dynet::LSTMBuilder letter_r2l_builder;
+
+  std::vector<dynet::expr::Expression> embeddings;
+
   std::unordered_map<const Production*, double> rule_scores;
   std::unordered_map<std::tuple<int,int,int>, double> span_scores;
 
@@ -96,15 +101,16 @@ struct nn_scorer
   unsigned lexical_level;
   unsigned span_level;
 
-
-
   const std::vector<Word>* words;
+
+  bool use_char_emb;
 
   nn_scorer(dynet::Model& m, unsigned lex_level, unsigned span_level,
             unsigned word_embedding_size,
             unsigned nt_embedding_size,
             unsigned hidden_size,
-            unsigned lstm_hidden_size);
+            unsigned lstm_hidden_size,
+            bool char_emb);
 
   ~nn_scorer() {};
 

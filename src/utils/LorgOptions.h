@@ -214,7 +214,8 @@ class LorgOptions
         ("nt-embedding-size", po::value<unsigned>()->default_value(50), "size of non-terminal embeddings")
         ("hidden-size", po::value<unsigned>()->default_value(200), "size of feed forward hidden layer")
         ("lstm-hidden-size", po::value<unsigned>()->default_value(200), "size of lstm hidden layer")
-        ("dropout", po::value<float>()->default_value(0.5), "dropout after lstms (trainng only)")
+        ("dropout", po::value<float>()->default_value(0.5), "dropout after lstms (training only)")
+        ("use-char-embeddings", po::value<bool>()->default_value(true), "build word embeddings from characters")
         ;
     options.add(parser_opts);
   }

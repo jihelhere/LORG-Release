@@ -40,7 +40,7 @@ private:
   unsigned hidden_size;
   unsigned lstm_hidden_size;
   float dropout;
-
+  bool use_char_embeddings;
 
   std::string train_output_name;
   bool train_mode;

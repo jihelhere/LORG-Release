@@ -233,7 +233,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                           std::get<3>(ref_anc_bin).get_rhs1()
                                                           ));
 
-        if((span_level > 0) and (std::get<1>(ref_anc_bin) - std::get<0>(ref_anc_bin) > 2))
+        if (span_level > 0)
           local_corrects.emplace_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
                                                             std::get<0>(ref_anc_bin),
                                                             std::get<1>(ref_anc_bin) -1
@@ -250,7 +250,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                      std::get<3>(best_anc_bin).get_rhs1()
                                                      ));
 
-        if((span_level > 0) and (std::get<1>(best_anc_bin) - std::get<0>(best_anc_bin) > 2))
+        if (span_level > 0)
           local_errs.emplace_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
                                                         std::get<0>(best_anc_bin),
                                                         std::get<1>(best_anc_bin) - 1
@@ -265,9 +265,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not best_anchored_unaries.count(ref_anc_un))
       {
         local_corrects.emplace_back( network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
-                                                          std::get<2>(ref_anc_un).get_rhs0(),
-                                                          SymbolTable::instance_nt().get_symbol_count()
-                                                          ));
+                                                             std::get<2>(ref_anc_un).get_rhs0(),
+                                                             SymbolTable::instance_nt().get_symbol_count()
+                                                             ));
       }
     }
 
@@ -276,9 +276,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not anchored_unaries.count(best_anc_un))
       {
         local_errs.emplace_back(network.rule_expression(std::get<2>(best_anc_un).get_lhs(),
-                                                     std::get<2>(best_anc_un).get_rhs0(),
-                                                     SymbolTable::instance_nt().get_symbol_count()
-                                                     ));
+                                                        std::get<2>(best_anc_un).get_rhs0(),
+                                                        SymbolTable::instance_nt().get_symbol_count()
+                                                        ));
       }
     }
 
@@ -289,8 +289,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not best_anchored_lexicals.count(ref_anc_lex))
       {
         local_corrects.emplace_back( network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
-                                                                  std::get<0>(ref_anc_lex)
-                                                                  ));
+                                                                     std::get<0>(ref_anc_lex)
+                                                                     ));
       }
     }
 
@@ -373,7 +373,8 @@ int NNLorgParseApp::run_train()
                           word_embedding_size,
                           nt_embedding_size,
                           hidden_size,
-                          lstm_hidden_size
+                          lstm_hidden_size,
+                          use_char_embeddings
                           );
 
   auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
@@ -816,6 +817,7 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   hidden_size = configuration.get_value<unsigned>("hidden-size");
   lstm_hidden_size = configuration.get_value<unsigned>("lstm-hidden-size");
   dropout = configuration.get_value<float>("dropout");
+  use_char_embeddings = configuration.get_value<bool>("use-char-embeddings");
 
   return true;
 }
