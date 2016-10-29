@@ -7,11 +7,6 @@
 
 #include <mutex>
 
-// #define WORD_EMBEDDING_SIZE 100
-// #define NT_EMBEDDING_SIZE 50
-// #define HIDDEN_SIZE 200
-// #define LSTM_HIDDEN_SIZE 200
-
 namespace d = dynet;
 namespace de = d::expr;
 
@@ -538,18 +533,20 @@ void nn_scorer::precompute_embeddings()
 
 void nn_scorer::set_dropout(float d)
 {
-  if (lexical_level > 0)
-  {
-    word_l2r_builders[lexical_level-1].set_dropout(d);
-    word_r2l_builders[lexical_level-1].set_dropout(d);
+  for (auto& b :  word_l2r_builders) {
+    b.set_dropout(d);
+  }
+  for (auto& b :  word_r2l_builders) {
+    b.set_dropout(d);
   }
 }
 
 void nn_scorer::unset_dropout()
 {
-  if (lexical_level > 0)
-  {
-    word_l2r_builders[lexical_level-1].disable_dropout();
-    word_r2l_builders[lexical_level-1].disable_dropout();
+  for (auto& b :  word_l2r_builders) {
+    b.disable_dropout();
+  }
+  for (auto& b :  word_r2l_builders) {
+    b.disable_dropout();
   }
 }
