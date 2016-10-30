@@ -22,7 +22,10 @@ d::Parameter nn_scorer::_p_W_lex;
 d::Parameter nn_scorer::_p_b_lex;
 d::Parameter nn_scorer::_p_o_lex;
 
-d::Parameter nn_scorer::_p_W_span;
+d::Parameter nn_scorer::_p_W_span_left;
+d::Parameter nn_scorer::_p_W_span_right;
+d::Parameter nn_scorer::_p_W_span_distance;
+d::Parameter nn_scorer::_p_W_span_extra;
 d::Parameter nn_scorer::_p_b_span;
 d::Parameter nn_scorer::_p_o_span;
 
@@ -32,7 +35,6 @@ d::LookupParameter nn_scorer::_p_nts;
 
 std::vector<d::LSTMBuilder> nn_scorer::word_l2r_builders;
 std::vector<d::LSTMBuilder> nn_scorer::word_r2l_builders;
-
 
 d::LSTMBuilder nn_scorer::letter_l2r_builder;
 d::LSTMBuilder nn_scorer::letter_r2l_builder;
@@ -111,23 +113,30 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
     if (span_level > 0)
     {
-      unsigned span_input_dim = 0;
       switch (span_level) {
         case 1: { // only the span with distance
-          span_input_dim = 2 * span_input_dim_base + 1;
+          _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_distance = m.add_parameters({hidden_size,1});
           break;
         }
         case 2: { // the span + distance + natural/artificial nt
-          span_input_dim = 2 * span_input_dim_base + 1 + 1;
+          _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_distance = m.add_parameters({hidden_size,1});
+          _p_W_span_extra = m.add_parameters({hidden_size,1});
           break;
         }
         default: { // the span + distance + nt embeddding
-          span_input_dim = 2 * span_input_dim_base + nt_embedding_size + 1;
+          _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_distance = m.add_parameters({hidden_size,1});
+          _p_W_span_extra = m.add_parameters({hidden_size,nt_embedding_size});
           break;
         }
       }
 
-      _p_W_span = m.add_parameters({hidden_size, span_input_dim });
+
       _p_b_span = m.add_parameters({hidden_size});
       _p_o_span = m.add_parameters({1,hidden_size});
     }
@@ -307,35 +316,44 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
-  auto W = de::parameter(*cg, _p_W_span);
-  auto b = de::parameter(*cg, _p_b_span);
-  auto o = de::parameter(*cg, _p_o_span);
+  auto&& Wl = de::parameter(*cg, _p_W_span_left);
+  auto&& Wr = de::parameter(*cg, _p_W_span_right);
+  auto&& Wd = de::parameter(*cg, _p_W_span_distance);
+  auto&& b = de::parameter(*cg, _p_b_span);
+  auto&& o = de::parameter(*cg, _p_o_span);
 
+  std::vector<de::Expression> lefts,rights,distances,extras;
 
+  for (unsigned i = 0; i < words->size(); ++i)
+  {
+    lefts.push_back(Wl * embeddings[i]);
+    rights.push_back(Wr * embeddings[i]);
+    distances.push_back(Wd * de::input(*cg, i));
+  }
 
   switch (span_level) {
     case 1: {
       for (unsigned i = 0; i < words->size(); ++i)
+      {
         for (unsigned j = i; j < words->size(); ++j)
         {
-          auto&& e1 = W * de::concatenate({embeddings[i], embeddings[j],
-                                           de::input(*cg, j-i)});
-          auto&& e = o * de::rectify(e1 + b);
+          auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + b);
           span_scores[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(e.i));
         }
+      }
       break;
     }
     case 2: {
+      auto&& We = de::parameter(*cg, _p_W_span_extra);
+      std::vector<de::Expression> extras;
+      for (unsigned l = 0; l < 2; ++l)
+        extras.push_back(We * de::input(*cg, l));
+
       for (unsigned l = 0; l < 2; ++l)
         for (unsigned i = 0; i < words->size(); ++i)
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e1 = W * de::concatenate({embeddings[i], embeddings[j],
-                                             de::input(*cg, j-i),
-                                             de::input(*cg, l)
-              });
-
-            auto&& e = o * de::rectify(e1 + b);
+            auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + extras[l] + b);
             span_scores[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(e.i));
           }
 
@@ -343,16 +361,16 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       break;
     }
     default:
+      auto&& We = de::parameter(*cg, _p_W_span_extra);
+      std::vector<de::Expression> extras;
+      for (unsigned l =0;l < lhs_int.size(); ++l)
+        extras.push_back(We *de::lookup(*cg, _p_nts, lhs_int[l]));
+
       for (unsigned l =0;l < lhs_int.size(); ++l)
         for (unsigned i = 0; i < words->size(); ++i)
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e1 = W * de::concatenate({embeddings[i], embeddings[j],
-                        de::input(*cg, j-i),
-                        de::input(*cg, lhs_int[l])
-              });
-
-            auto&& e = o * de::rectify(e1 + b);
+            auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + extras[l] + b);
             span_scores[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(e.i));
           }
       break;
@@ -363,33 +381,32 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
-  auto W = de::parameter(*cg, _p_W_span);
-  auto b = de::parameter(*cg, _p_b_span);
-  auto o = de::parameter(*cg, _p_o_span);
+  auto&& Wl = de::parameter(*cg, _p_W_span_left);
+  auto&& Wr = de::parameter(*cg, _p_W_span_right);
+  auto&& Wd = de::parameter(*cg, _p_W_span_distance);
+  auto&& b = de::parameter(*cg, _p_b_span);
+  auto&& o = de::parameter(*cg, _p_o_span);
 
 
   switch (span_level) {
     case 1: {
-      auto&& e1 = W * de::concatenate({embeddings[begin], embeddings[end],
-                                       de::input(*cg, end-begin)});
+      auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin);
       return o * de::rectify(e1 + b);
       break;
     }
     case 2:
       {
+        auto&& We = de::parameter(*cg, _p_W_span_extra);
         auto type_symbol = is_artificial(lhs) ? 0.0 : 1.0;
-        auto&& e1 = W * de::concatenate({embeddings[begin], embeddings[end],
-                                         de::input(*cg, end-begin),
-                                         de::input(*cg, type_symbol)
-          });
+        auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin)
+                    + We * de::input(*cg, type_symbol);
         return o * de::rectify(e1 + b);
         break;
       }
     default:
-      auto&& e1 = W * de::concatenate({embeddings[begin], embeddings[end],
-                                       de::input(*cg, end-begin),
-                                       de::lookup(*cg, _p_nts, lhs)
-        });
+      auto&& We = de::parameter(*cg, _p_W_span_extra);
+      auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin)
+                  + We * de::lookup(*cg, _p_nts, lhs);
       return o * de::rectify(e1 + b);
       break;
   }
@@ -400,13 +417,13 @@ de::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
-  auto i = de::concatenate({de::lookup(*cg,_p_nts,rhs0),
-                            de::lookup(*cg,_p_nts,rhs1),
-                            de::lookup(*cg,_p_nts,lhs)});
+  auto&& i = de::concatenate({de::lookup(*cg,_p_nts,rhs0),
+                              de::lookup(*cg,_p_nts,rhs1),
+                              de::lookup(*cg,_p_nts,lhs)});
 
-  auto W = de::parameter(*cg, _p_W_int);
-  auto b = de::parameter(*cg, _p_b_int);
-  auto o = de::parameter(*cg, _p_o_int);
+  auto&& W = de::parameter(*cg, _p_W_int);
+  auto&& b = de::parameter(*cg, _p_b_int);
+  auto&& o = de::parameter(*cg, _p_o_int);
   return o * de::rectify(W*i + b);
 }
 

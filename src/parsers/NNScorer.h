@@ -74,7 +74,10 @@ struct nn_scorer
   static dynet::Parameter _p_o_lex;
 
   //span FF
-  static dynet::Parameter _p_W_span;
+  static dynet::Parameter _p_W_span_left;
+  static dynet::Parameter _p_W_span_right;
+  static dynet::Parameter _p_W_span_distance;
+  static dynet::Parameter _p_W_span_extra;
   static dynet::Parameter _p_b_span;
   static dynet::Parameter _p_o_span;
 
