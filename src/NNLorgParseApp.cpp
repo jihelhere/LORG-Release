@@ -43,6 +43,16 @@ void write_symboltable(const SymbolTable& st, const std::string& filename)
   }
 }
 
+template<typename T>
+void serialize_object(const T& obj, const std::string& filename)
+{
+  std::stringstream gout;
+  std::ofstream gs(filename);
+  boost::archive::text_oarchive goa(gs);
+  goa << obj;
+}
+
+
 
 // extract a MLE pcfg from (binarized) trees
 void collect_rules(const std::vector<PtbPsTree>& trees,
@@ -332,10 +342,6 @@ int NNLorgParseApp::run_train()
   std::unordered_set<Rule> lex;
 
 
-  write_symboltable(SymbolTable::instance_nt(), "NTsymbols.txt");
-  write_symboltable(SymbolTable::instance_word(), "Tsymbols.txt");
-
-
   collect_rules(trees, bin, un, lex);
 
 
@@ -344,6 +350,20 @@ int NNLorgParseApp::run_train()
                     std::vector<Rule>(un.begin(),un.end()),
                     std::vector<Rule>(lex.begin(),lex.end())
                     );
+
+  write_symboltable(SymbolTable::instance_nt(), "NTsymbols.txt");
+  //write_symboltable(SymbolTable::instance_word(), "Tsymbols.txt");
+  std::stringstream wout;
+  wout << train_output_name << ".ts";
+  serialize_object(SymbolTable::instance_word(), wout.str());
+
+  std::stringstream nout;
+  nout << train_output_name << ".nts";
+  serialize_object(SymbolTable::instance_nt(), nout.str());
+
+  std::stringstream gout;
+  gout << train_output_name << ".grammar";
+  serialize_object(grammar, gout.str());
 
   ParserCKYNN parser(grammar);
 
@@ -546,19 +566,16 @@ int NNLorgParseApp::run_train()
 
     std::stringstream mout;
     mout << train_output_name
-          << "-b" << batch_size
-          << "-s" << span_level
-          << "-l" << lstm_level
-          << "-w" << word_embedding_size
-          << "-n" << nt_embedding_size
-          << "-h" << hidden_size
-          << "-lh" << lstm_hidden_size
+         << "-b" << batch_size
+         << "-s" << span_level
+         << "-l" << lstm_level
+         << "-w" << word_embedding_size
+         << "-n" << nt_embedding_size
+         << "-h" << hidden_size
+         << "-lh" << lstm_hidden_size
          << "-d" << dropout
          << "-model-" << iteration;
-    std::ofstream ms(mout.str());
-    boost::archive::text_oarchive oa(ms);
-
-    oa << m;
+    serialize_object(m, mout.str());
 
     ///////////// process dev file
     {
@@ -689,72 +706,136 @@ int NNLorgParseApp::run_train()
 
     if(verbose) std::clog << "Start parsing process.\n";
 
-    // std::vector<Word> s;
-    // std::vector< bracketing > brackets;
-    // std::string test_sentence;
-    // int count = 0;
 
-    // int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+    SymbolTable::instance_nt().load(train_output_name + ".nts");
+    SymbolTable::instance_word().load(train_output_name + ".ts");
+
+    Grammar<Rule,Rule,Rule> grammar;
+    std::stringstream gin;
+    std::ifstream gs(train_output_name + ".grammar");
+    boost::archive::text_iarchive gia(gs);
+    gia >> grammar;
+
+
+    ParserCKYNN parser(grammar);
+
+#ifdef USE_THREADS
+    parser.set_nbthreads(nbthreads);
+#endif
+
+    parser.set_word_signature(ws);
+    Tagger tagger(&(parser.get_words_to_rules()));
+
+    dynet::Model m;
+    std::ifstream ms(test_model_name);
+    boost::archive::text_iarchive mia(ms);
+    mia >> m;
+
+    int count = 0;
+    int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
     // clock_t parse_start = (verbose) ? clock() : 0;
 
-    // std::vector<std::string> comments;
-    //     while(tokeniser->tokenise(*in,test_sentence,s,brackets, comments)) {
-    //   clock_t sent_start = (verbose) ? clock() : 0;
 
-    //   // should be "extra-verbose"
-    //   // if(verbose) {
-    //   //   std::clog << "Tokens: ";
-    //   //   for(std::vector<Word>::const_iterator i = s.begin(); i != s.end(); i++)
-    //   // 	std::clog << "<" << i->form << ">";
-    //   //   std::clog << "\n";
-    //   // }
+    std::vector<ParserCKYNN::scorer> networks;
+    for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
+      networks.emplace_back(m, lstm_level, span_level,
+                            word_embedding_size,
+                            nt_embedding_size,
+                            hidden_size,
+                            lstm_hidden_size,
+                            use_char_embeddings
+                            );
+
+    auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+
+    // this is moved here and si sequential
+    // bc a mutex is needed
+    {
+      dynet::ComputationGraph cg;
+      networks[0].set_cg(cg);
+      networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+      networks[0].unset_dropout();
+    }
+    for (unsigned i = 1; i < nbthreads; ++i)
+    {
+      networks[i].rule_scores = networks[0].rule_scores;
+      networks[i].unset_dropout();
+    }
+
+    std::vector<std::vector<Word>> s(nbthreads);
+    std::vector<std::vector< bracketing>> brackets(nbthreads);
+    std::vector<std::vector<std::pair<PtbPsTree*,double>>> solutions(nbthreads, {{nullptr,1.0}});
+
+    bool allvalid = true;
+    while(allvalid)
+    {
+      dynet::ComputationGraph cgdev;
+
+      std::vector<std::string> test_sentence(nbthreads);
+      std::vector<std::vector<std::string>> comments(nbthreads);
+
+      std::vector<bool> valid_sentence(nbthreads, true);
+
+      std::vector<clock_t> clock_start(nbthreads,0);
+      std::vector<clock_t> clock_end(nbthreads,0);
+
+      std::vector<std::thread> threads;
+
+      for (unsigned i = 0; i < nbthreads; ++i)
+      {
+        networks[i].set_cg(cgdev);
+        networks[i].unset_gold();
+
+        valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);
+        allvalid = allvalid and valid_sentence[i];
+
+        auto f = [&](unsigned idx)
+                 {
+                   if (not valid_sentence[idx]) return;
+                   clock_start[idx] = (verbose) ? clock() : 0;
+
+                   // check length of input sentence
+                   if(s[idx].size() <= max_length)
+                   {
+                     tagger.tag(s[idx], *(parser.get_word_signature()));
+                     solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol, lhs_int_vec);
+                   }
+                   clock_end[idx] = (verbose) ? clock() : 0;
+                 };
+        //f(i);
+        threads.emplace_back(std::thread(f,i));
+      }
+
+      for (auto& thread : threads)
+        thread.join();
+
+      for (unsigned i = 0; i < nbthreads; ++i)
+      {
+        if (valid_sentence[i])
+        {
+          auto* p_typed =
+              parse_solution::factory.create_object(parse_solution::UNIX,
+                                                    parse_solution(test_sentence[i], ++count,
+                                                                   s[i].size(), solutions[i],
+                                                                   (verbose) ? clock_end[i] -clock_start[i] / double(CLOCKS_PER_SEC) : 0,
+                                                                   verbose, comments[i],false)
+                                                    );
+          p_typed->print(*out);
+          delete p_typed;
+        }
 
 
-    //   // the pointer to the solution
-    //   PtbPsTree*  best_tree = nullptr;
+        delete solutions[i][0].first;
+        solutions[i][0].first = nullptr;
+        s[i].clear();
+        brackets[i].clear();
 
-    //   // check length of input sentence
-    //   if(s.size() <= max_length) {
-
-    //     // tag
-    //     tagger->tag(s, *(parser->get_word_signature()));
-
-    //     // create and initialise chart
-    //     ParserCKYBest::Chart chart(s,parser->get_nonterm_count(),brackets);
-
-    //     // parse
-    //     parser->parse(chart);
-
-    //     // get results
-    //     best_tree = chart.get_best_tree(start_symbol, 0);
-    //   }
-
-    //   //FIXME get real prob
-    //   std::vector<std::pair<PtbPsTree*, double> > solutions(1, std::make_pair<>(best_tree, 1));
-
-    //   parse_solution p = parse_solution(test_sentence,
-    //                                     ++count,
-    //                                     s.size(),
-    //                                     solutions,
-    //                                     (verbose) ? (clock() - sent_start) / double(CLOCKS_PER_SEC) : 0,
-    //                                     verbose, comments, false);
-
-    //   *out << unix_parse_solution(p)	 << '\n';
-
-    //   delete best_tree;
-    //   s.clear();
-    //   brackets.clear();
-    // }
-
-    // if(verbose){
-    //   std::clog << "overall time: " << (clock() - parse_start) / double(CLOCKS_PER_SEC) << "s\n";
-    // }
+      }
+    }
 
     return 0; //everything's fine
   }
-
-
 
 LorgOptions NNLorgParseApp::get_options() const
 {
@@ -818,6 +899,8 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   lstm_hidden_size = configuration.get_value<unsigned>("lstm-hidden-size");
   dropout = configuration.get_value<float>("dropout");
   use_char_embeddings = configuration.get_value<bool>("use-char-embeddings");
+
+  test_model_name = configuration.get_value<std::string>("test-model-name");
 
   return true;
 }

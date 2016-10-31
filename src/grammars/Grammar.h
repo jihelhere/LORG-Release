@@ -65,10 +65,9 @@ protected:
       ar & binary_rules;
       ar & unary_rules;
       ar & lexical_rules;
+      ar & lhs_int_set;
+      ar & lhs_lex_set;
     }
-
-
-
 };
 
 #include <algorithm>

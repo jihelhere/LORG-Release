@@ -42,7 +42,10 @@ private:
   float dropout;
   bool use_char_embeddings;
 
+
+
   std::string train_output_name;
+  std::string test_model_name;
   bool train_mode;
 
   int run_train();

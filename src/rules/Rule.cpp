@@ -4,14 +4,14 @@
 #include <cmath>
 
 
-Rule::Rule(const int& llhs,const std::vector<int>& rrhs,const bool& llexical,const int& ccount,const double& pproba,bool mode) 
+Rule::Rule(int llhs, const std::vector<int>& rrhs, bool llexical, int ccount, double pproba,bool mode)
   : Production(llhs,rrhs,llexical), count(ccount)  , probability(pproba), log_mode(mode)
 {
 }
 
 
-Rule::Rule(const Production& pprod,const int& ccount,const double& pproba, bool mode) 
-  : Production(pprod), 
+Rule::Rule(const Production& pprod, int ccount, double pproba, bool mode)
+  : Production(pprod),
     count(ccount), probability(pproba), log_mode(mode)
 {
 }
@@ -39,17 +39,14 @@ void Rule::set_log_mode(bool m)
 // format is: {lex|int} LHS RHS_1 ... RHS_n _ count proba
 std::ostream& operator<<(std::ostream& out, const Rule& rule)
 {
-    out.precision( 22 ) ; 
-  //  out.setf( std::ios::fmtflags(), std::ios::floatfield ) ; 
-    
-    return 
+    out.precision( 22 ) ;
+  //  out.setf( std::ios::fmtflags(), std::ios::floatfield ) ;
+
+    return
       out << static_cast<Production>(rule) << " _ "
 	  << rule.count << " "
 	  << (rule.log_mode ? rule.probability : std::log(rule.probability))
      // << std::exp(rule.probability);
       ;
-    
+
 }
-
-
-

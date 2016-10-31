@@ -1,8 +1,19 @@
 // -*- mode: c++ -*-
-#ifndef RULE_H_
-#define RULE_H_
+#pragma once
 
 #include "Production.h"
+
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/unordered_set.hpp>
+#pragma clang diagnostic pop
+
 
 /**
   \class Rule
@@ -11,10 +22,29 @@
 class Rule : public Production
 {
 
-private:
+ private:
   int count;			///< current count
   double probability;	///< probability associated with the rule
   bool log_mode; ///< true if the probability is in logarithm mode
+
+ protected:
+  friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/)
+  {
+    ar & lhs;
+    ar & rhs;
+    ar & lexical;
+    ar & count;
+    ar & probability;
+    ar & log_mode;
+  }
+
+
+
 public:
   Rule(): count(0), probability(1.0), log_mode(true) {};
 
@@ -27,7 +57,7 @@ public:
     \param pproba given probability
     \param mode log_mode
   */
-  Rule(const int& llhs,const std::vector<int>& rrhs,const bool& llexical,const int& ccount, const double& pproba, bool mode);
+  Rule(int llhs,const std::vector<int>& rrhs, bool llexical, int ccount, double pproba, bool mode);
 
 
   /**
@@ -38,7 +68,7 @@ public:
      \param mode log_mode
   */
 
-  Rule(const Production& pprod,const int& ccount,const double& pproba, bool mode);
+  Rule(const Production& pprod, int ccount, double pproba, bool mode);
 
   /**
     \brief Destructor
@@ -115,5 +145,3 @@ namespace std {
       size_t operator () (const Rule &f) const { return f.hash(); }
     };
 }
-
-#endif // RULE_H_
