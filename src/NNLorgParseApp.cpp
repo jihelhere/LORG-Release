@@ -145,7 +145,8 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
   if (span_level > 0)
   {
-    network.span_scores.clear();
+    network.span_scores_bin.clear();
+    network.span_scores_un.clear();
     network.precompute_span_expressions(lhs_int_vec);
   }
 
@@ -245,8 +246,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
         if (span_level > 0)
           local_corrects.emplace_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
-                                                            std::get<0>(ref_anc_bin),
-                                                            std::get<1>(ref_anc_bin) -1
+                                                               std::get<0>(ref_anc_bin),
+                                                               std::get<1>(ref_anc_bin) -1,
+                                                               std::get<2>(ref_anc_bin)
                                                             ));
       }
     }
@@ -262,8 +264,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
         if (span_level > 0)
           local_errs.emplace_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
-                                                        std::get<0>(best_anc_bin),
-                                                        std::get<1>(best_anc_bin) - 1
+                                                           std::get<0>(best_anc_bin),
+                                                           std::get<1>(best_anc_bin) - 1,
+                                                           std::get<2>(best_anc_bin)
                                                         ));
       }
     }
@@ -278,6 +281,12 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                              std::get<2>(ref_anc_un).get_rhs0(),
                                                              SymbolTable::instance_nt().get_symbol_count()
                                                              ));
+        if (span_level > 0)
+          local_corrects.emplace_back( network.span_expression(std::get<2>(ref_anc_un).get_lhs(),
+                                                               std::get<0>(ref_anc_un),
+                                                               std::get<1>(ref_anc_un) -1,
+                                                               -1
+                                                            ));
       }
     }
 
@@ -289,6 +298,12 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                         std::get<2>(best_anc_un).get_rhs0(),
                                                         SymbolTable::instance_nt().get_symbol_count()
                                                         ));
+        if (span_level > 0)
+          local_errs.emplace_back( network.span_expression(std::get<2>(best_anc_un).get_lhs(),
+                                                           std::get<0>(best_anc_un),
+                                                           std::get<1>(best_anc_un) - 1,
+                                                           -1
+                                                           ));
       }
     }
 
@@ -320,8 +335,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       std::make_pair(local_corrects,local_errs),
       std::make_pair(ssref.str(), sshyp.str()));
 }
-
-
 
 int NNLorgParseApp::run_train()
 {

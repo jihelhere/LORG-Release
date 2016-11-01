@@ -48,10 +48,6 @@
 #pragma GCC diagnostic pop
 #endif
 
-
-class Edge;
-
-
 typedef std::tuple<int,int,int,Production> anchored_binrule_type;
 typedef std::tuple<int,int,Production> anchored_unirule_type;
 typedef std::tuple<int,Production> anchored_lexrule_type;
@@ -78,8 +74,12 @@ struct nn_scorer
   static dynet::Parameter _p_W_span_right;
   static dynet::Parameter _p_W_span_distance;
   static dynet::Parameter _p_W_span_extra;
-  static dynet::Parameter _p_b_span;
-  static dynet::Parameter _p_o_span;
+
+  static dynet::Parameter _p_b_span_bin;
+  static dynet::Parameter _p_o_span_bin;
+
+  static dynet::Parameter _p_b_span_un;
+  static dynet::Parameter _p_o_span_un;
 
   // embeddings for letters, words and grammar symbols
   static dynet::LookupParameter _p_letter;
@@ -95,7 +95,8 @@ struct nn_scorer
   std::vector<dynet::expr::Expression> embeddings;
 
   std::unordered_map<const Production*, double> rule_scores;
-  std::unordered_map<std::tuple<int,int,int>, double> span_scores;
+  std::unordered_map<std::tuple<int,int,int>, double> span_scores_bin;
+  std::unordered_map<std::tuple<int,int,int>, double> span_scores_un;
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
   const std::unordered_set<anchored_unirule_type>* anchored_unaries;
@@ -149,7 +150,7 @@ struct nn_scorer
 
   dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
   dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
-  dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end);
+  dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
 
   void set_dropout(float d);
   void unset_dropout();

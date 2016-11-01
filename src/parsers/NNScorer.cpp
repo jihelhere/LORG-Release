@@ -26,8 +26,10 @@ d::Parameter nn_scorer::_p_W_span_left;
 d::Parameter nn_scorer::_p_W_span_right;
 d::Parameter nn_scorer::_p_W_span_distance;
 d::Parameter nn_scorer::_p_W_span_extra;
-d::Parameter nn_scorer::_p_b_span;
-d::Parameter nn_scorer::_p_o_span;
+d::Parameter nn_scorer::_p_b_span_bin;
+d::Parameter nn_scorer::_p_o_span_bin;
+d::Parameter nn_scorer::_p_b_span_un;
+d::Parameter nn_scorer::_p_o_span_un;
 
 d::LookupParameter nn_scorer::_p_word;
 d::LookupParameter nn_scorer::_p_nts;
@@ -55,7 +57,8 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
                      ) :
     cg(nullptr),
     rule_scores(),
-    span_scores(),
+    span_scores_bin(),
+    span_scores_un(),
     lexical_level(lex_level),
     span_level(sp_level),
     words(nullptr),
@@ -136,9 +139,10 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
         }
       }
 
-
-      _p_b_span = m.add_parameters({hidden_size});
-      _p_o_span = m.add_parameters({1,hidden_size});
+      _p_b_span_bin = m.add_parameters({hidden_size});
+      _p_o_span_bin = m.add_parameters({1,hidden_size});
+      _p_b_span_un = m.add_parameters({hidden_size});
+      _p_o_span_un = m.add_parameters({1,hidden_size});
     }
 
 
@@ -173,7 +177,8 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 void nn_scorer::clear()
 {
   rule_scores.clear();
-  span_scores.clear();
+  span_scores_bin.clear();
+  span_scores_un.clear();
 
   // other members are managed somewhere else!
 }
@@ -229,7 +234,7 @@ nn_scorer::compute_internal_rule_score(const Production* r)
 double
 nn_scorer::compute_internal_span_score(int begin,
                                        int end,
-                                       int /*medium*/,
+                                       int medium,
                                        int lhs)
 {
 
@@ -253,7 +258,11 @@ nn_scorer::compute_internal_span_score(int begin,
       break;
   }
 
-  v = span_scores.at(std::make_tuple(begin,end, lhs_info));
+  if (medium >= 0)
+    v = span_scores_bin.at(std::make_tuple(begin,end, lhs_info));
+  else
+    v = span_scores_un.at(std::make_tuple(begin,end, lhs_info));
+
   return v;
 }
 
@@ -270,6 +279,8 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
   auto r = static_cast<const Production*>(mp);
 
   double v = compute_internal_rule_score(r);
+
+  if (span_level > 0) v+= compute_internal_span_score(begin, end - 1, -1, r->get_lhs());
 
   if (gold && !anchored_unaries->count(std::make_tuple(begin,end,*r)))
     v += 1.0;
@@ -319,8 +330,10 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& Wl = de::parameter(*cg, _p_W_span_left);
   auto&& Wr = de::parameter(*cg, _p_W_span_right);
   auto&& Wd = de::parameter(*cg, _p_W_span_distance);
-  auto&& b = de::parameter(*cg, _p_b_span);
-  auto&& o = de::parameter(*cg, _p_o_span);
+  auto&& bbin = de::parameter(*cg, _p_b_span_bin);
+  auto&& obin = de::parameter(*cg, _p_o_span_bin);
+  auto&& bun = de::parameter(*cg, _p_b_span_un);
+  auto&& oun = de::parameter(*cg, _p_o_span_un);
 
   std::vector<de::Expression> lefts,rights,distances,extras;
 
@@ -337,8 +350,11 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       {
         for (unsigned j = i; j < words->size(); ++j)
         {
-          auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + b);
-          span_scores[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(e.i));
+          auto&& e = lefts[i] + rights[j] + distances[j-i];
+          auto&& f = obin * de::rectify(e + bbin);
+          span_scores_bin[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(f.i));
+          auto&& g = oun * de::rectify(e + bun);
+          span_scores_un[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(g.i));
         }
       }
       break;
@@ -353,8 +369,11 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         for (unsigned i = 0; i < words->size(); ++i)
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + extras[l] + b);
-            span_scores[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(e.i));
+            auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
+            auto&& f = obin * de::rectify(e + bbin);
+            span_scores_bin[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(f.i));
+            auto&& g = oun * de::rectify(e + bun);
+            span_scores_un[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(g.i));
           }
 
 
@@ -370,23 +389,25 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         for (unsigned i = 0; i < words->size(); ++i)
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e = o * de::rectify(lefts[i] + rights[j] + distances[j-i] + extras[l] + b);
-            span_scores[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(e.i));
+            auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
+            auto&& f = obin * de::rectify(e + bbin);
+            span_scores_bin[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(f.i));
+            auto&& g = oun * de::rectify(e + bun);
+            span_scores_un[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(g.i));
           }
       break;
   }
 }
 
-de::Expression nn_scorer::span_expression(int lhs, int begin, int end)
+de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int medium)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
   auto&& Wl = de::parameter(*cg, _p_W_span_left);
   auto&& Wr = de::parameter(*cg, _p_W_span_right);
   auto&& Wd = de::parameter(*cg, _p_W_span_distance);
-  auto&& b = de::parameter(*cg, _p_b_span);
-  auto&& o = de::parameter(*cg, _p_o_span);
-
+  auto&& b = medium >= 0 ? de::parameter(*cg, _p_b_span_bin) : de::parameter(*cg, _p_b_span_un);
+  auto&& o = medium >= 0 ? de::parameter(*cg, _p_o_span_bin) : de::parameter(*cg, _p_o_span_un);
 
   switch (span_level) {
     case 1: {
