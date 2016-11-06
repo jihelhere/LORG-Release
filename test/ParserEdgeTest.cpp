@@ -53,8 +53,10 @@ BOOST_AUTO_TEST_SUITE(EdgeTestSuite)
 BOOST_AUTO_TEST_CASE(EdgeConstructorsTest){
 
     //Terminal edges
-    Edge *e0 = new Edge(0, 10.0);
-    Edge *e1 = new Edge(3, 30.0);
+  std::string foo("foo");
+  std::string bar("bar");
+  Edge *e0 = new Edge(0, 10.0, true, &foo);
+  Edge *e1 = new Edge(3, 30.0, true, &bar);
 
     BOOST_CHECK_EQUAL(e0->get_lhs(), 0);
     BOOST_CHECK_EQUAL(e0->is_terminal(), true);
@@ -88,18 +90,20 @@ BOOST_AUTO_TEST_CASE(EdgeConstructorsTest){
 }
 
 BOOST_AUTO_TEST_CASE(EdgeSettersTest){
-    Edge *e0 = new Edge(0, new Edge(1, 10.0), new Edge(2, 15.0), 25.00);
+    std::string foo("foo");
+  std::string bar("bar");
+  Edge *e0 = new Edge(0, new Edge(1, 10.0,true, &foo), new Edge(2, 15.0, true, &bar), 25.00);
 
     e0->set_lhs(1);
     BOOST_CHECK_EQUAL(e0->get_lhs(), 1);
     e0->set_probability(350.00);
     BOOST_CHECK_EQUAL(e0->get_probability(), 350.00);
 
-    Edge *e1 = new Edge(3, 22.5);
+    Edge *e1 = new Edge(3, 22.5, false, nullptr);
     e0->set_left_child(e1);
     BOOST_CHECK_EQUAL(e0->get_left_child(), e1);
 
-    Edge *e2 = new Edge(5, 22.6);
+    Edge *e2 = new Edge(5, 22.6, false, nullptr);
     e0->set_right_child(e2);
     BOOST_CHECK_EQUAL(e0->get_right_child(), e2);
 

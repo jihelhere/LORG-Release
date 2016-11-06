@@ -20,8 +20,8 @@ AC_LANG_CPLUSPLUS
 
 
 AX_CXX_COMPILE_STDCXX_11([noext])
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -pedantic -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -march=native],\
-[CXXFLAGS="$CXXFLAGS -Wall -Wextra -pedantic -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -march=native"])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -pedantic -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -Wno-vla-extension -Wno-c99-extensions -march=native],\
+[CXXFLAGS="$CXXFLAGS -Wall -Wextra -pedantic -Wno-unused-local-typedefs -Wno-unknown-warning-option -Wno-unknown-pragmas -Wno-vla-extension -Wno-c99-extensions -march=native"])
 
 
 AC_CONFIG_HEADERS([config.h])

@@ -68,7 +68,7 @@ simple_lorgparser_SOURCES += simple_lorgparser.cpp \
 
 
 simple_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) -I. -DNDEBUG
-simple_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512
+simple_lorgparser_CXXFLAGS= -O3 -pipe -ftemplate-depth=512 -Wvla-extension
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -fomit-frame-pointer -march=core2  -mtune=core2
 #simple_lorgparser_CXXFLAGS= -O3 -Wall -pipe -DNDEBUG -fomit-frame-pointer
 

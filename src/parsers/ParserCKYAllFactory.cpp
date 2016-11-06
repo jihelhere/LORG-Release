@@ -21,6 +21,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/unordered_set.hpp>
+
 
 #include "utils/tuple_serialization.hpp"
 
