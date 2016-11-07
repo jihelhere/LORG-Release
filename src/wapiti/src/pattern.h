@@ -46,7 +46,7 @@ struct pat_s {
 		bool      absolute;
 		int32_t   offset;
 		uint32_t  column;
-	} items[];
+	} *items;
 };
 
 pat_t *pat_comp(char *p);
@@ -54,4 +54,3 @@ char *pat_exec(const pat_t *pat, const tok_t *tok, uint32_t at);
 void pat_free(pat_t *pat);
 
 #endif
-

@@ -6,6 +6,12 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma gcc diagnostic push
+#pragma gcc diagnostic ignored "-Wunused-parameter"
+#pragma gcc diagnostic push
+#pragma gcc diagnostic ignored "-Wsign-compare"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/core.hpp>
 #include <boost/phoenix/operator.hpp>
@@ -14,6 +20,9 @@
 #include <boost/phoenix/bind/bind_member_function.hpp>
 #include <boost/phoenix/bind/bind_function.hpp>
 #pragma clang diagnostic pop
+#pragma clang diagnostic pop
+#pragma pop diagnostic pop
+#pragma pop diagnostic pop
 
 namespace fusion = boost::fusion;
 namespace phoenix = boost::phoenix;

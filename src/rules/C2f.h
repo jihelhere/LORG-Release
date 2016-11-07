@@ -5,10 +5,15 @@
 #include <cmath>
 
 // include headers that implement a archive in simple text format
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma gcc diagnostic push
+#pragma gcc diagnostic ignored "-Wunused-parameter"
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
-
+#pragma clang diagnostic pop
+#pragma pop diagnostic pop
 
 namespace {
   void set_log(std::vector<std::vector<std::vector<double> > >& probabilities)

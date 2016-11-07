@@ -387,7 +387,7 @@ class ParallelTask: public tbb::task {
     if (min_s >= sent_size) return;
 
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
-    ChartTask* x[sent_size][sent_size];
+    auto x = new ChartTask** [sent_size*sent_size];
     for (signed span = sent_size-1; span >= min_s; --span) {
       unsigned end_of_begin = sent_size - span;
       for (unsigned begin = 0; begin < end_of_begin; ++begin) {
@@ -406,6 +406,7 @@ class ParallelTask: public tbb::task {
           //           << x[span][begin]->successor[0] << "," << x[span][begin]->successor[1] << ")\n";
           // std::cout.flush();
       }
+
     }
 
     x[sent_size-1][0]->successor[0] = waiter;
@@ -419,6 +420,8 @@ class ParallelTask: public tbb::task {
     // Wait for all tasks to complete.
       waiter->spawn_and_wait_for_all(seeds);
       tbb::task::destroy(*waiter);
+
+      delete[] x;
   }
 
   template<class Types>
@@ -427,7 +430,7 @@ class ParallelTask: public tbb::task {
   {
     signed sent_size = get_size();
     tbb::task * waiter = new( tbb::task::allocate_root() ) tbb::empty_task;
-    ChartTask* x[sent_size][sent_size];
+    auto x = new ChartTask** [sent_size*sent_size];
     for (signed span = 0; span < sent_size; ++span) {
       unsigned end_of_begin = sent_size-span-1;
       for (unsigned begin = 0; begin <= end_of_begin; ++begin) {

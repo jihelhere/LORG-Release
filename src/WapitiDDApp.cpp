@@ -29,7 +29,7 @@ int WapitiDDApp::run()
   std::vector<Word> sentence; // the vector of words used by the parser to initialise the chart
   std::vector< bracketing > brackets; // pre-bracketting for guided parsing
   std::vector<std::string> comments; // strings to store comments associated with a sentence
-  int count = 0; // sentence count (debug & pretty-print)
+  //  int count = 0; // sentence count (debug & pretty-print)
 
 #ifdef USE_THREADS
   tick_count parse_start = tick_count::now();
@@ -55,7 +55,7 @@ int WapitiDDApp::run()
 
 
 #ifdef USE_THREADS
-    tick_count sent_start = tick_count::now();
+    //tick_count sent_start = tick_count::now();
 #endif
 
     if(sentence.size() <=  max_length && sentence.size() > 0) {
@@ -207,7 +207,7 @@ std::vector<unsigned> crf_get_mwe_ends(const std::vector<std::string>& tag_strin
 int WapitiDDApp::find_consensus()
 {
   double lu = 0;
-  bool valid = true;
+  //bool valid = true;
 
   for (size_t i = 0; i < crfs.size(); ++i)
   {

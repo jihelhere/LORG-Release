@@ -74,7 +74,7 @@
 typedef struct raw_s raw_t;
 struct raw_s {
 	uint32_t  len;      //   T     Sequence length
-	char     *lines[];  //  [T]    Raw lines directly from file
+	char     **lines;  //  [T]    Raw lines directly from file
 };
 
 /* tok_t:
@@ -95,7 +95,7 @@ struct tok_s {
 	uint32_t   len;     //   T     Sequence length
 	char     **lbl;     //  [T]    List of labels strings
 	uint32_t  *cnts;    //  [T]    Length of tokens lists
-	char     **toks[];  //  [T][]  Tokens lists
+	char     ***toks;  //  [T][]  Tokens lists
 };
 
 /* seq_t:
@@ -128,7 +128,7 @@ struct seq_s {
 		uint32_t  lbl;
 		uint32_t  ucnt,  bcnt;
 		uint64_t *uobs, *bobs;
-	} pos[];
+	} *pos;
 };
 
 /* dat_t:
