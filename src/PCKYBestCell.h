@@ -17,8 +17,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-local-typedef"
 #else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Winconsistent-missing-override"
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Winconsistent-missing-override"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
 #pragma GCC diagnostic push
@@ -31,7 +31,7 @@
 #pragma clang diagnostic pop
 #pragma clang diagnostic pop
 #else
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 #endif

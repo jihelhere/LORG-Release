@@ -22,7 +22,7 @@ namespace {
       newx = oldx+deux ;
     } while (un.compare_and_swap(newx,oldx) != oldx);
   }
-};
+}
 
 #endif
 

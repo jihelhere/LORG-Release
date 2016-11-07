@@ -7,17 +7,17 @@
 
 ///// destructors
 TrainingNode::~TrainingNode()
-{};
+{}
 
 LexicalTrainingNode::~LexicalTrainingNode()
-{};
+{}
 
 BinaryTrainingNode::~BinaryTrainingNode()
 {
   delete left; delete right;
-};
+}
 UnaryTrainingNode::~UnaryTrainingNode()
-{delete left;};
+{delete left;}
 
 
 /////// resize_annotations
