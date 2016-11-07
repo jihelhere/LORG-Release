@@ -24,6 +24,8 @@ d::Parameter nn_scorer::_p_o_lex;
 
 d::Parameter nn_scorer::_p_W_span_left;
 d::Parameter nn_scorer::_p_W_span_right;
+d::Parameter nn_scorer::_p_W_span_mid;
+
 d::Parameter nn_scorer::_p_W_span_distance;
 d::Parameter nn_scorer::_p_W_span_extra;
 d::Parameter nn_scorer::_p_b_span_bin;
@@ -120,12 +122,14 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
         case 1: { // only the span with distance
           _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
           _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_mid = m.add_parameters({hidden_size, span_input_dim_base });
           _p_W_span_distance = m.add_parameters({hidden_size,1});
           break;
         }
         case 2: { // the span + distance + natural/artificial nt
           _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
           _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_mid = m.add_parameters({hidden_size, span_input_dim_base });
           _p_W_span_distance = m.add_parameters({hidden_size,1});
           _p_W_span_extra = m.add_parameters({hidden_size,1});
           break;
@@ -133,6 +137,8 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
         default: { // the span + distance + nt embeddding
           _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
           _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
+          _p_W_span_mid = m.add_parameters({hidden_size, span_input_dim_base });
+
           _p_W_span_distance = m.add_parameters({hidden_size,1});
           _p_W_span_extra = m.add_parameters({hidden_size,nt_embedding_size});
           break;
@@ -141,6 +147,7 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
       _p_b_span_bin = m.add_parameters({hidden_size});
       _p_o_span_bin = m.add_parameters({1,hidden_size});
+
       _p_b_span_un = m.add_parameters({hidden_size});
       _p_o_span_un = m.add_parameters({1,hidden_size});
     }
@@ -259,7 +266,7 @@ nn_scorer::compute_internal_span_score(int begin,
   }
 
   if (medium >= 0)
-    v = span_scores_bin.at(std::make_tuple(begin,end, lhs_info));
+    v = span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info));
   else
     v = span_scores_un.at(std::make_tuple(begin,end, lhs_info));
 
@@ -329,18 +336,21 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
 
   auto&& Wl = de::parameter(*cg, _p_W_span_left);
   auto&& Wr = de::parameter(*cg, _p_W_span_right);
+  auto&& Wm = de::parameter(*cg, _p_W_span_mid);
+
   auto&& Wd = de::parameter(*cg, _p_W_span_distance);
   auto&& bbin = de::parameter(*cg, _p_b_span_bin);
   auto&& obin = de::parameter(*cg, _p_o_span_bin);
   auto&& bun = de::parameter(*cg, _p_b_span_un);
   auto&& oun = de::parameter(*cg, _p_o_span_un);
 
-  std::vector<de::Expression> lefts,rights,distances,extras;
+  std::vector<de::Expression> lefts,rights,mids,distances,extras;
 
   for (unsigned i = 0; i < words->size(); ++i)
   {
     lefts.push_back(Wl * embeddings[i]);
     rights.push_back(Wr * embeddings[i]);
+    mids.push_back(Wm * embeddings[i]);
     distances.push_back(Wd * de::input(*cg, i));
   }
 
@@ -351,10 +361,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         for (unsigned j = i; j < words->size(); ++j)
         {
           auto&& e = lefts[i] + rights[j] + distances[j-i];
-          auto&& f = obin * de::rectify(e + bbin);
-          span_scores_bin[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(f.i));
           auto&& g = oun * de::rectify(e + bun);
           span_scores_un[std::make_tuple(i,j,0)] = as_scalar(cg->get_value(g.i));
+          for (unsigned k = i; k <= j; ++k)
+          {
+            auto&& eb = e + mids[k];
+            auto&& f = obin * de::rectify(eb + bbin);
+            span_scores_bin[std::make_tuple(i,j,k,0)] = as_scalar(cg->get_value(f.i));
+          }
         }
       }
       break;
@@ -370,12 +384,15 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           for (unsigned j = i; j < words->size(); ++j)
           {
             auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
-            auto&& f = obin * de::rectify(e + bbin);
-            span_scores_bin[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(f.i));
             auto&& g = oun * de::rectify(e + bun);
             span_scores_un[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(g.i));
+            for (unsigned k = i; k <= j; ++k)
+            {
+            auto&& eb = e + mids[k];
+            auto&& f = obin * de::rectify(eb + bbin);
+            span_scores_bin[std::make_tuple(i,j,k,l)] = as_scalar(cg->get_value(f.i));
+            }
           }
-
 
       break;
     }
@@ -390,10 +407,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           for (unsigned j = i; j < words->size(); ++j)
           {
             auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
-            auto&& f = obin * de::rectify(e + bbin);
-            span_scores_bin[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(f.i));
             auto&& g = oun * de::rectify(e + bun);
             span_scores_un[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(g.i));
+            for (unsigned k = i; k <= j; ++k)
+            {
+              auto&& eb = e + mids[k];
+              auto&& f = obin * de::rectify(eb + bbin);
+              span_scores_bin[std::make_tuple(i,j,k,lhs_int[l])] = as_scalar(cg->get_value(f.i));
+            }
           }
       break;
   }
@@ -405,6 +426,8 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int mediu
 
   auto&& Wl = de::parameter(*cg, _p_W_span_left);
   auto&& Wr = de::parameter(*cg, _p_W_span_right);
+  auto&& Wm = de::parameter(*cg, _p_W_span_mid);
+
   auto&& Wd = de::parameter(*cg, _p_W_span_distance);
   auto&& b = medium >= 0 ? de::parameter(*cg, _p_b_span_bin) : de::parameter(*cg, _p_b_span_un);
   auto&& o = medium >= 0 ? de::parameter(*cg, _p_o_span_bin) : de::parameter(*cg, _p_o_span_un);
@@ -412,7 +435,8 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int mediu
   switch (span_level) {
     case 1: {
       auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin);
-      return o * de::rectify(e1 + b);
+      auto&& e2 = medium >=0 ? e1 + Wm * embeddings[medium] : e1;
+      return o * de::rectify(e2 + b);
       break;
     }
     case 2:
@@ -421,14 +445,16 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int mediu
         auto type_symbol = is_artificial(lhs) ? 0.0 : 1.0;
         auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin)
                     + We * de::input(*cg, type_symbol);
-        return o * de::rectify(e1 + b);
+        auto&& e2 = medium >=0 ? e1 + Wm * embeddings[medium] : e1;
+        return o * de::rectify(e2 + b);
         break;
       }
     default:
       auto&& We = de::parameter(*cg, _p_W_span_extra);
       auto&& e1 = Wl * embeddings[begin] + Wr * embeddings[end] + Wd * de::input(*cg, end-begin)
                   + We * de::lookup(*cg, _p_nts, lhs);
-      return o * de::rectify(e1 + b);
+      auto&& e2 = medium >=0 ? e1 + Wm * embeddings[medium] : e1;
+      return o * de::rectify(e2 + b);
       break;
   }
 

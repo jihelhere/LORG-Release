@@ -72,6 +72,8 @@ struct nn_scorer
   //span FF
   static dynet::Parameter _p_W_span_left;
   static dynet::Parameter _p_W_span_right;
+  static dynet::Parameter _p_W_span_mid;
+
   static dynet::Parameter _p_W_span_distance;
   static dynet::Parameter _p_W_span_extra;
 
@@ -95,7 +97,7 @@ struct nn_scorer
   std::vector<dynet::expr::Expression> embeddings;
 
   std::unordered_map<const Production*, double> rule_scores;
-  std::unordered_map<std::tuple<int,int,int>, double> span_scores_bin;
+  std::unordered_map<std::tuple<int,int,int,int>, double> span_scores_bin;
   std::unordered_map<std::tuple<int,int,int>, double> span_scores_un;
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
