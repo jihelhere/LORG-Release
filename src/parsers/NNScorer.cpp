@@ -380,10 +380,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         extras.push_back(We * de::input(*cg, l));
 
       for (unsigned l = 0; l < 2; ++l)
+      {
+        auto&& e1 = extras[l];
         for (unsigned i = 0; i < words->size(); ++i)
+        {
+          auto&& e2 = e1 + lefts[i];
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
+            auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
             span_scores_un[std::make_tuple(i,j,l)] = as_scalar(cg->get_value(g.i));
             for (unsigned k = i; k <= j; ++k)
@@ -393,7 +397,8 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             span_scores_bin[std::make_tuple(i,j,k,l)] = as_scalar(cg->get_value(f.i));
             }
           }
-
+        }
+      }
       break;
     }
     default:
@@ -403,10 +408,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         extras.push_back(We *de::lookup(*cg, _p_nts, lhs_int[l]));
 
       for (unsigned l =0;l < lhs_int.size(); ++l)
+      {
+        auto&& e1 = extras[l];
         for (unsigned i = 0; i < words->size(); ++i)
+        {
+          auto&& e2 = e1 + lefts[i];
           for (unsigned j = i; j < words->size(); ++j)
           {
-            auto&& e = lefts[i] + rights[j] + distances[j-i] + extras[l];
+            auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
             span_scores_un[std::make_tuple(i,j,lhs_int[l])] = as_scalar(cg->get_value(g.i));
             for (unsigned k = i; k <= j; ++k)
@@ -416,6 +425,8 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
               span_scores_bin[std::make_tuple(i,j,k,lhs_int[l])] = as_scalar(cg->get_value(f.i));
             }
           }
+        }
+      }
       break;
   }
 }
@@ -528,7 +539,7 @@ void nn_scorer::precompute_embeddings()
       letter_l2r_builder.start_new_sequence();
       // initialize with <w>
       letter_l2r_builder.add_input(de::input(*cg, 0.0));
-      auto form = w.get_form();
+      auto&& form = w.get_form();
       for (unsigned c = 0; c < form.size(); ++c)
       {
         letter_l2r_builder.add_input(de::input(*cg, float(form[c])));
