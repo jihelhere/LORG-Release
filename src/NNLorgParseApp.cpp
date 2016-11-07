@@ -454,26 +454,31 @@ int NNLorgParseApp::run_train()
 
       if (verbose) std::cerr << "Mini-batch: " << chunk << "/" << nb_chunks << std::endl;
 
+      {
+        // cg will be destroyed after init
+        dynet::ComputationGraph cg;
+        networks[0].set_cg(cg);
+        networks[0].clear();
+        networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        networks[0].set_dropout(dropout);
+      }
+
       // computation graph for the mini batch
       dynet::ComputationGraph cg;
       // collect errors for the mini batch
       std::vector<dynet::expr::Expression> errs;
 
       networks[0].set_cg(cg);
-      networks[0].clear();
-      networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-      networks[0].set_dropout(dropout);
-
-
       for (unsigned thidx = 1; thidx < nbthreads; ++thidx)
       {
-        networks[thidx].set_cg(cg);
-        networks[thidx].clear();
+          networks[thidx].set_cg(cg);
+          networks[thidx].clear();
 
-        networks[thidx].rule_scores = networks[0].rule_scores;
+          networks[thidx].rule_scores = networks[0].rule_scores;
 
-        networks[thidx].set_dropout(dropout);
+          networks[thidx].set_dropout(dropout);
       }
+
 
 
 
@@ -556,19 +561,11 @@ int NNLorgParseApp::run_train()
 
       if (not errs.empty())
       {
-        //std::cerr << "here 1" << std::endl;
         dynet::expr::Expression s = dynet::expr::sum(errs);
-        //std::cerr << "here 2" << std::endl;
         cg.incremental_forward(s);
-        //std::cerr << "here 3" << std::endl;
         cg.backward(s.i);
-        //std::cerr << "here 4" << std::endl;
         loss += as_scalar(cg.get_value(s.i));
-        //std::cerr << "here 5" << std::endl;
-        //std::cerr << loss << std::endl;
-        //std::cerr << "here 6" << std::endl;
         trainer.update(1.0);
-        //std::cerr << "here 7" << std::endl;
       }
     }
 
