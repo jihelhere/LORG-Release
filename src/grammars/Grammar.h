@@ -9,12 +9,23 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
-// include headers that implement a archive in simple text format
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+
+#pragma gcc diagnostic push
+#pragma gcc diagnostic ignored "-Wunused-parameter"
+#pragma gcc diagnostic push
+#pragma gcc diagnostic ignored "-Wsign-compare"
+
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #pragma clang diagnostic pop
+#pragma clang diagnostic pop
+
+#pragma gcc diagnostic pop
+#pragma gcc diagnostic pop
 
 template <typename Bin, typename Un, typename Lex>
 class Grammar

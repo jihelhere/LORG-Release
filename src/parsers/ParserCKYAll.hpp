@@ -16,7 +16,7 @@ ParserCKYAll_Impl<Types>::ParserCKYAll_Impl(const std::vector<AGrammar*>& cgs,
                                             unsigned min_beam, int stubborn) :
     ParserCKYAll(cgs, p, prior_threshold, annot_descendants_, accurate_, min_beam, stubborn),
     chart(nullptr)
-{};
+{}
 
 
 
