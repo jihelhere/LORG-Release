@@ -155,8 +155,6 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_o_span_un = m.add_parameters({1,hidden_size});
     }
 
-
-
     switch (lex_level) {
       case 0: {
 
@@ -237,10 +235,12 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 double
 nn_scorer::compute_internal_rule_score(const Production* r)
 {
+  auto&& e = rule_scores.at(std::make_tuple(r->get_lhs(),
+                                            r->get_rhs0(),
+                                            r->get_rhs().size() > 1 ? r->get_rhs1() : -1));
 
-  double v = as_scalar(cg->get_value(rule_scores.at(std::make_tuple(r->get_lhs(),
-                                                                    r->get_rhs0(),
-                                                                    r->get_rhs().size() > 1 ? r->get_rhs1() : -1)).i));
+  std::lock_guard<std::mutex> guard(cg_mutex);
+  double v = as_scalar(cg->get_value(e.i));
   return v;
 }
 
@@ -271,10 +271,15 @@ nn_scorer::compute_internal_span_score(int begin,
       break;
   }
 
-  if (medium >= 0)
-    v = as_scalar(cg->get_value(span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))));
-  else
-    v = as_scalar(cg->get_value(span_scores_un.at(std::make_tuple(begin,end, lhs_info))));
+
+  auto&& e = medium >= 0 ?
+             span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))
+             :
+             span_scores_un.at(std::make_tuple(begin,end, lhs_info));
+
+
+  std::lock_guard<std::mutex> guard(cg_mutex);
+  v = as_scalar(cg->get_value(e));
 
   return v;
 }
