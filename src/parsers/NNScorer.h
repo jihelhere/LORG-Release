@@ -94,16 +94,20 @@ struct nn_scorer
   static dynet::LSTMBuilder letter_l2r_builder;
   static dynet::LSTMBuilder letter_r2l_builder;
 
-  static std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> rule_scores;
+  static std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> rule_expressions;
+  static std::unordered_map<std::tuple<int,int,int>, double> rule_scores;
 
 
   std::vector<dynet::expr::Expression> embeddings;
 
 
-  std::unordered_map<std::tuple<int,int,int,int>, dynet::expr::Expression> span_scores_bin;
-  std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> span_scores_un;
+  std::unordered_map<std::tuple<int,int,int,int>, dynet::expr::Expression> span_expressions_bin;
+  std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> span_expressions_un;
+  std::unordered_map<std::tuple<int,int,int,int>, double> span_scores_bin;
+  std::unordered_map<std::tuple<int,int,int>, double> span_scores_un;
 
-  std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_scores;
+  std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_expressions;
+
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
   const std::unordered_set<anchored_unirule_type>* anchored_unaries;

@@ -46,7 +46,8 @@ std::vector<d::LSTMBuilder> nn_scorer::word_r2l_builders;
 d::LSTMBuilder nn_scorer::letter_l2r_builder;
 d::LSTMBuilder nn_scorer::letter_r2l_builder;
 
-std::unordered_map<std::tuple<int,int,int>, de::Expression> nn_scorer::rule_scores;
+std::unordered_map<std::tuple<int,int,int>, de::Expression> nn_scorer::rule_expressions;
+std::unordered_map<std::tuple<int,int,int>, double> nn_scorer::rule_scores;
 
 inline bool
 is_artificial(int lhs)
@@ -185,10 +186,12 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 void nn_scorer::clear()
 {
   rule_scores.clear();
+  rule_expressions.clear();
+
   span_scores_bin.clear();
   span_scores_un.clear();
 
-  lexical_scores.clear();
+  lexical_expressions.clear();
   // other members are managed somewhere else!
 }
 
@@ -211,18 +214,19 @@ void nn_scorer::unset_gold()
   gold = false;
 }
 
-
-
 double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 {
+  double v;
+
   auto&& r = static_cast<const Production*>(mp);
 
   // next function call is protected by non-recursive mutex
   auto&& e = lexical_rule_expression(mp->get_lhs(), position);
 
-  std::lock_guard<std::mutex> guard(cg_mutex);
-  double v = as_scalar(cg->get_value(e.i));
-
+  {
+    std::lock_guard<std::mutex> guard(cg_mutex);
+    v = as_scalar(cg->get_value(e.i));
+  }
 
   if (gold && !anchored_lexicals->count(std::make_tuple(position,*r)))
   {
@@ -235,13 +239,10 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 double
 nn_scorer::compute_internal_rule_score(const Production* r)
 {
-  auto&& e = rule_scores.at(std::make_tuple(r->get_lhs(),
-                                            r->get_rhs0(),
-                                            r->get_rhs().size() > 1 ? r->get_rhs1() : -1));
 
-  std::lock_guard<std::mutex> guard(cg_mutex);
-  double v = as_scalar(cg->get_value(e.i));
-  return v;
+  return rule_scores.at(std::make_tuple(r->get_lhs(),
+                                        r->get_rhs0(),
+                                        r->get_rhs().size() > 1 ? r->get_rhs1() : -1));
 }
 
 double
@@ -250,9 +251,6 @@ nn_scorer::compute_internal_span_score(int begin,
                                        int medium,
                                        int lhs)
 {
-
-  //  auto t = std::make_tuple(begin,end,medium,lhs);
-  double v;
   int lhs_info = 0;
   switch (span_level) {
     case 1: {
@@ -272,16 +270,14 @@ nn_scorer::compute_internal_span_score(int begin,
   }
 
 
-  auto&& e = medium >= 0 ?
+  return medium >= 0 ?
              span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))
              :
              span_scores_un.at(std::make_tuple(begin,end, lhs_info));
 
 
-  std::lock_guard<std::mutex> guard(cg_mutex);
-  v = as_scalar(cg->get_value(e));
-
-  return v;
+  // std::lock_guard<std::mutex> guard(cg_mutex);
+  // return as_scalar(cg->get_value(e));
 }
 
 
@@ -327,14 +323,18 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
 
   for (const auto& r : brules)
   {
-    auto e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
-    rule_scores[std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1())] = e;
+    auto&& e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
+    auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
+    rule_expressions[t] = e;
+    rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
 
   for (const auto& r : urules)
   {
-    auto e =  rule_expression(r.get_lhs(), r.get_rhs0(), pad);
-    rule_scores[std::make_tuple(r.get_lhs(), r.get_rhs0(), -1)] = e;
+    auto&& e =  rule_expression(r.get_lhs(), r.get_rhs0(), pad);
+    auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), -1);
+    rule_expressions[t] = e;
+    rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
 }
 
@@ -371,12 +371,17 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         {
           auto&& e = lefts[i] + rights[j] + distances[j-i];
           auto&& g = oun * de::rectify(e + bun);
-          span_scores_un[std::make_tuple(i,j,0)] = g;
+          auto&& t = std::make_tuple(i,j,0);
+          span_expressions_un[t] = g;
+          span_scores_un[t] = as_scalar(cg->get_value(g.i));
+
           for (unsigned k = i; k <= j; ++k)
           {
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
-            span_scores_bin[std::make_tuple(i,j,k,0)] = f;
+            auto&& t = std::make_tuple(i,j,k,0);
+            span_expressions_bin[t] = f;
+            span_scores_bin[t] = as_scalar(cg->get_value(f.i));
           }
         }
       }
@@ -398,12 +403,16 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           {
             auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
-            span_scores_un[std::make_tuple(i,j,l)] = g;
+            auto&& t = std::make_tuple(i,j,l);
+            span_expressions_un[t] = g;
+            span_scores_un[t] = as_scalar(cg->get_value(g.i));
             for (unsigned k = i; k <= j; ++k)
             {
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
-            span_scores_bin[std::make_tuple(i,j,k,l)] = f;
+            auto&& t = std::make_tuple(i,j,k,l);
+            span_expressions_bin[t] = f;
+            span_scores_bin[t] = as_scalar(cg->get_value(f.i));
             }
           }
         }
@@ -426,12 +435,20 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           {
             auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
-            span_scores_un[std::make_tuple(i,j,lhs_int[l])] = g;
+
+            auto&& t = std::make_tuple(i,j,lhs_int[l]);
+            span_expressions_un[t] = g;
+            span_scores_un[t] = as_scalar(cg->get_value(g.i));
+
             for (unsigned k = i; k <= j; ++k)
             {
               auto&& eb = e + mids[k];
               auto&& f = obin * de::rectify(eb + bbin);
-              span_scores_bin[std::make_tuple(i,j,k,lhs_int[l])] = f;
+
+              auto&& t = std::make_tuple(i,j,k,lhs_int[l]);
+              span_expressions_bin[t] = f;
+              span_scores_bin[t] = as_scalar(cg->get_value(f.i));
+
             }
           }
         }
@@ -458,8 +475,8 @@ de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int mediu
       break;
   }
 
-  return medium >= 0 ? span_scores_bin.at(std::make_tuple(begin,end,medium,lhs_code))
-      : span_scores_un.at(std::make_tuple(begin,end,lhs_code));
+  return medium >= 0 ? span_expressions_bin.at(std::make_tuple(begin,end,medium,lhs_code))
+      : span_expressions_un.at(std::make_tuple(begin,end,lhs_code));
 
 }
 
@@ -484,8 +501,8 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
 
   auto&& t = std::make_tuple(lhs,word_idx);
 
-  if (lexical_scores.count(t))
-    return lexical_scores[t];
+  if (lexical_expressions.count(t))
+    return lexical_expressions[t];
   else
   {
     std::lock_guard<std::mutex> guard(cg_mutex);
@@ -504,8 +521,7 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
     auto&& b = de::parameter(*cg, _p_b_lex);
     auto&& o = de::parameter(*cg, _p_o_lex);
 
-
-    return lexical_scores[t] = o * de::rectify(W*i + b);
+    return lexical_expressions[t] = o * de::rectify(W*i + b);
   }
 
   // linear classifier with 2 simple features (POS and WORD, POS)
@@ -598,7 +614,6 @@ void nn_scorer::precompute_embeddings()
       {
         auto e = de::concatenate({lstm_backward[lstm_backward.size() - i - 1],
                                   lstm_forward[i]});
-
         embeddings[i] = e;
       }
     }
