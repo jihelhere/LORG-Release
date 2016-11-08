@@ -147,6 +147,7 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
   {
     network.span_scores_bin.clear();
     network.span_scores_un.clear();
+    network.lexical_scores.clear();
     network.precompute_span_expressions(lhs_int_vec);
   }
 
@@ -239,13 +240,11 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_binaries.count(ref_anc_bin))
       {
-        local_corrects.emplace_back( network.rule_expression(std::get<3>(ref_anc_bin).get_lhs(),
-                                                          std::get<3>(ref_anc_bin).get_rhs0(),
-                                                          std::get<3>(ref_anc_bin).get_rhs1()
-                                                          ));
+        auto&& r = std::get<3>(ref_anc_bin);
+        local_corrects.emplace_back(nn_scorer::rule_scores.at(std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1())));
 
         if (span_level > 0)
-          local_corrects.emplace_back( network.span_expression(std::get<3>(ref_anc_bin).get_lhs(),
+          local_corrects.emplace_back( network.span_expression(r.get_lhs(),
                                                                std::get<0>(ref_anc_bin),
                                                                std::get<1>(ref_anc_bin) -1,
                                                                std::get<2>(ref_anc_bin)
@@ -257,17 +256,15 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not anchored_binaries.count(best_anc_bin))
       {
-        local_errs.emplace_back(network.rule_expression(std::get<3>(best_anc_bin).get_lhs(),
-                                                     std::get<3>(best_anc_bin).get_rhs0(),
-                                                     std::get<3>(best_anc_bin).get_rhs1()
-                                                     ));
+        auto&& r = std::get<3>(best_anc_bin);
+        local_errs.emplace_back( nn_scorer::rule_scores.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),r.get_rhs1())));
 
         if (span_level > 0)
-          local_errs.emplace_back( network.span_expression(std::get<3>(best_anc_bin).get_lhs(),
-                                                           std::get<0>(best_anc_bin),
-                                                           std::get<1>(best_anc_bin) - 1,
-                                                           std::get<2>(best_anc_bin)
-                                                        ));
+          local_errs.emplace_back(network.span_expression(r.get_lhs(),
+                                                          std::get<0>(best_anc_bin),
+                                                          std::get<1>(best_anc_bin) - 1,
+                                                          std::get<2>(best_anc_bin)
+                                                          ));
       }
     }
 
@@ -277,16 +274,15 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not best_anchored_unaries.count(ref_anc_un))
       {
-        local_corrects.emplace_back( network.rule_expression(std::get<2>(ref_anc_un).get_lhs(),
-                                                             std::get<2>(ref_anc_un).get_rhs0(),
-                                                             SymbolTable::instance_nt().get_symbol_count()
-                                                             ));
+        auto&& r = std::get<2>(ref_anc_un);
+        local_corrects.emplace_back( nn_scorer::rule_scores.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
+
         if (span_level > 0)
-          local_corrects.emplace_back( network.span_expression(std::get<2>(ref_anc_un).get_lhs(),
+          local_corrects.emplace_back( network.span_expression(r.get_lhs(),
                                                                std::get<0>(ref_anc_un),
                                                                std::get<1>(ref_anc_un) -1,
                                                                -1
-                                                            ));
+                                                               ));
       }
     }
 
@@ -294,10 +290,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       if (not anchored_unaries.count(best_anc_un))
       {
-        local_errs.emplace_back(network.rule_expression(std::get<2>(best_anc_un).get_lhs(),
-                                                        std::get<2>(best_anc_un).get_rhs0(),
-                                                        SymbolTable::instance_nt().get_symbol_count()
-                                                        ));
+        auto&& r = std::get<2>(best_anc_un);
+        local_errs.emplace_back(nn_scorer::rule_scores.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
+
         if (span_level > 0)
           local_errs.emplace_back( network.span_expression(std::get<2>(best_anc_un).get_lhs(),
                                                            std::get<0>(best_anc_un),
@@ -454,33 +449,21 @@ int NNLorgParseApp::run_train()
 
       if (verbose) std::cerr << "Mini-batch: " << chunk << "/" << nb_chunks << std::endl;
 
+
+      dynet::ComputationGraph cg;
+
+      for (auto& network: networks)
       {
-        // cg will be destroyed after init
-        dynet::ComputationGraph cg;
-        networks[0].set_cg(cg);
-        networks[0].clear();
-        networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-        networks[0].set_dropout(dropout);
+        network.clear();
+        network.set_dropout(dropout);
       }
 
-      // computation graph for the mini batch
-      dynet::ComputationGraph cg;
+
+      nn_scorer::set_cg(cg);
+      nn_scorer::precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+
       // collect errors for the mini batch
       std::vector<dynet::expr::Expression> errs;
-
-      networks[0].set_cg(cg);
-      for (unsigned thidx = 1; thidx < nbthreads; ++thidx)
-      {
-          networks[thidx].set_cg(cg);
-          networks[thidx].clear();
-
-          networks[thidx].rule_scores = networks[0].rule_scores;
-
-          networks[thidx].set_dropout(dropout);
-      }
-
-
-
 
       auto lower_bound = chunk * batch_size;
       auto upper_bound = std::min<unsigned long>(trees.size(), (chunk+1)*batch_size);

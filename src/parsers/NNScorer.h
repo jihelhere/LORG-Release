@@ -55,7 +55,7 @@ typedef std::tuple<int,Production> anchored_lexrule_type;
 
 struct nn_scorer
 {
-  dynet::ComputationGraph * cg;
+  static dynet::ComputationGraph * cg;
 
   static bool model_initialized;
 
@@ -94,11 +94,16 @@ struct nn_scorer
   static dynet::LSTMBuilder letter_l2r_builder;
   static dynet::LSTMBuilder letter_r2l_builder;
 
+  static std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> rule_scores;
+
+
   std::vector<dynet::expr::Expression> embeddings;
 
-  std::unordered_map<const Production*, double> rule_scores;
-  std::unordered_map<std::tuple<int,int,int,int>, double> span_scores_bin;
-  std::unordered_map<std::tuple<int,int,int>, double> span_scores_un;
+
+  std::unordered_map<std::tuple<int,int,int,int>, dynet::expr::Expression> span_scores_bin;
+  std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> span_scores_un;
+
+  std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_scores;
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
   const std::unordered_set<anchored_unirule_type>* anchored_unaries;
@@ -120,7 +125,7 @@ struct nn_scorer
 
   ~nn_scorer() {};
 
-  void set_cg(dynet::ComputationGraph& g) {cg = &g;};
+  static void set_cg(dynet::ComputationGraph& g) {cg = &g;};
 
 
   void set_gold(std::unordered_set<anchored_binrule_type>& ancbin,
@@ -143,14 +148,15 @@ struct nn_scorer
   compute_internal_span_score(int begin, int end, int medium, int lhs);
 
   void clear();
-  void precompute_rule_expressions(const std::vector<Rule>& brules,
-                                   const std::vector<Rule>& urules);
+  static void precompute_rule_expressions(const std::vector<Rule>& brules,
+                                          const std::vector<Rule>& urules);
+
   void precompute_span_expressions(const std::vector<int>& lhs_int);
 
   void precompute_embeddings();
 
 
-  dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
+  static dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
   dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
   dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
 
