@@ -145,8 +145,12 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
   if (span_level > 0)
   {
+    network.span_expressions_bin.clear();
+    network.span_expressions_un.clear();
+
     network.span_scores_bin.clear();
     network.span_scores_un.clear();
+
     network.lexical_expressions.clear();
     network.precompute_span_expressions(lhs_int_vec);
   }
@@ -445,9 +449,7 @@ int NNLorgParseApp::run_train()
 
     for (unsigned chunk = 0; chunk < nb_chunks; ++ chunk)
     {
-
       if (verbose) std::cerr << "Mini-batch: " << chunk << "/" << nb_chunks << std::endl;
-
 
       dynet::ComputationGraph cg;
 
@@ -457,7 +459,7 @@ int NNLorgParseApp::run_train()
         network.set_dropout(dropout);
       }
 
-
+      nn_scorer::train_mode = true;
       nn_scorer::set_cg(cg);
       nn_scorer::precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
@@ -596,20 +598,14 @@ int NNLorgParseApp::run_train()
 
       auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
-      // this is moved here and si sequential
-      // bc a mutex is needed
+
+      for (auto& network : networks)
       {
-        dynet::ComputationGraph cg;
-        networks[0].set_cg(cg);
-        networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-        networks[0].unset_dropout();
-      }
-      for (unsigned i = 1; i < nbthreads; ++i)
-      {
-        networks[i].rule_scores = networks[0].rule_scores;
-        networks[i].unset_dropout();
+        network.unset_dropout();
       }
 
+
+      nn_scorer::train_mode = false;
 
       std::vector<std::vector<Word>> s(nbthreads);
       std::vector<std::vector< bracketing>> brackets(nbthreads);
@@ -618,10 +614,7 @@ int NNLorgParseApp::run_train()
       bool allvalid = true;
       while(allvalid)
       {
-
         dynet::ComputationGraph cgdev;
-
-
 
         std::vector<std::string> test_sentence(nbthreads);
         std::vector<std::vector<std::string>> comments(nbthreads);

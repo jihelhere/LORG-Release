@@ -14,6 +14,8 @@ namespace de = d::expr;
 std::mutex cg_mutex;
 
 bool nn_scorer::model_initialized = false;
+bool nn_scorer::train_mode = false;
+
 
 d::ComputationGraph * nn_scorer::cg = nullptr;
 
@@ -325,7 +327,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   {
     auto&& e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
     auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
-    rule_expressions[t] = e;
+    if (train_mode) rule_expressions[t] = e;
     rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
 
@@ -333,7 +335,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   {
     auto&& e =  rule_expression(r.get_lhs(), r.get_rhs0(), pad);
     auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), -1);
-    rule_expressions[t] = e;
+    if (train_mode) rule_expressions[t] = e;
     rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
 }
@@ -372,7 +374,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           auto&& e = lefts[i] + rights[j] + distances[j-i];
           auto&& g = oun * de::rectify(e + bun);
           auto&& t = std::make_tuple(i,j,0);
-          span_expressions_un[t] = g;
+          if (train_mode) span_expressions_un[t] = g;
           span_scores_un[t] = as_scalar(cg->get_value(g.i));
 
           for (unsigned k = i; k <= j; ++k)
@@ -380,7 +382,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
             auto&& t = std::make_tuple(i,j,k,0);
-            span_expressions_bin[t] = f;
+            if (train_mode) span_expressions_bin[t] = f;
             span_scores_bin[t] = as_scalar(cg->get_value(f.i));
           }
         }
@@ -404,14 +406,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
             auto&& t = std::make_tuple(i,j,l);
-            span_expressions_un[t] = g;
+            if (train_mode) span_expressions_un[t] = g;
             span_scores_un[t] = as_scalar(cg->get_value(g.i));
             for (unsigned k = i; k <= j; ++k)
             {
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
             auto&& t = std::make_tuple(i,j,k,l);
-            span_expressions_bin[t] = f;
+            if (train_mode) span_expressions_bin[t] = f;
             span_scores_bin[t] = as_scalar(cg->get_value(f.i));
             }
           }
@@ -437,7 +439,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             auto&& g = oun * de::rectify(e + bun);
 
             auto&& t = std::make_tuple(i,j,lhs_int[l]);
-            span_expressions_un[t] = g;
+            if (train_mode) span_expressions_un[t] = g;
             span_scores_un[t] = as_scalar(cg->get_value(g.i));
 
             for (unsigned k = i; k <= j; ++k)
@@ -446,7 +448,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
               auto&& f = obin * de::rectify(eb + bbin);
 
               auto&& t = std::make_tuple(i,j,k,lhs_int[l]);
-              span_expressions_bin[t] = f;
+              if (train_mode) span_expressions_bin[t] = f;
               span_scores_bin[t] = as_scalar(cg->get_value(f.i));
 
             }

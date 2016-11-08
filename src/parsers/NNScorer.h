@@ -59,6 +59,8 @@ struct nn_scorer
 
   static bool model_initialized;
 
+  static bool train_mode;
+
   //internal rules FF
   static dynet::Parameter _p_W_int;
   static dynet::Parameter _p_b_int;
@@ -107,7 +109,6 @@ struct nn_scorer
   std::unordered_map<std::tuple<int,int,int>, double> span_scores_un;
 
   std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_expressions;
-
 
   const std::unordered_set<anchored_binrule_type>* anchored_binaries;
   const std::unordered_set<anchored_unirule_type>* anchored_unaries;
