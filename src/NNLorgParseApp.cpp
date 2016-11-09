@@ -33,7 +33,6 @@ NNLorgParseApp::NNLorgParseApp()
 NNLorgParseApp::~NNLorgParseApp()
 {}
 
-
 void write_symboltable(const SymbolTable& st, const std::string& filename)
 {
   std::ofstream stream(filename);
@@ -162,20 +161,19 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
   ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
 
-
   //std::cerr << "parse" << std::endl;
   parser.parse(chart, network);
 
   best_tree = chart.get_best_tree(start_symbol, 0);
 
-
   return best_tree;
 }
 
 //////
-std::pair<
-  std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
-  std::pair<std::string,std::string>>
+// std::pair<
+//   std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
+//   std::pair<std::string,std::string>>
+NNLorgParseApp::train_item
 NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const ParserCKYNN& parser,
                                const Tagger& tagger,
@@ -239,6 +237,10 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     }
 
 
+
+    std::unordered_map<const dynet::expr::Expression*, int> span_exp_diff_count;
+
+
     //binary rules
     for (const auto& ref_anc_bin : anchored_binaries)
     {
@@ -248,11 +250,14 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         local_corrects.emplace_back(nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1())));
 
         if (span_level > 0)
-          local_corrects.emplace_back( network.span_expression(r.get_lhs(),
-                                                               std::get<0>(ref_anc_bin),
-                                                               std::get<1>(ref_anc_bin) -1,
-                                                               std::get<2>(ref_anc_bin)
-                                                            ));
+        {
+          auto k = &network.span_expression(r.get_lhs(),
+                                            std::get<0>(ref_anc_bin),
+                                            std::get<1>(ref_anc_bin) -1,
+                                            std::get<2>(ref_anc_bin)
+                                            );
+          span_exp_diff_count[k]--; // should be zero for non-existent k
+        }
       }
     }
 
@@ -264,11 +269,14 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         local_errs.emplace_back( nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),r.get_rhs1())));
 
         if (span_level > 0)
-          local_errs.emplace_back(network.span_expression(r.get_lhs(),
-                                                          std::get<0>(best_anc_bin),
-                                                          std::get<1>(best_anc_bin) - 1,
-                                                          std::get<2>(best_anc_bin)
-                                                          ));
+        {
+          auto k = &network.span_expression(r.get_lhs(),
+                                            std::get<0>(best_anc_bin),
+                                            std::get<1>(best_anc_bin) - 1,
+                                            std::get<2>(best_anc_bin)
+                                            );
+          span_exp_diff_count[k]++; // should be zero for non-existent k
+        }
       }
     }
 
@@ -282,11 +290,14 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         local_corrects.emplace_back( nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
 
         if (span_level > 0)
-          local_corrects.emplace_back( network.span_expression(r.get_lhs(),
-                                                               std::get<0>(ref_anc_un),
-                                                               std::get<1>(ref_anc_un) -1,
-                                                               -1
-                                                               ));
+        {
+          auto k = &network.span_expression(r.get_lhs(),
+                                            std::get<0>(ref_anc_un),
+                                            std::get<1>(ref_anc_un) -1,
+                                            -1
+                                            );
+          span_exp_diff_count[k]--; // should be zero for non-existent k
+        }
       }
     }
 
@@ -298,11 +309,14 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         local_errs.emplace_back(nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
 
         if (span_level > 0)
-          local_errs.emplace_back( network.span_expression(std::get<2>(best_anc_un).get_lhs(),
-                                                           std::get<0>(best_anc_un),
-                                                           std::get<1>(best_anc_un) - 1,
-                                                           -1
-                                                           ));
+        {
+          auto k = &network.span_expression(std::get<2>(best_anc_un).get_lhs(),
+                                            std::get<0>(best_anc_un),
+                                            std::get<1>(best_anc_un) - 1,
+                                            -1
+                                            );
+          span_exp_diff_count[k]++; // should be zero for non-existent k
+        }
       }
     }
 
@@ -327,12 +341,24 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                                              ));
       }
     }
+
+    for(auto& kv : span_exp_diff_count)
+    {
+      if (kv.second > 0)
+      {
+        for (auto i = 0; i < kv.second; ++i)
+          local_errs.emplace_back(*(kv.first));
+      }
+      else
+      {
+        for (auto i = 0; i < -kv.second; ++i)
+          local_corrects.emplace_back(*(kv.first));
+      }
+    }
   }
   if (best_tree) delete best_tree;
 
-  return std::make_pair(
-      std::make_pair(local_corrects,local_errs),
-      std::make_pair(ssref.str(), sshyp.str()));
+  return {local_corrects,local_errs, ssref.str(), sshyp.str()};
 }
 
 int NNLorgParseApp::run_train()
@@ -495,9 +521,8 @@ int NNLorgParseApp::run_train()
                                           lhs_int_vec
                                           );
                 if (verbose) std::cerr << '|' ;
-                auto& local_corrects = res.first.first;
-                auto& local_errs = res.first.second;
-                auto& strpair = res.second;
+                auto&& local_corrects = res.correct_exprs;
+                auto&& local_errs = res.error_exprs;
 
                 if (not local_corrects.empty())
                   thread_corrects[i].insert(thread_corrects[i].end(), local_corrects.begin(), local_corrects.end());
@@ -505,7 +530,7 @@ int NNLorgParseApp::run_train()
                   thread_errs[i].insert(thread_errs[i].end(), local_errs.begin(), local_errs.end());
 
 
-                thread_treestrings[i].emplace_back(strpair);
+                thread_treestrings[i].emplace_back(res.ref_tree_string, res.hyp_tree_string);
               }
             };
 

@@ -462,7 +462,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   }
 }
 
-de::Expression nn_scorer::span_expression(int lhs, int begin, int end, int medium)
+de::Expression& nn_scorer::span_expression(int lhs, int begin, int end, int medium)
 {
   int lhs_code = 0;
   switch (span_level) {

@@ -163,7 +163,7 @@ struct nn_scorer
 
   static dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
   dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
-  dynet::expr::Expression span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
+  dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
 
   void set_dropout(float d);
   void unset_dropout();

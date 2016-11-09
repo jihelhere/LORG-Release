@@ -50,9 +50,21 @@ private:
 
   int run_train();
 
-  std::pair<
-    std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
-    std::pair<std::string,std::string>>
+
+struct train_item
+{
+  std::vector<dynet::expr::Expression> correct_exprs;
+  std::vector<dynet::expr::Expression> error_exprs;
+
+  //for debug only
+  std::string ref_tree_string;
+  std::string hyp_tree_string;
+};
+
+  // std::pair<
+  //   std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
+  //   std::pair<std::string,std::string>>
+  train_item
   train_instance(const PtbPsTree& tree,
                  const ParserCKYNN& parser,
                  const Tagger& tagger,
