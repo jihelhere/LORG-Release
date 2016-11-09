@@ -151,9 +151,10 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
     network.span_scores_bin.clear();
     network.span_scores_un.clear();
 
-    network.lexical_expressions.clear();
     network.precompute_span_expressions(lhs_int_vec);
   }
+
+  network.lexical_expressions.clear();
 
   // create and initialise chart
   //std::cerr << "chart" << std::endl;
@@ -626,9 +627,12 @@ int NNLorgParseApp::run_train()
 
         std::vector<std::thread> threads;
 
+        nn_scorer::train_mode = false;
+        nn_scorer::set_cg(cgdev);
+        nn_scorer::precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+
         for (unsigned i = 0; i < nbthreads; ++i)
         {
-          networks[i].set_cg(cgdev);
           networks[i].unset_gold();
 
           valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);

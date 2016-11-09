@@ -377,7 +377,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
           if (train_mode) span_expressions_un[t] = g;
           span_scores_un[t] = as_scalar(cg->get_value(g.i));
 
-          for (unsigned k = i; k <= j; ++k)
+          for (unsigned k = i+1; k <= j; ++k)
           {
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
@@ -406,9 +406,12 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             auto&& e = e2 + rights[j] + distances[j-i];
             auto&& g = oun * de::rectify(e + bun);
             auto&& t = std::make_tuple(i,j,l);
-            if (train_mode) span_expressions_un[t] = g;
-            span_scores_un[t] = as_scalar(cg->get_value(g.i));
-            for (unsigned k = i; k <= j; ++k)
+            if (l==1) // artificial for unaries makes no sense
+            {
+              if (train_mode) span_expressions_un[t] = g;
+              span_scores_un[t] = as_scalar(cg->get_value(g.i));
+            }
+            for (unsigned k = i+1; k <= j; ++k)
             {
             auto&& eb = e + mids[k];
             auto&& f = obin * de::rectify(eb + bbin);
@@ -427,7 +430,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       for (unsigned l =0;l < lhs_int.size(); ++l)
         extras.push_back(We *de::lookup(*cg, _p_nts, lhs_int[l]));
 
-      for (unsigned l =0;l < lhs_int.size(); ++l)
+      for (unsigned l = 0;l < lhs_int.size(); ++l)
       {
         auto&& e1 = extras[l];
         for (unsigned i = 0; i < words->size(); ++i)
@@ -442,7 +445,7 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
             if (train_mode) span_expressions_un[t] = g;
             span_scores_un[t] = as_scalar(cg->get_value(g.i));
 
-            for (unsigned k = i; k <= j; ++k)
+            for (unsigned k = i+1; k <= j; ++k)
             {
               auto&& eb = e + mids[k];
               auto&& f = obin * de::rectify(eb + bbin);
@@ -614,7 +617,7 @@ void nn_scorer::precompute_embeddings()
 
       for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
       {
-        auto e = de::concatenate({lstm_backward[lstm_backward.size() - i - 1],
+        auto&& e = de::concatenate({lstm_backward[lstm_backward.size() - i - 1],
                                   lstm_forward[i]});
         embeddings[i] = e;
       }
