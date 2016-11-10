@@ -99,21 +99,23 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
     unsigned span_input_dim_base = 0;
     switch (lex_level) {
       case 0: {
-        lex_input_dim = 3*word_embedding_size;
+        lex_input_dim = word_embedding_size;
         span_input_dim_base = word_embedding_size;
 
         break;
       }
       default:
-        lex_input_dim = 2*lstm_hidden_size;
-        span_input_dim_base = 2*lstm_hidden_size;
+        lex_input_dim = lstm_hidden_size;
+        span_input_dim_base = lstm_hidden_size;
         break;
     }
 
-    _p_W_int = m.add_parameters({hidden_size, nt_embedding_size*3});
+    // grammar rules
+    _p_W_int = m.add_parameters({hidden_size, nt_embedding_size});
     _p_b_int = m.add_parameters({hidden_size});
     _p_o_int = m.add_parameters({1,hidden_size});
 
+    // lexical rules
     _p_W_lex = m.add_parameters({hidden_size, nt_embedding_size + lex_input_dim});
     _p_b_lex = m.add_parameters({hidden_size});
     _p_o_lex = m.add_parameters({1,hidden_size});
@@ -163,8 +165,8 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
         for (unsigned s = 1; s < lex_level; ++s)
         {
-          word_l2r_builders.push_back(d::LSTMBuilder(1, 2*lstm_hidden_size, lstm_hidden_size, &m));
-          word_r2l_builders.push_back(d::LSTMBuilder(1, 2*lstm_hidden_size, lstm_hidden_size, &m));
+          word_l2r_builders.push_back(d::LSTMBuilder(1, lstm_hidden_size, lstm_hidden_size, &m));
+          word_r2l_builders.push_back(d::LSTMBuilder(1, lstm_hidden_size, lstm_hidden_size, &m));
         }
         break;
     }
@@ -511,9 +513,9 @@ de::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
-  auto&& i = de::concatenate({de::lookup(*cg,_p_nts,rhs0),
-                              de::lookup(*cg,_p_nts,rhs1),
-                              de::lookup(*cg,_p_nts,lhs)});
+  auto&& i = de::lookup(*cg,_p_nts,rhs0) +
+             de::lookup(*cg,_p_nts,rhs1) +
+             de::lookup(*cg,_p_nts,lhs);
 
   auto&& W = de::parameter(*cg, _p_W_int);
   auto&& b = de::parameter(*cg, _p_b_int);
@@ -537,10 +539,10 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
     auto&& i = lexical_level > 0 ? de::concatenate({embeddings[word_idx],
                                                     de::lookup(*cg, _p_nts, lhs)})
                :
-               de::concatenate({embeddings[word_idx],
-                                de::lookup(*cg, _p_nts, lhs),
-                                word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1],
-                                word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1]
+               de::concatenate({de::lookup(*cg, _p_nts, lhs),
+                                embeddings[word_idx] +
+                                (word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1]) +
+                                (word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1])
                  })
                ;
 
@@ -598,9 +600,9 @@ void nn_scorer::precompute_embeddings()
       }
 
       // finalize with </w> and concatenate
-      embeddings.push_back(de::concatenate({letter_l2r_builder.add_input(de::input(*cg,1.0)),
-                                            letter_r2l_builder.add_input(de::input(*cg,1.0))
-          }));
+      embeddings.push_back(letter_l2r_builder.add_input(de::input(*cg,1.0)) +
+                           letter_r2l_builder.add_input(de::input(*cg,1.0))
+                           );
     }
   }
 
@@ -639,8 +641,8 @@ void nn_scorer::precompute_embeddings()
 
       for (unsigned int i = 0 ; i < lstm_forward.size() ; ++i)
       {
-        auto&& e = de::concatenate({lstm_backward[lstm_backward.size() - i - 1],
-                                  lstm_forward[i]});
+        auto&& e = lstm_backward[lstm_backward.size() - i - 1] +
+                   lstm_forward[i];
         embeddings[i] = e;
       }
     }
