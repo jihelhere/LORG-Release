@@ -432,7 +432,8 @@ int NNLorgParseApp::run_train()
                           nt_embedding_size,
                           hidden_size,
                           lstm_hidden_size,
-                          use_char_embeddings
+                          use_char_embeddings,
+                          use_span_midpoints
                           );
 
   auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
@@ -758,7 +759,8 @@ int NNLorgParseApp::run_train()
                             nt_embedding_size,
                             hidden_size,
                             lstm_hidden_size,
-                            use_char_embeddings
+                            use_char_embeddings,
+                            use_span_midpoints
                             );
 
     auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
@@ -913,6 +915,7 @@ bool NNLorgParseApp::read_config(ConfigTable& configuration)
   lstm_hidden_size = configuration.get_value<unsigned>("lstm-hidden-size");
   dropout = configuration.get_value<float>("dropout");
   use_char_embeddings = configuration.get_value<bool>("use-char-embeddings");
+  use_span_midpoints = configuration.get_value<bool>("use-span-midpoints");
 
   test_model_name = configuration.get_value<std::string>("test-model-name");
 

@@ -41,6 +41,7 @@ private:
   unsigned lstm_hidden_size;
   float dropout;
   bool use_char_embeddings;
+  bool use_span_midpoints;
 
 
 

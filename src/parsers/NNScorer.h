@@ -120,13 +120,15 @@ struct nn_scorer
   const std::vector<Word>* words;
 
   bool use_char_emb;
+  bool use_span_midpoints;
 
   nn_scorer(dynet::Model& m, unsigned lex_level, unsigned span_level,
             unsigned word_embedding_size,
             unsigned nt_embedding_size,
             unsigned hidden_size,
             unsigned lstm_hidden_size,
-            bool char_emb);
+            bool char_emb,
+            bool span_midp);
 
   ~nn_scorer() {};
 

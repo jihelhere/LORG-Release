@@ -217,6 +217,7 @@ class LorgOptions
         ("dropout", po::value<float>()->default_value(0.5), "dropout after lstms (training only)")
         ("use-char-embeddings", po::value<bool>()->default_value(false), "build word embeddings from characters")
         ("test-model-name", po::value<std::string>()->default_value(""), "name of the final test file")
+        ("use-span-midpoints", po::value<bool>()->default_value(false), "additionally use split word to characterize spans (sloow)")
         ;
     options.add(parser_opts);
   }
