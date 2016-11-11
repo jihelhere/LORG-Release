@@ -48,8 +48,8 @@ std::vector<d::LSTMBuilder> nn_scorer::word_r2l_builders;
 d::LSTMBuilder nn_scorer::letter_l2r_builder;
 d::LSTMBuilder nn_scorer::letter_r2l_builder;
 
-std::unordered_map<std::tuple<int,int,int>, de::Expression> nn_scorer::rule_expressions;
-std::unordered_map<std::tuple<int,int,int>, double> nn_scorer::rule_scores;
+std::vector<de::Expression> nn_scorer::rule_expressions;
+std::vector<double> nn_scorer::rule_scores;
 
 inline bool
 is_artificial(int lhs)
@@ -78,6 +78,14 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
   if (not model_initialized)
   {
+    rule_scores.resize(SymbolTable::instance_nt().get_symbol_count() *
+                       SymbolTable::instance_nt().get_symbol_count() *
+                       (SymbolTable::instance_nt().get_symbol_count() + 1) );
+
+    rule_expressions.resize(SymbolTable::instance_nt().get_symbol_count() *
+                            SymbolTable::instance_nt().get_symbol_count() *
+                            (SymbolTable::instance_nt().get_symbol_count() +1) );
+
     if (use_char_emb)
     {
       // todo manage unicode ??? use a dict ???
@@ -178,9 +186,6 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
 void nn_scorer::clear()
 {
-  rule_scores.clear();
-  rule_expressions.clear();
-
   span_scores_bin.clear();
   span_scores_un.clear();
 
@@ -232,10 +237,8 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
 double
 nn_scorer::compute_internal_rule_score(const Production* r)
 {
-
-  return rule_scores.at(std::make_tuple(r->get_lhs(),
-                                        r->get_rhs0(),
-                                        r->get_rhs().size() > 1 ? r->get_rhs1() : -1));
+  static int pad = SymbolTable::instance_nt().get_symbol_count();
+  return rule_scores[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : pad))];
 }
 
 
@@ -321,7 +324,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   for (const auto& r : brules)
   {
     auto&& e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
-    auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
+    auto&& t = nt_triple_to_index(r.get_lhs(),r.get_rhs0(),r.get_rhs1());
     if (train_mode) rule_expressions[t] = e;
     rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
@@ -329,7 +332,7 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
   for (const auto& r : urules)
   {
     auto&& e =  rule_expression(r.get_lhs(), r.get_rhs0(), pad);
-    auto&& t = std::make_tuple(r.get_lhs(), r.get_rhs0(), -1);
+    auto&& t = nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1);
     if (train_mode) rule_expressions[t] = e;
     rule_scores[t] = as_scalar(cg->get_value(e.i));
   }
@@ -552,19 +555,6 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
 
     return lexical_expressions[t] = o * de::rectify(W*i + b);
   }
-
-  // linear classifier with 2 simple features (POS and WORD, POS)
-  // auto v = std::vector<float>(SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
-  //                             + SymbolTable::instance_nt().get_symbol_count(), 0.0);
-  // v[lhs * SymbolTable::instance_word().get_symbol_count() + words[word_position].get_id()] = 1.0;
-  // v[SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count() + lhs] = 1.0;
-
-  // de::Expression i = de::input(*cg,{SymbolTable::instance_nt().get_symbol_count() * SymbolTable::instance_word().get_symbol_count()
-  //                           + SymbolTable::instance_nt().get_symbol_count()}, v);
-
-  // return W * i;
-
-
 }
 
 // adapted from caio

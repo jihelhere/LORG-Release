@@ -96,12 +96,10 @@ struct nn_scorer
   static dynet::LSTMBuilder letter_l2r_builder;
   static dynet::LSTMBuilder letter_r2l_builder;
 
-  static std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> rule_expressions;
-  static std::unordered_map<std::tuple<int,int,int>, double> rule_scores;
-
+  static std::vector<dynet::expr::Expression> rule_expressions;
+  static std::vector<double> rule_scores;
 
   std::vector<dynet::expr::Expression> embeddings;
-
 
   std::unordered_map<std::tuple<int,int,int,int>, dynet::expr::Expression> span_expressions_bin;
   std::unordered_map<std::tuple<int,int,int>, dynet::expr::Expression> span_expressions_un;
@@ -144,8 +142,6 @@ struct nn_scorer
 
   void set_words(const std::vector<Word>& w);
 
-
-
   double compute_lexical_score(int position, const MetaProduction* mp);
   double compute_unary_score(int begin, int end, const MetaProduction* mp);
 
@@ -169,6 +165,14 @@ struct nn_scorer
 
   void set_dropout(float d);
   void unset_dropout();
+
+  static inline int nt_triple_to_index(int lhs, int rhs0, int rhs1)
+  {
+    // should not change after 1st call.
+    static int b = SymbolTable::instance_nt().get_symbol_count();
+    return (b+1) * (lhs * b + rhs0) + (rhs1 >= 0 ? rhs1 : b);
+
+  }
 
 
  private:

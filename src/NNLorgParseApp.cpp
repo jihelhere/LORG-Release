@@ -247,7 +247,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not best_anchored_binaries.count(ref_anc_bin))
       {
         auto&& r = std::get<3>(ref_anc_bin);
-        local_corrects.emplace_back(nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(), r.get_rhs0(), r.get_rhs1())));
+        local_corrects.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())]);
+
 
         if (span_level > 0)
         {
@@ -266,7 +267,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not anchored_binaries.count(best_anc_bin))
       {
         auto&& r = std::get<3>(best_anc_bin);
-        local_errs.emplace_back( nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),r.get_rhs1())));
+        local_errs.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())]);
+
 
         if (span_level > 0)
         {
@@ -287,7 +289,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not best_anchored_unaries.count(ref_anc_un))
       {
         auto&& r = std::get<2>(ref_anc_un);
-        local_corrects.emplace_back( nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
+        local_corrects.emplace_back( nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)]);
+
 
         if (span_level > 0)
         {
@@ -306,7 +309,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (not anchored_unaries.count(best_anc_un))
       {
         auto&& r = std::get<2>(best_anc_un);
-        local_errs.emplace_back(nn_scorer::rule_expressions.at(std::make_tuple(r.get_lhs(),r.get_rhs0(),-1)));
+        local_errs.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(), -1)]);
 
         if (span_level > 0)
         {
