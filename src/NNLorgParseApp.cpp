@@ -250,14 +250,20 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
       if (span_level > 0)
       {
-        k = &network.span_expression(r.get_lhs(),
-                                     std::get<0>(ref_anc_bin),
-                                     std::get<1>(ref_anc_bin) -1,
-                                     std::get<2>(ref_anc_bin)
-                                     );
+        auto begin = std::get<0>(ref_anc_bin);
+        auto end =   std::get<1>(ref_anc_bin) -1;
+        auto split = std::get<2>(ref_anc_bin);
+
+        k = &network.span_expression(r.get_lhs(), begin, end, split);
         exp_diff_count[k]--; // should be zero for non-existent k
 
-        k = &network.span_init(r.get_lhs(), std::get<0>(ref_anc_bin));
+        k = &network.span_init(r.get_lhs(), begin);
+        exp_diff_count[k]--;
+
+        k = &network.span_end(r.get_lhs(), end);
+        exp_diff_count[k]--;
+
+        k = &network.span_split(r.get_lhs(), split);
         exp_diff_count[k]--;
       }
     }
@@ -270,14 +276,20 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
       if (span_level > 0)
       {
-        k = &network.span_expression(r.get_lhs(),
-                                     std::get<0>(best_anc_bin),
-                                     std::get<1>(best_anc_bin) - 1,
-                                     std::get<2>(best_anc_bin)
-                                     );
+        auto begin = std::get<0>(best_anc_bin);
+        auto end =   std::get<1>(best_anc_bin) -1;
+        auto split = std::get<2>(best_anc_bin);
+
+        k = &network.span_expression(r.get_lhs(), begin, end, split);
         exp_diff_count[k]++; // should be zero for non-existent k
 
-        k = &network.span_init(r.get_lhs(), std::get<0>(best_anc_bin));
+        k = &network.span_init(r.get_lhs(), begin);
+        exp_diff_count[k]++;
+
+        k = &network.span_end(r.get_lhs(), end);
+        exp_diff_count[k]++;
+
+        k = &network.span_split(r.get_lhs(), split);
         exp_diff_count[k]++;
       }
     }
@@ -292,15 +304,18 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
       if (span_level > 0)
       {
-        k = &network.span_expression(r.get_lhs(),
-                                     std::get<0>(ref_anc_un),
-                                     std::get<1>(ref_anc_un) -1,
-                                     -1
-                                     );
+        auto begin = std::get<0>(ref_anc_un);
+        auto end =   std::get<1>(ref_anc_un) -1;
+        auto split = -1;
+
+        k = &network.span_expression(r.get_lhs(), begin, end, split);
         exp_diff_count[k]--; // should be zero for non-existent k
 
-        k = &network.span_init(r.get_lhs(), std::get<0>(ref_anc_un));
-        exp_diff_count[k]--; // should be zero for non-existent k
+        k = &network.span_init(r.get_lhs(), begin);
+        exp_diff_count[k]--;
+
+        k = &network.span_end(r.get_lhs(), end);
+        exp_diff_count[k]--;
       }
     }
 
@@ -312,15 +327,18 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
       if (span_level > 0)
       {
-        k = &network.span_expression(r.get_lhs(),
-                                     std::get<0>(best_anc_un),
-                                     std::get<1>(best_anc_un) - 1,
-                                     -1
-                                     );
-        exp_diff_count[k]++; // should be zero for non-existent k
+        auto begin = std::get<0>(best_anc_un);
+        auto end =   std::get<1>(best_anc_un) -1;
+        auto split = -1;
 
-        k = &network.span_init(r.get_lhs(), std::get<0>(best_anc_un));
-        exp_diff_count[k]++; // should be zero for non-existent k
+        k = &network.span_expression(r.get_lhs(), begin, end, split);
+        exp_diff_count[k]--; // should be zero for non-existent k
+
+        k = &network.span_init(r.get_lhs(), begin);
+        exp_diff_count[k]--;
+
+        k = &network.span_end(r.get_lhs(), end);
+        exp_diff_count[k]--;
       }
     }
 
@@ -346,6 +364,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       }
     }
 
+    // todo : why not return the table directly ??
     for(auto& kv : exp_diff_count)
     {
       if (kv.second > 0)

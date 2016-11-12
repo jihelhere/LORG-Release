@@ -73,11 +73,17 @@ struct nn_scorer
 
   //span FF
   static dynet::Parameter _p_W_span_init;
-  // static dynet::Parameter _p_W_span_end;
-  // static dynet::Parameter _p_W_span_split;
+  static dynet::Parameter _p_W_span_end;
+  static dynet::Parameter _p_W_span_split;
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;
+
+  static dynet::Parameter _p_b_span_end;
+  static dynet::Parameter _p_o_span_end;
+
+  static dynet::Parameter _p_b_span_split;
+  static dynet::Parameter _p_o_span_split;
 
   static dynet::Parameter _p_W_span_left;
   static dynet::Parameter _p_W_span_right;
@@ -115,6 +121,12 @@ struct nn_scorer
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_init;
   std::vector<std::vector<double>> span_scores_init;
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_end;
+  std::vector<std::vector<double>> span_scores_end;
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_split;
+  std::vector<std::vector<double>> span_scores_split;
 
   std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_expressions;
 
@@ -173,6 +185,8 @@ struct nn_scorer
   dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
   dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
   dynet::expr::Expression& span_init(int lhs, int begin);
+  dynet::expr::Expression& span_end(int lhs, int end);
+  dynet::expr::Expression& span_split(int lhs, int split);
 
 
   void set_dropout(float d);
