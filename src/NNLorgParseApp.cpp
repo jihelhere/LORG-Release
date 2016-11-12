@@ -236,9 +236,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                       best_anchored_lexicals);
     }
 
-
-
-
     std::unordered_map<const dynet::expr::Expression*, int> exp_diff_count;
 
     //binary rules
@@ -346,22 +343,16 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //lexical rules
     for (const auto& ref_anc_lex : anchored_lexicals)
     {
-      if (not best_anchored_lexicals.count(ref_anc_lex))
-      {
-        local_corrects.emplace_back( network.lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
-                                                                     std::get<0>(ref_anc_lex)
-                                                                     ));
-      }
+      auto k = &network.lexical_expressions[std::make_tuple(std::get<1>(ref_anc_lex).get_lhs(),
+                                                            std::get<0>(ref_anc_lex))];
+      exp_diff_count[k]--;
     }
 
     for (const auto& best_anc_lex : best_anchored_lexicals)
     {
-      if (not anchored_lexicals.count(best_anc_lex))
-      {
-        local_errs.emplace_back(network.lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
-                                                             std::get<0>(best_anc_lex)
-                                                             ));
-      }
+      auto k = &network.lexical_expressions[std::make_tuple(std::get<1>(best_anc_lex).get_lhs(),
+                                                                std::get<0>(best_anc_lex))];
+      exp_diff_count[k]++;
     }
 
     // todo : why not return the table directly ??
@@ -370,6 +361,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (kv.second > 0)
       {
         for (auto i = 0; i < kv.second; ++i)
+
           local_errs.emplace_back(*(kv.first));
       }
       else

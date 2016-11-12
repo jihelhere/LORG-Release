@@ -622,28 +622,23 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
 
   auto&& t = std::make_tuple(lhs,word_idx);
 
-  if (lexical_expressions.count(t))
-    return lexical_expressions[t];
-  else
-  {
-    std::lock_guard<std::mutex> guard(cg_mutex);
+  std::lock_guard<std::mutex> guard(cg_mutex);
 
-    auto&& i = lexical_level > 0 ? de::concatenate({embeddings[word_idx],
-                                                    de::lookup(*cg, _p_nts, lhs)})
-               :
-               de::concatenate({embeddings[word_idx],
-                                de::lookup(*cg, _p_nts, lhs),
-                                word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1],
-                                word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1]
-                 })
-               ;
+  auto&& W = de::parameter(*cg, _p_W_lex);
+  auto&& b = de::parameter(*cg, _p_b_lex);
+  auto&& o = de::parameter(*cg, _p_o_lex);
 
-    auto&& W = de::parameter(*cg, _p_W_lex);
-    auto&& b = de::parameter(*cg, _p_b_lex);
-    auto&& o = de::parameter(*cg, _p_o_lex);
+  auto&& i = lexical_level > 0 ? de::concatenate({embeddings[word_idx],
+                                                  de::lookup(*cg, _p_nts, lhs)})
+             :
+             de::concatenate({embeddings[word_idx],
+                              de::lookup(*cg, _p_nts, lhs),
+                              word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1],
+                              word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1]
+               })
+             ;
 
-    return lexical_expressions[t] = o * de::rectify(W*i + b);
-  }
+  return lexical_expressions[t] = o * de::rectify(W*i + b);
 }
 
 // adapted from caio
