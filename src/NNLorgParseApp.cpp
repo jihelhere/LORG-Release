@@ -238,47 +238,47 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
 
 
 
-    std::unordered_map<const dynet::expr::Expression*, int> span_exp_diff_count;
 
+    std::unordered_map<const dynet::expr::Expression*, int> exp_diff_count;
 
     //binary rules
     for (const auto& ref_anc_bin : anchored_binaries)
     {
-      if (not best_anchored_binaries.count(ref_anc_bin))
+      auto&& r = std::get<3>(ref_anc_bin);
+      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
+      exp_diff_count[k]--; // should be zero for non-existent k
+
+      if (span_level > 0)
       {
-        auto&& r = std::get<3>(ref_anc_bin);
-        local_corrects.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())]);
+        k = &network.span_expression(r.get_lhs(),
+                                     std::get<0>(ref_anc_bin),
+                                     std::get<1>(ref_anc_bin) -1,
+                                     std::get<2>(ref_anc_bin)
+                                     );
+        exp_diff_count[k]--; // should be zero for non-existent k
 
-
-        if (span_level > 0)
-        {
-          auto k = &network.span_expression(r.get_lhs(),
-                                            std::get<0>(ref_anc_bin),
-                                            std::get<1>(ref_anc_bin) -1,
-                                            std::get<2>(ref_anc_bin)
-                                            );
-          span_exp_diff_count[k]--; // should be zero for non-existent k
-        }
+        k = &network.span_init(r.get_lhs(), std::get<0>(ref_anc_bin));
+        exp_diff_count[k]--;
       }
     }
 
     for (const auto& best_anc_bin : best_anchored_binaries)
     {
-      if (not anchored_binaries.count(best_anc_bin))
+      auto&& r = std::get<3>(best_anc_bin);
+      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
+      exp_diff_count[k]++; // should be zero for non-existent k
+
+      if (span_level > 0)
       {
-        auto&& r = std::get<3>(best_anc_bin);
-        local_errs.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())]);
+        k = &network.span_expression(r.get_lhs(),
+                                     std::get<0>(best_anc_bin),
+                                     std::get<1>(best_anc_bin) - 1,
+                                     std::get<2>(best_anc_bin)
+                                     );
+        exp_diff_count[k]++; // should be zero for non-existent k
 
-
-        if (span_level > 0)
-        {
-          auto k = &network.span_expression(r.get_lhs(),
-                                            std::get<0>(best_anc_bin),
-                                            std::get<1>(best_anc_bin) - 1,
-                                            std::get<2>(best_anc_bin)
-                                            );
-          span_exp_diff_count[k]++; // should be zero for non-existent k
-        }
+        k = &network.span_init(r.get_lhs(), std::get<0>(best_anc_bin));
+        exp_diff_count[k]++;
       }
     }
 
@@ -286,40 +286,41 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //unary rules
     for (const auto& ref_anc_un : anchored_unaries)
     {
-      if (not best_anchored_unaries.count(ref_anc_un))
+      auto&& r = std::get<2>(ref_anc_un);
+      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)];
+      exp_diff_count[k]--;
+
+      if (span_level > 0)
       {
-        auto&& r = std::get<2>(ref_anc_un);
-        local_corrects.emplace_back( nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)]);
+        k = &network.span_expression(r.get_lhs(),
+                                     std::get<0>(ref_anc_un),
+                                     std::get<1>(ref_anc_un) -1,
+                                     -1
+                                     );
+        exp_diff_count[k]--; // should be zero for non-existent k
 
-
-        if (span_level > 0)
-        {
-          auto k = &network.span_expression(r.get_lhs(),
-                                            std::get<0>(ref_anc_un),
-                                            std::get<1>(ref_anc_un) -1,
-                                            -1
-                                            );
-          span_exp_diff_count[k]--; // should be zero for non-existent k
-        }
+        k = &network.span_init(r.get_lhs(), std::get<0>(ref_anc_un));
+        exp_diff_count[k]--; // should be zero for non-existent k
       }
     }
 
     for (const auto& best_anc_un : best_anchored_unaries)
     {
-      if (not anchored_unaries.count(best_anc_un))
-      {
-        auto&& r = std::get<2>(best_anc_un);
-        local_errs.emplace_back(nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(), -1)]);
+      auto&& r = std::get<2>(best_anc_un);
+      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(), -1)];
+      exp_diff_count[k]++;
 
-        if (span_level > 0)
-        {
-          auto k = &network.span_expression(std::get<2>(best_anc_un).get_lhs(),
-                                            std::get<0>(best_anc_un),
-                                            std::get<1>(best_anc_un) - 1,
-                                            -1
-                                            );
-          span_exp_diff_count[k]++; // should be zero for non-existent k
-        }
+      if (span_level > 0)
+      {
+        k = &network.span_expression(r.get_lhs(),
+                                     std::get<0>(best_anc_un),
+                                     std::get<1>(best_anc_un) - 1,
+                                     -1
+                                     );
+        exp_diff_count[k]++; // should be zero for non-existent k
+
+        k = &network.span_init(r.get_lhs(), std::get<0>(best_anc_un));
+        exp_diff_count[k]++; // should be zero for non-existent k
       }
     }
 
@@ -345,7 +346,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       }
     }
 
-    for(auto& kv : span_exp_diff_count)
+    for(auto& kv : exp_diff_count)
     {
       if (kv.second > 0)
       {

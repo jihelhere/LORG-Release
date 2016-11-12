@@ -27,6 +27,13 @@ d::Parameter nn_scorer::_p_W_lex;
 d::Parameter nn_scorer::_p_b_lex;
 d::Parameter nn_scorer::_p_o_lex;
 
+d::Parameter nn_scorer::_p_W_span_init;
+// d::Parameter nn_scorer::_p_W_span_end;
+// d::Parameter nn_scorer::_p_W_span_split;
+
+d::Parameter nn_scorer::_p_b_span_init;
+d::Parameter nn_scorer::_p_o_span_init;
+
 d::Parameter nn_scorer::_p_W_span_left;
 d::Parameter nn_scorer::_p_W_span_right;
 d::Parameter nn_scorer::_p_W_span_mid;
@@ -131,6 +138,13 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
 
     if (span_level > 0)
     {
+      _p_W_span_init = m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
+      _p_b_span_init = m.add_parameters({hidden_size});
+      _p_o_span_init = m.add_parameters({1,hidden_size});
+      // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
+      // _p_W_span_mid =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size})
+
+
       _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
       _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
       //if (use_span_midpoints) // TODO templatize code to be able to remove this
@@ -268,16 +282,15 @@ nn_scorer::compute_internal_span_score(int begin,
   }
 
 
+  double v = span_scores_init[begin][lhs];
+
+
   if (medium >=0 && not use_span_midpoints) medium = 0;
 
-  return medium >= 0 ?
-             span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))
-             :
-             span_scores_un.at(std::make_tuple(begin,end, lhs_info));
-
-
-  // std::lock_guard<std::mutex> guard(cg_mutex);
-  // return as_scalar(cg->get_value(e));
+  return v + (medium >= 0 ?
+              span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))
+              :
+              span_scores_un.at(std::make_tuple(begin,end, lhs_info)));
 }
 
 
@@ -353,7 +366,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& bun = de::parameter(*cg, _p_b_span_un);
   auto&& oun = de::parameter(*cg, _p_o_span_un);
 
+  auto&& Wi = de::parameter(*cg,_p_W_span_init);
+  auto&& bi = de::parameter(*cg,_p_b_span_init);
+  auto&& oi = de::parameter(*cg,_p_o_span_init);
+
   std::vector<de::Expression> lefts,rights,mids,distances,extras;
+
+  span_expressions_init.resize(words->size());
+  span_scores_init.resize(words->size());
 
   for (unsigned i = 0; i < words->size(); ++i)
   {
@@ -361,6 +381,16 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
     rights.push_back(Wr * embeddings[i]);
     if (use_span_midpoints) mids.push_back(Wm * embeddings[i]);
     distances.push_back(Wd * de::input(*cg, i));
+
+    span_expressions_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    for (auto l : lhs_int)
+    {
+      auto&& inp = de::concatenate({de::lookup(*cg,_p_nts,l), embeddings[i]});
+      auto&& e = oi * de::rectify(Wi * inp + bi);
+      if (train_mode) span_expressions_init[i][l] = e;
+      span_scores_init[i][l] = as_scalar(cg->get_value(e.i));
+    }
   }
 
   switch (span_level) {
@@ -486,6 +516,12 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   }
 }
 
+
+de::Expression& nn_scorer::span_init(int lhs, int begin)
+{
+  return span_expressions_init[begin][lhs];
+}
+
 de::Expression& nn_scorer::span_expression(int lhs, int begin, int end, int medium)
 {
   int lhs_code = 0;
@@ -506,10 +542,11 @@ de::Expression& nn_scorer::span_expression(int lhs, int begin, int end, int medi
 
   if (medium >=0 && not use_span_midpoints) medium = 0;
 
-  return medium >= 0 ?
-      span_expressions_bin.at(std::make_tuple(begin,end,medium,lhs_code))
-      : span_expressions_un.at(std::make_tuple(begin,end,lhs_code));
-
+  return
+      medium >= 0 ?
+      span_expressions_bin.at(std::make_tuple(begin,end, medium, lhs_code))
+      :
+      span_expressions_un.at(std::make_tuple(begin,end, lhs_code));
 }
 
 de::Expression nn_scorer::rule_expression(int lhs, int rhs0, int rhs1)
