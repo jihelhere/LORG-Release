@@ -260,8 +260,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         k = &network.span_end(r.get_lhs(), end);
         exp_diff_count[k]--;
 
-        // k = &network.span_split(r.get_lhs(), split);
-        // exp_diff_count[k]--;
+        k = &network.span_split(r.get_lhs(), split);
+        exp_diff_count[k]--;
       }
     }
 
@@ -286,8 +286,8 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         k = &network.span_end(r.get_lhs(), end);
         exp_diff_count[k]++;
 
-        // k = &network.span_split(r.get_lhs(), split);
-        // exp_diff_count[k]++;
+        k = &network.span_split(r.get_lhs(), split);
+        exp_diff_count[k]++;
       }
     }
 
