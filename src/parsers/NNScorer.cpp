@@ -564,10 +564,10 @@ de::Expression& nn_scorer::span_init(int lhs, int begin)
   return span_expressions_init[begin][lhs];
 }
 
-// de::Expression& nn_scorer::span_end(int lhs, int end)
-// {
-//   return span_expressions_init[end][lhs];
-// }
+de::Expression& nn_scorer::span_end(int lhs, int end)
+{
+  return span_expressions_init[end][lhs];
+}
 
 // de::Expression& nn_scorer::span_split(int lhs, int split)
 // {

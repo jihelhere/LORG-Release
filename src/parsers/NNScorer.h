@@ -187,7 +187,7 @@ struct nn_scorer
   dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
   dynet::expr::Expression& span_init(int lhs, int begin);
 
-  // dynet::expr::Expression& span_end(int lhs, int end);
+  dynet::expr::Expression& span_end(int lhs, int end);
   // dynet::expr::Expression& span_split(int lhs, int split);
 
 
