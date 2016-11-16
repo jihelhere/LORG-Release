@@ -28,8 +28,8 @@ d::Parameter nn_scorer::_p_b_lex;
 d::Parameter nn_scorer::_p_o_lex;
 
 d::Parameter nn_scorer::_p_W_span_init;
-d::Parameter nn_scorer::_p_W_span_end;
-d::Parameter nn_scorer::_p_W_span_split;
+// d::Parameter nn_scorer::_p_W_span_end;
+// d::Parameter nn_scorer::_p_W_span_split;
 
 d::Parameter nn_scorer::_p_b_span_init;
 d::Parameter nn_scorer::_p_o_span_init;
@@ -148,11 +148,11 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_b_span_init = m.add_parameters({hidden_size});
       _p_o_span_init = m.add_parameters({1,hidden_size});
 
-      _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
+      // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_end = m.add_parameters({hidden_size});
       _p_o_span_end = m.add_parameters({1,hidden_size});
 
-      _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
+      // _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_split = m.add_parameters({hidden_size});
       _p_o_span_split = m.add_parameters({1,hidden_size});
 
@@ -382,11 +382,11 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& bi = de::parameter(*cg,_p_b_span_init);
   auto&& oi = de::parameter(*cg,_p_o_span_init);
 
-  auto&& We = de::parameter(*cg,_p_W_span_end);
+  //auto&& We = de::parameter(*cg,_p_W_span_end);
   auto&& be = de::parameter(*cg,_p_b_span_end);
   auto&& oe = de::parameter(*cg,_p_o_span_end);
 
-  auto&& Ws = de::parameter(*cg,_p_W_span_split);
+  //auto&& Ws = de::parameter(*cg,_p_W_span_split);
   auto&& bs = de::parameter(*cg,_p_b_span_split);
   auto&& os = de::parameter(*cg,_p_o_span_split);
 
@@ -420,9 +420,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
     for (auto l : lhs_int)
     {
       auto&& inp = de::concatenate({de::lookup(*cg,_p_nts,l), embeddings[i]});
-      auto&& ei = oi * de::rectify(Wi * inp + bi);
-      auto&& ee = oe * de::rectify(We * inp + be);
-      auto&& es = os * de::rectify(Ws * inp + bs);
+      auto&& hp = Wi * inp;
+      // auto&& ei = oi * de::rectify(Wi * inp + bi);
+      // auto&& ee = oe * de::rectify(We * inp + be);
+      // auto&& es = os * de::rectify(Ws * inp + bs);
+
+      auto&& ei = oi * de::rectify(hp + bi);
+      auto&& ee = oe * de::rectify(hp + be);
+      auto&& es = os * de::rectify(hp + bs);
 
       if (train_mode)
       {

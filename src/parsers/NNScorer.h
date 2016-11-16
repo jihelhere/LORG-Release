@@ -73,8 +73,8 @@ struct nn_scorer
 
   //span FF
   static dynet::Parameter _p_W_span_init;
-  static dynet::Parameter _p_W_span_end;
-  static dynet::Parameter _p_W_span_split;
+  // static dynet::Parameter _p_W_span_end;
+  // static dynet::Parameter _p_W_span_split;
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;

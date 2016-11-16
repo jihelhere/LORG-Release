@@ -432,7 +432,7 @@ int NNLorgParseApp::run_train()
   //dynet::SimpleSGDTrainer trainer(&m);
   //dynet::MomentumSGDTrainer trainer(&m);
   dynet::AdamTrainer trainer(&m);
-  trainer.eta_decay = 0.08;
+  trainer.eta_decay = 1e-8;
 
 
   int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
