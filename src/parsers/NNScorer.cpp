@@ -691,7 +691,11 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
   auto&& b = de::parameter(*cg, _p_b_lex);
   auto&& o = de::parameter(*cg, _p_o_lex);
 
-  auto&& i = de::concatenate({embeddings[word_idx],
+  auto&& i = lexical_level > 0 ?
+             de::concatenate({embeddings[word_idx],
+                              de::lookup(*cg, _p_nts, lhs)})
+             :
+             de::concatenate({embeddings[word_idx],
                               de::lookup(*cg, _p_nts, lhs),
                               word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1],
                               word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1]
