@@ -308,10 +308,10 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         k = &network.span_expression(r.get_lhs(), begin, end, split);
         exp_diff_count[k]--; // should be zero for non-existent k
 
-        k = &network.span_init(r.get_lhs(), begin);
+        k = &network.span_init_un(r.get_lhs(), begin);
         exp_diff_count[k]--;
 
-        k = &network.span_end(r.get_lhs(), end);
+        k = &network.span_end_un(r.get_lhs(), end);
         exp_diff_count[k]--;
       }
     }
@@ -331,10 +331,10 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
         k = &network.span_expression(r.get_lhs(), begin, end, split);
         exp_diff_count[k]++; // should be zero for non-existent k
 
-        k = &network.span_init(r.get_lhs(), begin);
+        k = &network.span_init_un(r.get_lhs(), begin);
         exp_diff_count[k]++;
 
-        k = &network.span_end(r.get_lhs(), end);
+        k = &network.span_end_un(r.get_lhs(), end);
         exp_diff_count[k]++;
       }
     }

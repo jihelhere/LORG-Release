@@ -78,9 +78,11 @@ struct nn_scorer
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;
+  static dynet::Parameter _p_o_span_init_un;
 
   static dynet::Parameter _p_b_span_end;
   static dynet::Parameter _p_o_span_end;
+  static dynet::Parameter _p_o_span_end_un;
 
   static dynet::Parameter _p_b_span_split;
   static dynet::Parameter _p_o_span_split;
@@ -122,8 +124,14 @@ struct nn_scorer
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_init;
   std::vector<std::vector<double>> span_scores_init;
 
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_init_un;
+  std::vector<std::vector<double>> span_scores_init_un;
+
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_end;
   std::vector<std::vector<double>> span_scores_end;
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_end_un;
+  std::vector<std::vector<double>> span_scores_end_un;
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_split;
   std::vector<std::vector<double>> span_scores_split;
@@ -186,10 +194,11 @@ struct nn_scorer
 
   dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
   dynet::expr::Expression& span_init(int lhs, int begin);
-
   dynet::expr::Expression& span_end(int lhs, int end);
   dynet::expr::Expression& span_split(int lhs, int split);
 
+  dynet::expr::Expression& span_init_un(int lhs, int begin);
+  dynet::expr::Expression& span_end_un(int lhs, int end);
 
 
   void set_dropout(float d);

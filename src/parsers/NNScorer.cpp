@@ -33,9 +33,11 @@ d::Parameter nn_scorer::_p_W_span_init;
 
 d::Parameter nn_scorer::_p_b_span_init;
 d::Parameter nn_scorer::_p_o_span_init;
+d::Parameter nn_scorer::_p_o_span_init_un;
 
 d::Parameter nn_scorer::_p_b_span_end;
 d::Parameter nn_scorer::_p_o_span_end;
+d::Parameter nn_scorer::_p_o_span_end_un;
 
 d::Parameter nn_scorer::_p_b_span_split;
 d::Parameter nn_scorer::_p_o_span_split;
@@ -147,10 +149,12 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_W_span_init = m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_init = m.add_parameters({hidden_size});
       _p_o_span_init = m.add_parameters({1,hidden_size});
+      _p_o_span_init_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_end = m.add_parameters({hidden_size});
       _p_o_span_end = m.add_parameters({1,hidden_size});
+      _p_o_span_end_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_split = m.add_parameters({hidden_size});
@@ -293,16 +297,26 @@ nn_scorer::compute_internal_span_score(int begin,
   }
 
 
-  double v = span_scores_init[begin][lhs];
-  v += span_scores_end[end][lhs];
-  if (medium >=0) v += span_scores_split[medium][lhs];
+  if (medium >= 0) // binary rule
+  {
+    double v = span_scores_init[begin][lhs] +
+               span_scores_end[end][lhs] +
+               span_scores_split[medium][lhs];
 
-  if (medium >=0 && not use_span_midpoints) medium = 0;
 
-  return v + (medium >= 0 ?
-              span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info))
-              :
-              span_scores_un.at(std::make_tuple(begin,end, lhs_info)));
+    if (not use_span_midpoints) medium = 0;
+
+    return v + span_scores_bin.at(std::make_tuple(begin,end, medium, lhs_info));
+
+  }
+  else
+  {
+  double v = span_scores_init_un[begin][lhs] +
+             span_scores_end_un[end][lhs];
+
+  return v + span_scores_un.at(std::make_tuple(begin,end, lhs_info));
+  }
+
 }
 
 
@@ -381,10 +395,12 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& Wi = de::parameter(*cg,_p_W_span_init);
   auto&& bi = de::parameter(*cg,_p_b_span_init);
   auto&& oi = de::parameter(*cg,_p_o_span_init);
+  auto&& oiu = de::parameter(*cg,_p_o_span_init_un);
 
   //auto&& We = de::parameter(*cg,_p_W_span_end);
   auto&& be = de::parameter(*cg,_p_b_span_end);
   auto&& oe = de::parameter(*cg,_p_o_span_end);
+  auto&& oeu = de::parameter(*cg,_p_o_span_end_un);
 
   //auto&& Ws = de::parameter(*cg,_p_W_span_split);
   auto&& bs = de::parameter(*cg,_p_b_span_split);
@@ -395,12 +411,19 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   span_expressions_init.resize(words->size());
   span_scores_init.resize(words->size());
 
+  span_expressions_init_un.resize(words->size());
+  span_scores_init_un.resize(words->size());
+
   span_expressions_end.resize(words->size());
   span_scores_end.resize(words->size());
+
+  span_expressions_end_un.resize(words->size());
+  span_scores_end_un.resize(words->size());
 
   span_expressions_split.resize(words->size());
   span_scores_split.resize(words->size());
 
+  // TODO: distinguish symbols based on un/bin
   for (unsigned i = 0; i < words->size(); ++i)
   {
     lefts.push_back(Wl * embeddings[i]);
@@ -411,8 +434,14 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
     span_expressions_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
+    span_expressions_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
     span_expressions_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+    span_expressions_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
     span_expressions_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
@@ -429,15 +458,26 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       auto&& ee = oe * de::rectify(hp + be);
       auto&& es = os * de::rectify(hp + bs);
 
+
+      auto&& eiu = oiu * de::rectify(hp + bi);
+      auto&& eeu = oeu * de::rectify(hp + be);
+
       if (train_mode)
       {
         span_expressions_init[i][l] = ei;
         span_expressions_end[i][l] = ee;
         span_expressions_split[i][l] = es;
+
+        span_expressions_init_un[i][l] = eiu;
+        span_expressions_end_un[i][l] = eeu;
       }
       span_scores_init[i][l]  = as_scalar(cg->get_value(ei.i));
       span_scores_end[i][l]   = as_scalar(cg->get_value(ee.i));
       span_scores_split[i][l] = as_scalar(cg->get_value(es.i));
+
+      span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
+      span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
+
     }
   }
 
@@ -573,6 +613,19 @@ de::Expression& nn_scorer::span_end(int lhs, int end)
 {
   return span_expressions_end[end][lhs];
 }
+
+de::Expression& nn_scorer::span_init_un(int lhs, int begin)
+{
+  return span_expressions_init_un[begin][lhs];
+}
+
+de::Expression& nn_scorer::span_end_un(int lhs, int end)
+{
+  return span_expressions_end_un[end][lhs];
+}
+
+
+
 
 de::Expression& nn_scorer::span_split(int lhs, int split)
 {
