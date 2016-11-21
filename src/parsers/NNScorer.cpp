@@ -104,8 +104,8 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
     if (use_char_emb)
     {
       // todo manage unicode ??? use a dict ???
-      letter_l2r_builder = d::LSTMBuilder(1, 1, word_embedding_size / 2, &m);
-      letter_r2l_builder = d::LSTMBuilder(1, 1, word_embedding_size - (word_embedding_size / 2), &m);
+      letter_l2r_builder = d::LSTMBuilder(1, 1, word_embedding_size, &m);
+      letter_r2l_builder = d::LSTMBuilder(1, 1, word_embedding_size, &m);
     }
 
     // needed for padding when not using word lstms
@@ -186,19 +186,24 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_o_span_un = m.add_parameters({1,hidden_size});
     }
 
+
+    unsigned lstm_input_size = word_embedding_size;
+    // if (use_char_emb) // no we use addition instead of concatenation
+    //   lstm_input_size += word_embedding_size;
+
     switch (lex_level) {
       case 0: {
 
         break;
       }
       case 1: {
-        word_l2r_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(2, word_embedding_size, lstm_hidden_size, &m));
-        word_r2l_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(2, word_embedding_size, lstm_hidden_size, &m));
+        word_l2r_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(2, lstm_input_size, lstm_hidden_size, &m));
+        word_r2l_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(2, lstm_input_size, lstm_hidden_size, &m));
         break;
       }
       default:
-        word_l2r_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(1, word_embedding_size, lstm_hidden_size, &m));
-        word_r2l_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(1, word_embedding_size, lstm_hidden_size, &m));
+        word_l2r_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(1, lstm_input_size, lstm_hidden_size, &m));
+        word_r2l_builders = std::vector<d::LSTMBuilder>(1,d::LSTMBuilder(1, lstm_input_size, lstm_hidden_size, &m));
 
         for (unsigned s = 1; s < lex_level; ++s)
         {
@@ -729,7 +734,8 @@ void nn_scorer::precompute_embeddings()
       }
 
       // finalize with </w> and concatenate (encoded as one)
-      embeddings.push_back(letter_l2r_builder.add_input(de::input(*cg,1.0)) +
+      embeddings.push_back(de::lookup(*cg,_p_word, w.get_id()) +
+                           letter_l2r_builder.add_input(de::input(*cg,1.0)) +
                            letter_r2l_builder.add_input(de::input(*cg,1.0))
                            );
     }
