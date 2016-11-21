@@ -686,10 +686,7 @@ de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
   auto&& b = de::parameter(*cg, _p_b_lex);
   auto&& o = de::parameter(*cg, _p_o_lex);
 
-  auto&& i = lexical_level > 0 ? de::concatenate({embeddings[word_idx],
-                                                  de::lookup(*cg, _p_nts, lhs)})
-             :
-             de::concatenate({embeddings[word_idx],
+  auto&& i = de::concatenate({embeddings[word_idx],
                               de::lookup(*cg, _p_nts, lhs),
                               word_idx == 0 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx-1],
                               word_idx == embeddings.size() - 1 ? de::lookup(*cg, _p_word, pad) : embeddings[word_idx+1]
@@ -724,14 +721,14 @@ void nn_scorer::precompute_embeddings()
       // Build backward LSTM
       letter_r2l_builder.new_graph(*cg);
       letter_r2l_builder.start_new_sequence();
-      // initialize with <w>
+      // initialize with <w> (encoded as zero)
       letter_r2l_builder.add_input(de::input(*cg,0.0));
       for (int i = form.size() - 1; i >= 0; --i)
       {
         letter_r2l_builder.add_input(de::input(*cg,float(form[i])));
       }
 
-      // finalize with </w> and concatenate
+      // finalize with </w> and concatenate (encoded as one)
       embeddings.push_back(letter_l2r_builder.add_input(de::input(*cg,1.0)) +
                            letter_r2l_builder.add_input(de::input(*cg,1.0))
                            );
