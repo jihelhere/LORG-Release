@@ -71,7 +71,9 @@ struct train_item
                  const Tagger& tagger,
                  ParserCKYNN::scorer& network,
                  int start_symbol,
-                 const std::vector<int>& lhs_int_vec
+                 const std::vector<int>& lhs_int_vec,
+                 const std::vector<int>& rhs0_int_vec,
+                 const std::vector<int>& rhs1_int_vec
                  );
 
   PtbPsTree *
@@ -79,7 +81,9 @@ struct train_item
                  const ParserCKYNN& parser,
                  ParserCKYNN::scorer& network,
                  int start_symbol,
-                 const std::vector<int>& lhs_int_vec);
+                 const std::vector<int>& lhs_int_vec,
+                 const std::vector<int>& rhs0_int_vec,
+                 const std::vector<int>& rhs1_int_vec);
 
 
 

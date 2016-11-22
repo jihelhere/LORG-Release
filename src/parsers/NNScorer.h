@@ -78,16 +78,26 @@ struct nn_scorer
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;
-  static dynet::Parameter _p_b_span_init_un;
-  static dynet::Parameter _p_o_span_init_un;
+  // static dynet::Parameter _p_b_span_init_un;
+  // static dynet::Parameter _p_o_span_init_un;
 
   static dynet::Parameter _p_b_span_end;
   static dynet::Parameter _p_o_span_end;
-  static dynet::Parameter _p_b_span_end_un;
-  static dynet::Parameter _p_o_span_end_un;
+  // static dynet::Parameter _p_b_span_end_un;
+  // static dynet::Parameter _p_o_span_end_un;
 
   static dynet::Parameter _p_b_span_split;
   static dynet::Parameter _p_o_span_split;
+
+
+  static dynet::Parameter _p_W_span0_init;
+  static dynet::Parameter _p_b_span0_init;
+  static dynet::Parameter _p_o_span0_init;
+  static dynet::Parameter _p_b_span0_end;
+  static dynet::Parameter _p_o_span0_end;
+  static dynet::Parameter _p_b_span0_split;
+  static dynet::Parameter _p_o_span0_split;
+
 
   static dynet::Parameter _p_W_span_left;
   static dynet::Parameter _p_W_span_right;
@@ -126,17 +136,28 @@ struct nn_scorer
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_init;
   std::vector<std::vector<double>> span_scores_init;
 
-  std::vector<std::vector<dynet::expr::Expression>> span_expressions_init_un;
-  std::vector<std::vector<double>> span_scores_init_un;
+  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_init_un;
+  // std::vector<std::vector<double>> span_scores_init_un;
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_end;
   std::vector<std::vector<double>> span_scores_end;
 
-  std::vector<std::vector<dynet::expr::Expression>> span_expressions_end_un;
-  std::vector<std::vector<double>> span_scores_end_un;
+  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_end_un;
+  // std::vector<std::vector<double>> span_scores_end_un;
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_split;
   std::vector<std::vector<double>> span_scores_split;
+
+
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_init;
+  std::vector<std::vector<double>> span_scores_rhs0_init;
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_end;
+  std::vector<std::vector<double>> span_scores_rhs0_end;
+
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_split;
+  std::vector<std::vector<double>> span_scores_rhs0_split;
 
   std::unordered_map<std::tuple<int,int>, dynet::expr::Expression> lexical_expressions;
 
@@ -180,13 +201,15 @@ struct nn_scorer
   double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp);
 
   double
-  compute_internal_span_score(int begin, int end, int medium, int lhs);
+  compute_internal_span_score(int begin, int end, int medium, int lhs, int rhs0);
 
   void clear();
   static void precompute_rule_expressions(const std::vector<Rule>& brules,
                                           const std::vector<Rule>& urules);
 
-  void precompute_span_expressions(const std::vector<int>& lhs_int);
+  void precompute_span_expressions(const std::vector<int>& lhs_int,
+                                   const std::vector<int>& rhs0_int,
+                                   const std::vector<int>& rhs1_int);
 
   void precompute_embeddings();
 
@@ -199,8 +222,12 @@ struct nn_scorer
   dynet::expr::Expression& span_end(int lhs, int end);
   dynet::expr::Expression& span_split(int lhs, int split);
 
-  dynet::expr::Expression& span_init_un(int lhs, int begin);
-  dynet::expr::Expression& span_end_un(int lhs, int end);
+  // dynet::expr::Expression& span_init_un(int lhs, int begin);
+  // dynet::expr::Expression& span_end_un(int lhs, int end);
+
+  dynet::expr::Expression& span_rhs0_init(int rhs0, int begin);
+  dynet::expr::Expression& span_rhs0_end(int rhs0, int end);
+  dynet::expr::Expression& span_rhs0_split(int rhs0, int split);
 
 
   void set_dropout(float d);

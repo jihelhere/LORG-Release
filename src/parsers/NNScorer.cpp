@@ -16,7 +16,6 @@ std::mutex cg_mutex;
 bool nn_scorer::model_initialized = false;
 bool nn_scorer::train_mode = false;
 
-
 d::ComputationGraph * nn_scorer::cg = nullptr;
 
 d::Parameter nn_scorer::_p_W_int;
@@ -33,13 +32,13 @@ d::Parameter nn_scorer::_p_W_span_init;
 
 d::Parameter nn_scorer::_p_b_span_init;
 d::Parameter nn_scorer::_p_o_span_init;
-d::Parameter nn_scorer::_p_b_span_init_un;
-d::Parameter nn_scorer::_p_o_span_init_un;
+// d::Parameter nn_scorer::_p_b_span_init_un;
+// d::Parameter nn_scorer::_p_o_span_init_un;
 
 d::Parameter nn_scorer::_p_b_span_end;
 d::Parameter nn_scorer::_p_o_span_end;
-d::Parameter nn_scorer::_p_b_span_end_un;
-d::Parameter nn_scorer::_p_o_span_end_un;
+// d::Parameter nn_scorer::_p_b_span_end_un;
+// d::Parameter nn_scorer::_p_o_span_end_un;
 
 d::Parameter nn_scorer::_p_b_span_split;
 d::Parameter nn_scorer::_p_o_span_split;
@@ -57,6 +56,16 @@ d::Parameter nn_scorer::_p_o_span_un;
 
 d::LookupParameter nn_scorer::_p_word;
 d::LookupParameter nn_scorer::_p_nts;
+
+
+dynet::Parameter nn_scorer::_p_W_span0_init;
+dynet::Parameter nn_scorer::_p_b_span0_init;
+dynet::Parameter nn_scorer::_p_o_span0_init;
+dynet::Parameter nn_scorer::_p_b_span0_end;
+dynet::Parameter nn_scorer::_p_o_span0_end;
+dynet::Parameter nn_scorer::_p_b_span0_split;
+dynet::Parameter nn_scorer::_p_o_span0_split;
+
 
 
 std::vector<d::LSTMBuilder> nn_scorer::word_l2r_builders;
@@ -151,19 +160,30 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_W_span_init = m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_init = m.add_parameters({hidden_size});
       _p_o_span_init = m.add_parameters({1,hidden_size});
-      _p_b_span_init_un = m.add_parameters({hidden_size});
-      _p_o_span_init_un = m.add_parameters({1,hidden_size});
+      // _p_b_span_init_un = m.add_parameters({hidden_size});
+      // _p_o_span_init_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_end = m.add_parameters({hidden_size});
       _p_o_span_end = m.add_parameters({1,hidden_size});
 
-      _p_b_span_end_un = m.add_parameters({hidden_size});
-      _p_o_span_end_un = m.add_parameters({1,hidden_size});
+      // _p_b_span_end_un = m.add_parameters({hidden_size});
+      // _p_o_span_end_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_split = m.add_parameters({hidden_size});
       _p_o_span_split = m.add_parameters({1,hidden_size});
+
+
+      _p_W_span0_init = m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
+      _p_b_span0_init = m.add_parameters({hidden_size});
+      _p_o_span0_init = m.add_parameters({1,hidden_size});
+
+      _p_b_span0_end = m.add_parameters({hidden_size});
+      _p_o_span0_end = m.add_parameters({1,hidden_size});
+
+      _p_b_span0_split = m.add_parameters({hidden_size});
+      _p_o_span0_split = m.add_parameters({1,hidden_size});
 
       _p_W_span_left = m.add_parameters({hidden_size, span_input_dim_base });
       _p_W_span_right = m.add_parameters({hidden_size, span_input_dim_base });
@@ -286,7 +306,7 @@ double
 nn_scorer::compute_internal_span_score(int begin,
                                        int end,
                                        int medium,
-                                       int lhs)
+                                       int lhs, int rhs0)
 {
   int lhs_info = 0;
   switch (span_level) {
@@ -313,6 +333,7 @@ nn_scorer::compute_internal_span_score(int begin,
                span_scores_end[end][lhs] +
                span_scores_split[medium][lhs];
 
+    v += span_scores_rhs0_init[begin][rhs0];
 
     if (not use_span_midpoints) medium = 0;
 
@@ -321,10 +342,13 @@ nn_scorer::compute_internal_span_score(int begin,
   }
   else
   {
-  double v = span_scores_init_un[begin][lhs] +
-             span_scores_end_un[end][lhs];
+  // double v = span_scores_init_un[begin][lhs] +
+  //            span_scores_end_un[end][lhs];
+    double v = span_scores_init[begin][lhs] +
+               span_scores_end[end][lhs];
+    v += span_scores_rhs0_init[begin][rhs0];
 
-  return v + span_scores_un.at(std::make_tuple(begin,end, lhs_info));
+    return v + span_scores_un.at(std::make_tuple(begin,end, lhs_info));
   }
 
 }
@@ -343,7 +367,8 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
 
   double v = compute_internal_rule_score(r);
 
-  if (span_level > 0) v+= compute_internal_span_score(begin, end - 1, -1, r->get_lhs());
+  if (span_level > 0) v+= compute_internal_span_score(begin, end - 1, -1, r->get_lhs(),
+                                                      r->get_rhs0());
 
   if (gold && !anchored_unaries->count(std::make_tuple(begin,end,*r)))
     v += 1.0;
@@ -358,7 +383,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 
   double v = compute_internal_rule_score(r);
 
-  if (span_level > 0) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs());
+  if (span_level > 0) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs(), r->get_rhs0());
 
   if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r))) v += 1.0;
 
@@ -388,10 +413,13 @@ void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
 }
 
 
-void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
+void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int,
+                                            const std::vector<int>& rhs0_int,
+                                            const std::vector<int>& rhs1_int)
 {
   std::lock_guard<std::mutex> guard(cg_mutex);
 
+  // span bigrams
   auto&& Wl = de::parameter(*cg, _p_W_span_left);
   auto&& Wr = de::parameter(*cg, _p_W_span_right);
   auto&& Wm = de::parameter(*cg, _p_W_span_mid);
@@ -402,38 +430,64 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& bun = de::parameter(*cg, _p_b_span_un);
   auto&& oun = de::parameter(*cg, _p_o_span_un);
 
+
+  // lhs + span init
   auto&& Wi = de::parameter(*cg,_p_W_span_init);
   auto&& bi = de::parameter(*cg,_p_b_span_init);
   auto&& oi = de::parameter(*cg,_p_o_span_init);
-  auto&& biu = de::parameter(*cg,_p_b_span_init_un);
-  auto&& oiu = de::parameter(*cg,_p_o_span_init_un);
+  // auto&& biu = de::parameter(*cg,_p_b_span_init_un);
+  // auto&& oiu = de::parameter(*cg,_p_o_span_init_un);
 
+
+  // lhs + span end
   //auto&& We = de::parameter(*cg,_p_W_span_end);
   auto&& be = de::parameter(*cg,_p_b_span_end);
   auto&& oe = de::parameter(*cg,_p_o_span_end);
-  auto&& beu = de::parameter(*cg,_p_b_span_end_un);
-  auto&& oeu = de::parameter(*cg,_p_o_span_end_un);
+  // auto&& beu = de::parameter(*cg,_p_b_span_end_un);
+  // auto&& oeu = de::parameter(*cg,_p_o_span_end_un);
 
+  //lhs + span split
   //auto&& Ws = de::parameter(*cg,_p_W_span_split);
   auto&& bs = de::parameter(*cg,_p_b_span_split);
   auto&& os = de::parameter(*cg,_p_o_span_split);
+
+
+    // rhs0 + span init
+  auto&& W0i = de::parameter(*cg,_p_W_span0_init);
+  auto&& b0i = de::parameter(*cg,_p_b_span0_init);
+  auto&& o0i = de::parameter(*cg,_p_o_span0_init);
+
+  // rhs0 + span end
+  auto&& b0e = de::parameter(*cg,_p_b_span0_end);
+  auto&& o0e = de::parameter(*cg,_p_o_span0_end);
+
+  //rhs0 + span split
+  auto&& b0s = de::parameter(*cg,_p_b_span0_split);
+  auto&& o0s = de::parameter(*cg,_p_o_span0_split);
 
   std::vector<de::Expression> lefts,rights,mids,distances,extras;
 
   span_expressions_init.resize(words->size());
   span_scores_init.resize(words->size());
+  // span_expressions_init_un.resize(words->size());
+  // span_scores_init_un.resize(words->size());
 
-  span_expressions_init_un.resize(words->size());
-  span_scores_init_un.resize(words->size());
+  span_expressions_rhs0_init.resize(words->size());
+  span_scores_rhs0_init.resize(words->size());
 
   span_expressions_end.resize(words->size());
   span_scores_end.resize(words->size());
+  // span_expressions_end_un.resize(words->size());
+  // span_scores_end_un.resize(words->size());
 
-  span_expressions_end_un.resize(words->size());
-  span_scores_end_un.resize(words->size());
+  span_expressions_rhs0_end.resize(words->size());
+  span_scores_rhs0_end.resize(words->size());
 
   span_expressions_split.resize(words->size());
   span_scores_split.resize(words->size());
+
+  span_expressions_rhs0_split.resize(words->size());
+  span_scores_rhs0_split.resize(words->size());
 
   // TODO: distinguish symbols based on un/bin
   for (unsigned i = 0; i < words->size(); ++i)
@@ -446,17 +500,51 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
     span_expressions_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
-    span_expressions_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-    span_scores_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
     span_expressions_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
-    span_expressions_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-    span_scores_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-
     span_expressions_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+    // span_expressions_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    // span_scores_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    // span_expressions_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    // span_scores_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+    span_expressions_rhs0_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_rhs0_init[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+
+    span_expressions_rhs0_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_rhs0_end[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+    span_expressions_rhs0_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_rhs0_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
+
+    for (auto r0 : rhs0_int)
+    {
+      auto&& inp = de::concatenate({de::lookup(*cg,_p_nts,r0), embeddings[i]});
+      auto&& h0p = W0i * inp;
+
+      auto&& e0i = o0i * de::rectify(h0p + b0i);
+      auto&& e0e = o0e * de::rectify(h0p + b0e);
+      auto&& e0s = o0s * de::rectify(h0p + b0s);
+
+
+
+      if (train_mode)
+      {
+        span_expressions_rhs0_init[i][r0] = e0i;
+        span_expressions_rhs0_end[i][r0] = e0e;
+        span_expressions_rhs0_split[i][r0] = e0s;
+
+      }
+      span_scores_rhs0_init[i][r0]  = as_scalar(cg->get_value(e0i.i));
+      span_scores_rhs0_end[i][r0]   = as_scalar(cg->get_value(e0e.i));
+      span_scores_rhs0_split[i][r0] = as_scalar(cg->get_value(e0s.i));
+    }
+
 
     for (auto l : lhs_int)
     {
@@ -470,8 +558,8 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       auto&& ee = oe * de::rectify(hp + be);
       auto&& es = os * de::rectify(hp + bs);
 
-      auto&& eiu = oiu * de::rectify(hp + biu);
-      auto&& eeu = oeu * de::rectify(hp + beu);
+      // auto&& eiu = oiu * de::rectify(hp + biu);
+      // auto&& eeu = oeu * de::rectify(hp + beu);
 
       if (train_mode)
       {
@@ -479,16 +567,21 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
         span_expressions_end[i][l] = ee;
         span_expressions_split[i][l] = es;
 
-        span_expressions_init_un[i][l] = eiu;
-        span_expressions_end_un[i][l] = eeu;
+        // span_expressions_init_un[i][l] = eiu;
+        // span_expressions_end_un[i][l] = eeu;
       }
       span_scores_init[i][l]  = as_scalar(cg->get_value(ei.i));
       span_scores_end[i][l]   = as_scalar(cg->get_value(ee.i));
       span_scores_split[i][l] = as_scalar(cg->get_value(es.i));
 
-      span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
-      span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
+      // span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
+      // span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
     }
+
+
+
+
+
   }
 
   switch (span_level) {
@@ -624,15 +717,15 @@ de::Expression& nn_scorer::span_end(int lhs, int end)
   return span_expressions_end[end][lhs];
 }
 
-de::Expression& nn_scorer::span_init_un(int lhs, int begin)
-{
-  return span_expressions_init_un[begin][lhs];
-}
+// de::Expression& nn_scorer::span_init_un(int lhs, int begin)
+// {
+//   return span_expressions_init_un[begin][lhs];
+// }
 
-de::Expression& nn_scorer::span_end_un(int lhs, int end)
-{
-  return span_expressions_end_un[end][lhs];
-}
+// de::Expression& nn_scorer::span_end_un(int lhs, int end)
+// {
+//   return span_expressions_end_un[end][lhs];
+// }
 
 
 
@@ -640,6 +733,23 @@ de::Expression& nn_scorer::span_end_un(int lhs, int end)
 de::Expression& nn_scorer::span_split(int lhs, int split)
 {
   return span_expressions_split[split][lhs];
+}
+
+
+
+de::Expression& nn_scorer::span_rhs0_init(int rhs0, int begin)
+{
+  return span_expressions_rhs0_init[begin][rhs0];
+}
+
+de::Expression& nn_scorer::span_rhs0_end(int rhs0, int end)
+{
+  return span_expressions_rhs0_end[end][rhs0];
+}
+
+de::Expression& nn_scorer::span_rhs0_split(int rhs0, int split)
+{
+  return span_expressions_rhs0_split[split][rhs0];
 }
 
 de::Expression& nn_scorer::span_expression(int lhs, int begin, int end, int medium)

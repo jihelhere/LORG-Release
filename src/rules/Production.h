@@ -121,7 +121,7 @@ size_t Production::hash() const
 
   size_t seed = 0;
   boost::hash_combine(seed, hash_int(lhs));
-  for (auto& r : rhs)
+  for (auto r : rhs)
     boost::hash_combine(seed, hash_int(r));
   return seed;
 }

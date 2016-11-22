@@ -27,7 +27,7 @@
 #endif
 
 NNLorgParseApp::NNLorgParseApp()
-    : LorgParseApp()
+: LorgParseApp()
 {}
 
 NNLorgParseApp::~NNLorgParseApp()
@@ -131,7 +131,10 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
                                const ParserCKYNN& parser,
                                ParserCKYNN::scorer& network,
                                int start_symbol,
-                               const std::vector<int>& lhs_int_vec)
+                               const std::vector<int>& lhs_int_vec,
+                               const std::vector<int>& rhs0_int_vec,
+                               const std::vector<int>& rhs1_int_vec
+                               )
 {
 
   PtbPsTree*  best_tree = nullptr;
@@ -150,7 +153,7 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
     network.span_scores_bin.clear();
     network.span_scores_un.clear();
 
-    network.precompute_span_expressions(lhs_int_vec);
+    network.precompute_span_expressions(lhs_int_vec, rhs0_int_vec, rhs1_int_vec);
   }
 
   network.lexical_expressions.clear();
@@ -169,17 +172,139 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
   return best_tree;
 }
 
-//////
-// std::pair<
-//   std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
-//   std::pair<std::string,std::string>>
+
+template <typename T> // for increment/decrement
+void extract_feature_anchored_binary_rule(const anchored_binrule_type& ref_anc_bin,
+                                          std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                          nn_scorer& network,
+                                          int span_level)
+{
+  T oper;
+
+  auto&& r = std::get<3>(ref_anc_bin);
+  auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
+  exp_diff_count[k] = oper(exp_diff_count[k]);
+
+  if (span_level > 0)
+  {
+    auto begin = std::get<0>(ref_anc_bin);
+    auto end =   std::get<1>(ref_anc_bin) -1;
+    auto split = std::get<2>(ref_anc_bin);
+
+    k = &network.span_expression(r.get_lhs(), begin, end, split);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_init(r.get_lhs(), begin);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_end(r.get_lhs(), end);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_split(r.get_lhs(), split);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_rhs0_init(r.get_rhs0(), begin);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_rhs0_end(r.get_rhs0(), end);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_rhs0_split(r.get_rhs0(), end);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+  }
+}
+
+
+template <typename T> // for increment/decrement
+void extract_feature_anchored_unary_rule(const anchored_unirule_type& ref_anc_un,
+                                          std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                          nn_scorer& network,
+                                          int span_level)
+{
+  T oper;
+
+  auto&& r = std::get<2>(ref_anc_un);
+  auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)];
+  exp_diff_count[k] = oper(exp_diff_count[k]);
+
+  if (span_level > 0)
+  {
+    auto begin = std::get<0>(ref_anc_un);
+    auto end =   std::get<1>(ref_anc_un) -1;
+    auto split = -1;
+    k = &network.span_expression(r.get_lhs(), begin, end, split);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_init(r.get_lhs(), begin);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_end(r.get_lhs(), end);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_rhs0_init(r.get_rhs0(), begin);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+
+    k = &network.span_rhs0_end(r.get_rhs0(), end);
+    exp_diff_count[k] = oper(exp_diff_count[k]);
+  }
+}
+
+
+struct int_decrement
+{
+  inline
+  int operator()(int e) {return e - 1;}
+};
+
+struct int_increment
+{
+  inline
+  int operator()(int e) {return e + 1;}
+};
+
+void extract_feature_anchored_binary_rule_ref(const anchored_binrule_type& anc_bin,
+                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                              nn_scorer& network,
+                                              int span_level)
+{
+  extract_feature_anchored_binary_rule<int_decrement>(anc_bin, exp_diff_count, network, span_level);
+}
+
+void extract_feature_anchored_binary_rule_hyp(const anchored_binrule_type& anc_bin,
+                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                              nn_scorer& network,
+                                              int span_level)
+{
+  extract_feature_anchored_binary_rule<int_increment>(anc_bin, exp_diff_count, network, span_level);
+}
+
+
+void extract_feature_anchored_unary_rule_ref(const anchored_unirule_type& anc_un,
+                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                              nn_scorer& network,
+                                              int span_level)
+{
+  extract_feature_anchored_unary_rule<int_decrement>(anc_un, exp_diff_count, network, span_level);
+}
+
+void extract_feature_anchored_unary_rule_hyp(const anchored_unirule_type& anc_un,
+                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                                              nn_scorer& network,
+                                              int span_level)
+{
+  extract_feature_anchored_unary_rule<int_increment>(anc_un, exp_diff_count, network, span_level);
+}
+
+
 NNLorgParseApp::train_item
 NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const ParserCKYNN& parser,
                                const Tagger& tagger,
                                ParserCKYNN::scorer& network,
                                int start_symbol,
-                               const std::vector<int>& lhs_int_vec)
+                               const std::vector<int>& lhs_int_vec,
+                               const std::vector<int>& rhs0_int_vec,
+                               const std::vector<int>& rhs1_int_vec)
 {
   std::vector<dynet::expr::Expression> local_corrects, local_errs;
   std::stringstream ssref,sshyp;
@@ -212,9 +337,9 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                parser,
                                network,
                                start_symbol,
-                               lhs_int_vec);
-
-
+                               lhs_int_vec,
+                               rhs0_int_vec,
+                               rhs1_int_vec);
 
     std::unordered_set<anchored_binrule_type> best_anchored_binaries;
     std::unordered_set<anchored_unirule_type> best_anchored_unaries;
@@ -241,102 +366,23 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //binary rules
     for (const auto& ref_anc_bin : anchored_binaries)
     {
-      auto&& r = std::get<3>(ref_anc_bin);
-      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
-      exp_diff_count[k]--; // should be zero for non-existent k
-
-      if (span_level > 0)
-      {
-        auto begin = std::get<0>(ref_anc_bin);
-        auto end =   std::get<1>(ref_anc_bin) -1;
-        auto split = std::get<2>(ref_anc_bin);
-
-        k = &network.span_expression(r.get_lhs(), begin, end, split);
-        exp_diff_count[k]--; // should be zero for non-existent k
-
-        k = &network.span_init(r.get_lhs(), begin);
-        exp_diff_count[k]--;
-
-        k = &network.span_end(r.get_lhs(), end);
-        exp_diff_count[k]--;
-
-        k = &network.span_split(r.get_lhs(), split);
-        exp_diff_count[k]--;
-      }
+      extract_feature_anchored_binary_rule_ref(ref_anc_bin, exp_diff_count, network, span_level);
     }
 
     for (const auto& best_anc_bin : best_anchored_binaries)
     {
-      auto&& r = std::get<3>(best_anc_bin);
-      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
-      exp_diff_count[k]++; // should be zero for non-existent k
-
-      if (span_level > 0)
-      {
-        auto begin = std::get<0>(best_anc_bin);
-        auto end =   std::get<1>(best_anc_bin) -1;
-        auto split = std::get<2>(best_anc_bin);
-
-        k = &network.span_expression(r.get_lhs(), begin, end, split);
-        exp_diff_count[k]++; // should be zero for non-existent k
-
-        k = &network.span_init(r.get_lhs(), begin);
-        exp_diff_count[k]++;
-
-        k = &network.span_end(r.get_lhs(), end);
-        exp_diff_count[k]++;
-
-        k = &network.span_split(r.get_lhs(), split);
-        exp_diff_count[k]++;
-      }
+      extract_feature_anchored_binary_rule_hyp(best_anc_bin, exp_diff_count, network, span_level);
     }
-
 
     //unary rules
     for (const auto& ref_anc_un : anchored_unaries)
     {
-      auto&& r = std::get<2>(ref_anc_un);
-      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)];
-      exp_diff_count[k]--;
-
-      if (span_level > 0)
-      {
-        auto begin = std::get<0>(ref_anc_un);
-        auto end =   std::get<1>(ref_anc_un) -1;
-        auto split = -1;
-
-        k = &network.span_expression(r.get_lhs(), begin, end, split);
-        exp_diff_count[k]--; // should be zero for non-existent k
-
-        k = &network.span_init_un(r.get_lhs(), begin);
-        exp_diff_count[k]--;
-
-        k = &network.span_end_un(r.get_lhs(), end);
-        exp_diff_count[k]--;
-      }
+      extract_feature_anchored_unary_rule_ref(ref_anc_un, exp_diff_count, network, span_level);
     }
 
     for (const auto& best_anc_un : best_anchored_unaries)
     {
-      auto&& r = std::get<2>(best_anc_un);
-      auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(), -1)];
-      exp_diff_count[k]++;
-
-      if (span_level > 0)
-      {
-        auto begin = std::get<0>(best_anc_un);
-        auto end =   std::get<1>(best_anc_un) -1;
-        auto split = -1;
-
-        k = &network.span_expression(r.get_lhs(), begin, end, split);
-        exp_diff_count[k]++; // should be zero for non-existent k
-
-        k = &network.span_init_un(r.get_lhs(), begin);
-        exp_diff_count[k]++;
-
-        k = &network.span_end_un(r.get_lhs(), end);
-        exp_diff_count[k]++;
-      }
+      extract_feature_anchored_unary_rule_hyp(best_anc_un, exp_diff_count, network, span_level);
     }
 
 
@@ -351,7 +397,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     for (const auto& best_anc_lex : best_anchored_lexicals)
     {
       auto k = &network.lexical_expressions[std::make_tuple(std::get<1>(best_anc_lex).get_lhs(),
-                                                                std::get<0>(best_anc_lex))];
+                                                            std::get<0>(best_anc_lex))];
       exp_diff_count[k]++;
     }
 
@@ -404,7 +450,11 @@ int NNLorgParseApp::run_train()
                     std::vector<Rule>(lex.begin(),lex.end())
                     );
 
-  write_symboltable(SymbolTable::instance_nt(), "NTsymbols.txt");
+  std::cerr << grammar.binary_rules.size() << " binary rules" << std::endl;
+  std::cerr << grammar.unary_rules.size() << " unary rules" << std::endl;
+  std::cerr << grammar.lexical_rules.size() << " lexical rules" << std::endl;
+
+  //write_symboltable(SymbolTable::instance_nt(), "NTsymbols.txt");
   //write_symboltable(SymbolTable::instance_word(), "Tsymbols.txt");
   std::stringstream wout;
   wout << train_output_name << ".ts";
@@ -452,6 +502,23 @@ int NNLorgParseApp::run_train()
                           );
 
   auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+
+  //also compute rhs0 rhs1 vectors
+  std::unordered_set<int> rhs0_int_set, rhs1_int_set;
+  for (const auto& r : grammar.binary_rules)
+  {
+    rhs0_int_set.insert(r.get_rhs0());
+    rhs1_int_set.insert(r.get_rhs1());
+  }
+
+  for (const auto& r : grammar.unary_rules)
+  {
+    rhs0_int_set.insert(r.get_rhs0());
+  }
+
+  auto&& rhs0_int_vec = std::vector<int>(rhs0_int_set.begin(), rhs0_int_set.end());
+  auto&& rhs1_int_vec = std::vector<int>(rhs1_int_set.begin(), rhs1_int_set.end());
+
 
   for (unsigned iteration = 0; iteration < iterations; ++iteration)
   {
@@ -524,31 +591,33 @@ int NNLorgParseApp::run_train()
 
 
 
-        auto f =
-            [&](unsigned i, unsigned mi, unsigned ma)
+      auto f =
+          [&](unsigned i, unsigned mi, unsigned ma)
+          {
+            if (ma > upper_bound)
+              ma = upper_bound;
+            for(auto idx = mi; idx < ma; ++idx)
             {
-              if (ma > upper_bound)
-                ma = upper_bound;
-              for(auto idx = mi; idx < ma; ++idx)
-              {
-                auto res = train_instance(trees[idx], parser,
-                                          tagger, networks[i],
-                                          start_symbol,
-                                          lhs_int_vec
-                                          );
-                if (verbose) std::cerr << '|' ;
-                auto&& local_corrects = res.correct_exprs;
-                auto&& local_errs = res.error_exprs;
+              auto res = train_instance(trees[idx], parser,
+                                        tagger, networks[i],
+                                        start_symbol,
+                                        lhs_int_vec,
+                                        rhs0_int_vec,
+                                        rhs1_int_vec
+                                        );
+              if (verbose) std::cerr << '|' ;
+              auto&& local_corrects = res.correct_exprs;
+              auto&& local_errs = res.error_exprs;
 
-                if (not local_corrects.empty())
-                  thread_corrects[i].insert(thread_corrects[i].end(), local_corrects.begin(), local_corrects.end());
-                if (not local_errs.empty())
-                  thread_errs[i].insert(thread_errs[i].end(), local_errs.begin(), local_errs.end());
+              if (not local_corrects.empty())
+                thread_corrects[i].insert(thread_corrects[i].end(), local_corrects.begin(), local_corrects.end());
+              if (not local_errs.empty())
+                thread_errs[i].insert(thread_errs[i].end(), local_errs.begin(), local_errs.end());
 
 
-                thread_treestrings[i].emplace_back(res.ref_tree_string, res.hyp_tree_string);
-              }
-            };
+              thread_treestrings[i].emplace_back(res.ref_tree_string, res.hyp_tree_string);
+            }
+          };
 
 
 
@@ -638,7 +707,7 @@ int NNLorgParseApp::run_train()
       delete in;
       in = new std::ifstream(in_filename.c_str());
 
-      auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
+      //      auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
 
       for (auto& network : networks)
@@ -688,7 +757,10 @@ int NNLorgParseApp::run_train()
                      if(s[idx].size() <= max_length)
                      {
                        tagger.tag(s[idx], *(parser.get_word_signature()));
-                       solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol, lhs_int_vec);
+                       solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol,
+                                                                lhs_int_vec,
+                                                                rhs0_int_vec,
+                                                                rhs1_int_vec);
                      }
                      clock_end[idx] = (verbose) ? clock() : 0;
                    };
@@ -730,143 +802,162 @@ int NNLorgParseApp::run_train()
 }
 
 
-  int NNLorgParseApp::run()
-  {
-    if (train_mode) return run_train();
+int NNLorgParseApp::run()
+{
+  if (train_mode) return run_train();
 
-    if(verbose) std::clog << "Start parsing process.\n";
-
-
-    SymbolTable::instance_nt().load(train_output_name + ".nts");
-    SymbolTable::instance_word().load(train_output_name + ".ts");
-
-    Grammar<Rule,Rule,Rule> grammar;
-    std::stringstream gin;
-    std::ifstream gs(train_output_name + ".grammar");
-    boost::archive::text_iarchive gia(gs);
-    gia >> grammar;
+  if(verbose) std::clog << "Start parsing process.\n";
 
 
-    ParserCKYNN parser(grammar);
+  SymbolTable::instance_nt().load(train_output_name + ".nts");
+  SymbolTable::instance_word().load(train_output_name + ".ts");
+
+  Grammar<Rule,Rule,Rule> grammar;
+  std::stringstream gin;
+  std::ifstream gs(train_output_name + ".grammar");
+  boost::archive::text_iarchive gia(gs);
+  gia >> grammar;
+
+
+  ParserCKYNN parser(grammar);
 
 #ifdef USE_THREADS
-    parser.set_nbthreads(nbthreads);
+  parser.set_nbthreads(nbthreads);
 #endif
 
-    parser.set_word_signature(ws);
-    Tagger tagger(&(parser.get_words_to_rules()));
+  parser.set_word_signature(ws);
+  Tagger tagger(&(parser.get_words_to_rules()));
 
-    dynet::Model m;
-    std::ifstream ms(test_model_name);
-    boost::archive::text_iarchive mia(ms);
-    mia >> m;
+  dynet::Model m;
+  std::ifstream ms(test_model_name);
+  boost::archive::text_iarchive mia(ms);
+  mia >> m;
 
-    int count = 0;
-    int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
+  int count = 0;
+  int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
-    // clock_t parse_start = (verbose) ? clock() : 0;
-
-
-    std::vector<ParserCKYNN::scorer> networks;
-    for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-      networks.emplace_back(m, lstm_level, span_level,
-                            word_embedding_size,
-                            nt_embedding_size,
-                            hidden_size,
-                            lstm_hidden_size,
-                            use_char_embeddings,
-                            use_span_midpoints
-                            );
-
-    auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
-
-    // this is moved here and si sequential
-    // bc a mutex is needed
-    {
-      dynet::ComputationGraph cg;
-      networks[0].set_cg(cg);
-      networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
-      networks[0].unset_dropout();
-    }
-    for (unsigned i = 1; i < nbthreads; ++i)
-    {
-      networks[i].rule_scores = networks[0].rule_scores;
-      networks[i].unset_dropout();
-    }
-
-    std::vector<std::vector<Word>> s(nbthreads);
-    std::vector<std::vector< bracketing>> brackets(nbthreads);
-    std::vector<std::vector<std::pair<PtbPsTree*,double>>> solutions(nbthreads, {{nullptr,1.0}});
-
-    bool allvalid = true;
-    while(allvalid)
-    {
-      dynet::ComputationGraph cgdev;
-
-      std::vector<std::string> test_sentence(nbthreads);
-      std::vector<std::vector<std::string>> comments(nbthreads);
-
-      std::vector<bool> valid_sentence(nbthreads, true);
-
-      std::vector<clock_t> clock_start(nbthreads,0);
-      std::vector<clock_t> clock_end(nbthreads,0);
-
-      std::vector<std::thread> threads;
-
-      for (unsigned i = 0; i < nbthreads; ++i)
-      {
-        networks[i].set_cg(cgdev);
-        networks[i].unset_gold();
-
-        valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);
-        allvalid = allvalid and valid_sentence[i];
-
-        auto f = [&](unsigned idx)
-                 {
-                   if (not valid_sentence[idx]) return;
-                   clock_start[idx] = (verbose) ? clock() : 0;
-
-                   // check length of input sentence
-                   if(s[idx].size() <= max_length)
-                   {
-                     tagger.tag(s[idx], *(parser.get_word_signature()));
-                     solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol, lhs_int_vec);
-                   }
-                   clock_end[idx] = (verbose) ? clock() : 0;
-                 };
-        //f(i);
-        threads.emplace_back(std::thread(f,i));
-      }
-
-      for (auto& thread : threads)
-        thread.join();
-
-      for (unsigned i = 0; i < nbthreads; ++i)
-      {
-        if (valid_sentence[i])
-        {
-          auto* p_typed =
-              parse_solution::factory.create_object(parse_solution::UNIX,
-                                                    parse_solution(test_sentence[i], ++count,
-                                                                   s[i].size(), solutions[i],
-                                                                   (verbose) ? clock_end[i] -clock_start[i] / double(CLOCKS_PER_SEC) : 0,
-                                                                   verbose, comments[i],false)
-                                                    );
-          p_typed->print(*out);
-          delete p_typed;
-        }
+  // clock_t parse_start = (verbose) ? clock() : 0;
 
 
-        delete solutions[i][0].first;
-        solutions[i][0].first = nullptr;
-        s[i].clear();
-        brackets[i].clear();
+  std::vector<ParserCKYNN::scorer> networks;
+  for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
+    networks.emplace_back(m, lstm_level, span_level,
+                          word_embedding_size,
+                          nt_embedding_size,
+                          hidden_size,
+                          lstm_hidden_size,
+                          use_char_embeddings,
+                          use_span_midpoints
+                          );
 
-      }
-    }
+  auto&& lhs_int_vec =std::vector<int>(grammar.lhs_int_set.begin(), grammar.lhs_int_set.end());
 
-    return 0; //everything's fine
+  //also compute rhs0 rhs1 vectors
+  std::unordered_set<int> rhs0_int_set, rhs1_int_set;
+  for (const auto& r : grammar.binary_rules)
+  {
+    rhs0_int_set.insert(r.get_rhs0());
+    rhs1_int_set.insert(r.get_rhs1());
   }
+
+  for (const auto& r : grammar.unary_rules)
+  {
+    rhs1_int_set.insert(r.get_rhs0());
+  }
+
+  auto&& rhs0_int_vec = std::vector<int>(rhs0_int_set.begin(), rhs0_int_set.end());
+  auto&& rhs1_int_vec = std::vector<int>(rhs1_int_set.begin(), rhs1_int_set.end());
+
+
+  // this is moved here and si sequential
+  // bc a mutex is needed
+  {
+    dynet::ComputationGraph cg;
+    networks[0].set_cg(cg);
+    networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+    networks[0].unset_dropout();
+  }
+  for (unsigned i = 1; i < nbthreads; ++i)
+  {
+    networks[i].rule_scores = networks[0].rule_scores;
+    networks[i].unset_dropout();
+  }
+
+  std::vector<std::vector<Word>> s(nbthreads);
+  std::vector<std::vector< bracketing>> brackets(nbthreads);
+  std::vector<std::vector<std::pair<PtbPsTree*,double>>> solutions(nbthreads, {{nullptr,1.0}});
+
+  bool allvalid = true;
+  while(allvalid)
+  {
+    dynet::ComputationGraph cgdev;
+
+    std::vector<std::string> test_sentence(nbthreads);
+    std::vector<std::vector<std::string>> comments(nbthreads);
+
+    std::vector<bool> valid_sentence(nbthreads, true);
+
+    std::vector<clock_t> clock_start(nbthreads,0);
+    std::vector<clock_t> clock_end(nbthreads,0);
+
+    std::vector<std::thread> threads;
+
+    for (unsigned i = 0; i < nbthreads; ++i)
+    {
+      networks[i].set_cg(cgdev);
+      networks[i].unset_gold();
+
+      valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);
+      allvalid = allvalid and valid_sentence[i];
+
+      auto f = [&](unsigned idx)
+               {
+                 if (not valid_sentence[idx]) return;
+                 clock_start[idx] = (verbose) ? clock() : 0;
+
+                 // check length of input sentence
+                 if(s[idx].size() <= max_length)
+                 {
+                   tagger.tag(s[idx], *(parser.get_word_signature()));
+                   solutions[idx][0].first = parse_instance(s[idx], parser, networks[idx], start_symbol,
+                                                            lhs_int_vec,
+                                                            rhs0_int_vec, rhs1_int_vec);
+                 }
+                 clock_end[idx] = (verbose) ? clock() : 0;
+               };
+      //f(i);
+      threads.emplace_back(std::thread(f,i));
+    }
+
+    for (auto& thread : threads)
+      thread.join();
+
+    for (unsigned i = 0; i < nbthreads; ++i)
+    {
+      if (valid_sentence[i])
+      {
+        auto* p_typed =
+            parse_solution::factory.create_object(parse_solution::UNIX,
+                                                  parse_solution(test_sentence[i], ++count,
+                                                                 s[i].size(), solutions[i],
+                                                                 (verbose) ? clock_end[i] -clock_start[i] / double(CLOCKS_PER_SEC) : 0,
+                                                                 verbose, comments[i],false)
+                                                  );
+        p_typed->print(*out);
+        delete p_typed;
+      }
+
+
+      delete solutions[i][0].first;
+      solutions[i][0].first = nullptr;
+      s[i].clear();
+      brackets[i].clear();
+
+    }
+  }
+
+  return 0; //everything's fine
+}
 
 LorgOptions NNLorgParseApp::get_options() const
 {
