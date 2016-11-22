@@ -78,10 +78,12 @@ struct nn_scorer
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;
+  static dynet::Parameter _p_b_span_init_un;
   static dynet::Parameter _p_o_span_init_un;
 
   static dynet::Parameter _p_b_span_end;
   static dynet::Parameter _p_o_span_end;
+  static dynet::Parameter _p_b_span_end_un;
   static dynet::Parameter _p_o_span_end_un;
 
   static dynet::Parameter _p_b_span_split;

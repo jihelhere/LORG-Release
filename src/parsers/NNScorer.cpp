@@ -33,10 +33,12 @@ d::Parameter nn_scorer::_p_W_span_init;
 
 d::Parameter nn_scorer::_p_b_span_init;
 d::Parameter nn_scorer::_p_o_span_init;
+d::Parameter nn_scorer::_p_b_span_init_un;
 d::Parameter nn_scorer::_p_o_span_init_un;
 
 d::Parameter nn_scorer::_p_b_span_end;
 d::Parameter nn_scorer::_p_o_span_end;
+d::Parameter nn_scorer::_p_b_span_end_un;
 d::Parameter nn_scorer::_p_o_span_end_un;
 
 d::Parameter nn_scorer::_p_b_span_split;
@@ -149,11 +151,14 @@ nn_scorer::nn_scorer(d::Model& m, unsigned lex_level, unsigned sp_level,
       _p_W_span_init = m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_init = m.add_parameters({hidden_size});
       _p_o_span_init = m.add_parameters({1,hidden_size});
+      _p_b_span_init_un = m.add_parameters({hidden_size});
       _p_o_span_init_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
       _p_b_span_end = m.add_parameters({hidden_size});
       _p_o_span_end = m.add_parameters({1,hidden_size});
+
+      _p_b_span_end_un = m.add_parameters({hidden_size});
       _p_o_span_end_un = m.add_parameters({1,hidden_size});
 
       // _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
@@ -400,11 +405,13 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
   auto&& Wi = de::parameter(*cg,_p_W_span_init);
   auto&& bi = de::parameter(*cg,_p_b_span_init);
   auto&& oi = de::parameter(*cg,_p_o_span_init);
+  auto&& biu = de::parameter(*cg,_p_b_span_init_un);
   auto&& oiu = de::parameter(*cg,_p_o_span_init_un);
 
   //auto&& We = de::parameter(*cg,_p_W_span_end);
   auto&& be = de::parameter(*cg,_p_b_span_end);
   auto&& oe = de::parameter(*cg,_p_o_span_end);
+  auto&& beu = de::parameter(*cg,_p_b_span_end_un);
   auto&& oeu = de::parameter(*cg,_p_o_span_end_un);
 
   //auto&& Ws = de::parameter(*cg,_p_W_span_split);
@@ -463,9 +470,8 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
       auto&& ee = oe * de::rectify(hp + be);
       auto&& es = os * de::rectify(hp + bs);
 
-
-      auto&& eiu = oiu * de::rectify(hp + bi);
-      auto&& eeu = oeu * de::rectify(hp + be);
+      auto&& eiu = oiu * de::rectify(hp + biu);
+      auto&& eeu = oeu * de::rectify(hp + beu);
 
       if (train_mode)
       {
@@ -482,7 +488,6 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int)
 
       span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
       span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
-
     }
   }
 
