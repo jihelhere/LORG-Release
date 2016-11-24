@@ -129,7 +129,7 @@ void collect_rules(const std::vector<PtbPsTree>& trees,
 PtbPsTree *
 NNLorgParseApp::parse_instance(const std::vector<Word>& words,
                                const ParserCKYNN& parser,
-                               ParserCKYNN::scorer& network,
+                               typename ParserCKYNN::scorer& network,
                                int start_symbol,
                                const std::vector<int>& lhs_int_vec,
                                const std::vector<int>& rhs0_int_vec,
@@ -147,22 +147,22 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
   if (span_level > 0)
   {
-    network.span_expressions_bin.clear();
-    network.span_expressions_un.clear();
+    network.span_repr->clear();
 
-    network.span_scores_bin.clear();
-    network.span_scores_un.clear();
-
-    network.precompute_span_expressions(lhs_int_vec, rhs0_int_vec, rhs1_int_vec);
+    network.span_repr->precompute_span_expressions(lhs_int_vec,
+                                                   rhs0_int_vec,
+                                                   rhs1_int_vec,
+                                                   words,
+                                                   nn_scorer::train_mode);
   }
 
-  network.lexical_expressions.clear();
+  network.lexrule_repr->clear();
 
   // create and initialise chart
   //std::cerr << "chart" << std::endl;
   std::vector<bracketing> brackets;
 
-  ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
+  typename ParserCKYNN::Chart chart(words,parser.get_nonterm_count(), brackets, network);
 
   //std::cerr << "parse" << std::endl;
   parser.parse(chart, network);
@@ -174,15 +174,15 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
 
 template <typename T> // for increment/decrement
-void extract_feature_anchored_binary_rule(const anchored_binrule_type& ref_anc_bin,
-                                          std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                          nn_scorer& network,
-                                          int span_level)
+void extract_feature(const anchored_binrule_type& ref_anc_bin,
+                     std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                     nn_scorer& network,
+                     int span_level)
 {
   T oper;
 
   auto&& r = std::get<3>(ref_anc_bin);
-  auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(), r.get_rhs0(), r.get_rhs1())];
+  auto k = &nn_scorer::cfg.brule_expression(r);
   exp_diff_count[k] = oper(exp_diff_count[k]);
 
   if (span_level > 0)
@@ -191,40 +191,40 @@ void extract_feature_anchored_binary_rule(const anchored_binrule_type& ref_anc_b
     auto end =   std::get<1>(ref_anc_bin) -1;
     auto split = std::get<2>(ref_anc_bin);
 
-    k = &network.span_expression(r.get_lhs(), begin, end, split);
+    k = &network.span_repr->get_span_expr_lhs_info(r.get_lhs(), begin, end, split);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_init(r.get_lhs(), begin);
+    k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_end(r.get_lhs(), end);
+    k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_split(r.get_lhs(), split);
+    k = &network.span_repr->get_span_expr_lhs_split(r.get_lhs(), split);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_rhs0_init(r.get_rhs0(), begin);
+    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_rhs0_end(r.get_rhs0(), end);
+    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_rhs0_split(r.get_rhs0(), end);
+    k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
     exp_diff_count[k] = oper(exp_diff_count[k]);
   }
 }
 
 
 template <typename T> // for increment/decrement
-void extract_feature_anchored_unary_rule(const anchored_unirule_type& ref_anc_un,
-                                          std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                          nn_scorer& network,
-                                          int span_level)
+void extract_feature(const anchored_unirule_type& ref_anc_un,
+                     std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                     nn_scorer& network,
+                     int span_level)
 {
   T oper;
 
   auto&& r = std::get<2>(ref_anc_un);
-  auto k = &nn_scorer::rule_expressions[nn_scorer::nt_triple_to_index(r.get_lhs(),r.get_rhs0(),-1)];
+  auto k = &nn_scorer::cfg.urule_expression(r);
   exp_diff_count[k] = oper(exp_diff_count[k]);
 
   if (span_level > 0)
@@ -232,19 +232,19 @@ void extract_feature_anchored_unary_rule(const anchored_unirule_type& ref_anc_un
     auto begin = std::get<0>(ref_anc_un);
     auto end =   std::get<1>(ref_anc_un) -1;
     auto split = -1;
-    k = &network.span_expression(r.get_lhs(), begin, end, split);
+    k = &network.span_repr->get_span_expr_lhs_info(r.get_lhs(), begin, end, split);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_init(r.get_lhs(), begin);
+    k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_end(r.get_lhs(), end);
+    k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_rhs0_init(r.get_rhs0(), begin);
+    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_rhs0_end(r.get_rhs0(), end);
+    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
     exp_diff_count[k] = oper(exp_diff_count[k]);
   }
 }
@@ -262,37 +262,39 @@ struct int_increment
   int operator()(int e) {return e + 1;}
 };
 
-void extract_feature_anchored_binary_rule_ref(const anchored_binrule_type& anc_bin,
-                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                              nn_scorer& network,
-                                              int span_level)
+void extract_feature_ref(const anchored_binrule_type& anc_bin,
+                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         nn_scorer& network,
+                         int span_level)
 {
-  extract_feature_anchored_binary_rule<int_decrement>(anc_bin, exp_diff_count, network, span_level);
-}
-
-void extract_feature_anchored_binary_rule_hyp(const anchored_binrule_type& anc_bin,
-                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                              nn_scorer& network,
-                                              int span_level)
-{
-  extract_feature_anchored_binary_rule<int_increment>(anc_bin, exp_diff_count, network, span_level);
+  extract_feature<int_decrement>(anc_bin, exp_diff_count, network, span_level);
 }
 
 
-void extract_feature_anchored_unary_rule_ref(const anchored_unirule_type& anc_un,
-                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                              nn_scorer& network,
-                                              int span_level)
+void extract_feature_hyp(const anchored_binrule_type& anc_bin,
+                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         nn_scorer& network,
+                         int span_level)
 {
-  extract_feature_anchored_unary_rule<int_decrement>(anc_un, exp_diff_count, network, span_level);
+  extract_feature<int_increment>(anc_bin, exp_diff_count, network, span_level);
 }
 
-void extract_feature_anchored_unary_rule_hyp(const anchored_unirule_type& anc_un,
-                                              std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                                              nn_scorer& network,
-                                              int span_level)
+
+void extract_feature_ref(const anchored_unirule_type& anc_un,
+                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         nn_scorer& network,
+                         int span_level)
 {
-  extract_feature_anchored_unary_rule<int_increment>(anc_un, exp_diff_count, network, span_level);
+  extract_feature<int_decrement>(anc_un, exp_diff_count, network, span_level);
+}
+
+
+void extract_feature_hyp(const anchored_unirule_type& anc_un,
+                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         nn_scorer& network,
+                         int span_level)
+{
+  extract_feature<int_increment>(anc_un, exp_diff_count, network, span_level);
 }
 
 
@@ -300,7 +302,7 @@ NNLorgParseApp::train_item
 NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const ParserCKYNN& parser,
                                const Tagger& tagger,
-                               ParserCKYNN::scorer& network,
+                               typename ParserCKYNN::scorer& network,
                                int start_symbol,
                                const std::vector<int>& lhs_int_vec,
                                const std::vector<int>& rhs0_int_vec,
@@ -366,38 +368,38 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     //binary rules
     for (const auto& ref_anc_bin : anchored_binaries)
     {
-      extract_feature_anchored_binary_rule_ref(ref_anc_bin, exp_diff_count, network, span_level);
+      extract_feature_ref(ref_anc_bin, exp_diff_count, network, span_level);
     }
 
     for (const auto& best_anc_bin : best_anchored_binaries)
     {
-      extract_feature_anchored_binary_rule_hyp(best_anc_bin, exp_diff_count, network, span_level);
+      extract_feature_hyp(best_anc_bin, exp_diff_count, network, span_level);
     }
 
     //unary rules
     for (const auto& ref_anc_un : anchored_unaries)
     {
-      extract_feature_anchored_unary_rule_ref(ref_anc_un, exp_diff_count, network, span_level);
+      extract_feature_ref(ref_anc_un, exp_diff_count, network, span_level);
     }
 
     for (const auto& best_anc_un : best_anchored_unaries)
     {
-      extract_feature_anchored_unary_rule_hyp(best_anc_un, exp_diff_count, network, span_level);
+      extract_feature_hyp(best_anc_un, exp_diff_count, network, span_level);
     }
 
 
     //lexical rules
     for (const auto& ref_anc_lex : anchored_lexicals)
     {
-      auto k = &network.lexical_expressions[std::make_tuple(std::get<1>(ref_anc_lex).get_lhs(),
-                                                            std::get<0>(ref_anc_lex))];
+      auto k = &network.lexrule_repr->retrieve_lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
+                                                                       std::get<0>(ref_anc_lex));
       exp_diff_count[k]--;
     }
 
     for (const auto& best_anc_lex : best_anchored_lexicals)
     {
-      auto k = &network.lexical_expressions[std::make_tuple(std::get<1>(best_anc_lex).get_lhs(),
-                                                            std::get<0>(best_anc_lex))];
+      auto k = &network.lexrule_repr->retrieve_lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
+                                                                       std::get<0>(best_anc_lex));
       exp_diff_count[k]++;
     }
 
@@ -492,7 +494,8 @@ int NNLorgParseApp::run_train()
 
   std::vector<ParserCKYNN::scorer> networks;
   for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-    networks.emplace_back(m, lstm_level, span_level,
+    networks.emplace_back(thidx == 0,
+                          m, lstm_level, span_level,
                           word_embedding_size,
                           nt_embedding_size,
                           hidden_size,
@@ -571,7 +574,7 @@ int NNLorgParseApp::run_train()
 
       nn_scorer::train_mode = true;
       nn_scorer::set_cg(cg);
-      nn_scorer::precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+      nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules, nn_scorer::train_mode);
 
       // collect errors for the mini batch
       std::vector<dynet::expr::Expression> errs;
@@ -739,7 +742,7 @@ int NNLorgParseApp::run_train()
 
         nn_scorer::train_mode = false;
         nn_scorer::set_cg(cgdev);
-        nn_scorer::precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
+        nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules, nn_scorer::train_mode);
 
         for (unsigned i = 0; i < nbthreads; ++i)
         {
@@ -841,7 +844,8 @@ int NNLorgParseApp::run()
 
   std::vector<ParserCKYNN::scorer> networks;
   for (unsigned thidx = 0; thidx < nbthreads; ++ thidx)
-    networks.emplace_back(m, lstm_level, span_level,
+    networks.emplace_back(thidx == 0,
+                          m, lstm_level, span_level,
                           word_embedding_size,
                           nt_embedding_size,
                           hidden_size,
@@ -879,7 +883,6 @@ int NNLorgParseApp::run()
   }
   for (unsigned i = 1; i < nbthreads; ++i)
   {
-    networks[i].rule_scores = networks[0].rule_scores;
     networks[i].unset_dropout();
   }
 

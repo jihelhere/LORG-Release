@@ -5,13 +5,14 @@
 //(-std::numeric_limits<double>::infinity())
 // was -9 ??
 
-void ParserCKYNN::parse(Chart& chart, scorer& s) const
+void ParserCKYNN::parse(typename ParserCKYNN::MyTypes::Chart& chart,
+                        typename ParserCKYNN::MyTypes::scorer& s) const
 {
   bool isroot = chart.get_size() == 1;
 
 
   chart.opencells_apply(
-      [&](Cell& cell)
+      [&](typename ParserCKYNN::MyTypes::Cell& cell)
       {
         if (cell.get_end() == cell.get_begin())
           add_unary_init(cell, isroot, s);
@@ -27,9 +28,9 @@ void ParserCKYNN::parse(Chart& chart, scorer& s) const
 }
 
 
-
-inline
-void ParserCKYNN::add_unary_init(Cell& cell, bool isroot, scorer& s) const
+void ParserCKYNN::add_unary_init(typename ParserCKYNN::MyTypes::Cell& cell,
+                                    bool isroot,
+                                    typename ParserCKYNN::MyTypes::scorer& s) const
 {
 
   //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs]
@@ -47,8 +48,10 @@ void ParserCKYNN::add_unary_init(Cell& cell, bool isroot, scorer& s) const
 }
 
 
-inline
-void ParserCKYNN::add_unary(Cell& cell, bool isroot, scorer& s) const
+
+void ParserCKYNN::add_unary(typename ParserCKYNN::MyTypes::Cell& cell,
+                               bool isroot,
+                               typename ParserCKYNN::MyTypes::scorer& s) const
 {
 
   //for each unary rule set in the grammar [sets made up of all unary rules with a particular rhs being a lhs of a binary rule]
@@ -68,11 +71,14 @@ void ParserCKYNN::add_unary(Cell& cell, bool isroot, scorer& s) const
 
 
 
-//inline
-void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot, scorer& s) const
-    {
 
-      // std::cerr << "follow_unary_chain" << std::endl;
+void ParserCKYNN::follow_unary_chain(typename ParserCKYNN::MyTypes::Cell& cell,
+                                        const Edge * edge,
+                                        bool isroot,
+                                        typename ParserCKYNN::MyTypes::scorer& s) const
+{
+
+  // std::cerr << "follow_unary_chain" << std::endl;
 
   static int start_symbol = SymbolTable::instance_nt().get(LorgConstants::tree_root_name);
 
@@ -81,7 +87,8 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
   Edge candidate;
   candidate.set_right_child(NULL);
 
-  size_t size = isroot ? Cell::unary_length +1 : Cell::unary_length;
+  size_t size = isroot ? ParserCKYNN::MyTypes::Cell::unary_length +1
+                : ParserCKYNN::MyTypes::Cell::unary_length;
 
   do {
     const auto& p = accumulator.back();
@@ -150,10 +157,11 @@ void ParserCKYNN::follow_unary_chain(Cell& cell, const Edge * edge, bool isroot,
 
 
 
-void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
+void ParserCKYNN::process_internal_rules(typename ParserCKYNN::MyTypes::Chart& chart,
+                                            typename ParserCKYNN::MyTypes::scorer& s) const
 {
   chart.opencells_apply_bottom_up(
-    [&](Cell&cell)
+    [&](typename ParserCKYNN::MyTypes::Cell& cell)
     {
       auto begin = cell.get_begin();
       auto end   = cell.get_end();
@@ -163,10 +171,10 @@ void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
 
         for (unsigned m = begin; m < end; ++m)
         {
-          const Cell& left_cell = chart.access(begin,m);
+          const auto& left_cell = chart.access(begin,m);
           if(!left_cell.is_closed())
           {
-            const Cell& right_cell = chart.access(m+1,end);
+            const auto& right_cell = chart.access(m+1,end);
             if( !right_cell.is_closed())
               get_candidates(left_cell,right_cell,cell, s);
           }
@@ -218,11 +226,11 @@ void ParserCKYNN::process_internal_rules(Chart& chart, scorer& s) const
 }
 
 
-inline
-void ParserCKYNN::get_candidates(const Cell& left_cell,
-				   const Cell& right_cell,
-				   Cell& result_cell,
-                                   scorer& s) const
+
+void ParserCKYNN::get_candidates(const typename ParserCKYNN::MyTypes::Cell&left_cell,
+                                 const typename ParserCKYNN::MyTypes::Cell&right_cell,
+                                 typename ParserCKYNN::MyTypes::Cell& result_cell,
+                                 typename ParserCKYNN::MyTypes::scorer& s) const
 {
   Edge current_candidate;
 

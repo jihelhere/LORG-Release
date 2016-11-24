@@ -62,24 +62,22 @@ struct train_item
   std::string hyp_tree_string;
 };
 
-  // std::pair<
-  //   std::pair<std::vector<dynet::expr::Expression>,std::vector<dynet::expr::Expression>>,
-  //   std::pair<std::string,std::string>>
   train_item
   train_instance(const PtbPsTree& tree,
                  const ParserCKYNN& parser,
                  const Tagger& tagger,
-                 ParserCKYNN::scorer& network,
+                 typename ParserCKYNN::scorer& network,
                  int start_symbol,
                  const std::vector<int>& lhs_int_vec,
                  const std::vector<int>& rhs0_int_vec,
                  const std::vector<int>& rhs1_int_vec
                  );
 
+
   PtbPsTree *
   parse_instance(const std::vector<Word>& words,
                  const ParserCKYNN& parser,
-                 ParserCKYNN::scorer& network,
+                 typename ParserCKYNN::scorer& network,
                  int start_symbol,
                  const std::vector<int>& lhs_int_vec,
                  const std::vector<int>& rhs0_int_vec,

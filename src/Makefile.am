@@ -275,7 +275,13 @@ nn_lorgparser_SOURCES = nn_lorgparser.cpp \
 	TagGuesser.h utils/unordered_map_serialization.hpp \
 	parsers/ParserCKYNN.h 	parsers/ParserCKYNN.cpp \
 	grammars/compact_binary_rules_production.cpp Bracketing.h \
-	parsers/NNScorer.h parsers/NNScorer.cpp \
+	parsers/neural/NNScorer.h parsers/neural/NNScorer.cpp \
+	parsers/neural/computation_attachment.h parsers/neural/computation_attachment.cpp \
+	parsers/neural/cfg_rule_representation.h parsers/neural/cfg_rule_representation.cpp \
+	parsers/neural/word_representation.h parsers/neural/word_representation.cpp \
+	parsers/neural/lexicon_representation.h parsers/neural/lexicon_representation.cpp \
+	parsers/neural/lexical_rule_representation.h parsers/neural/lexical_rule_representation.cpp \
+	parsers/neural/span_representation.h parsers/neural/span_representation.cpp \
 	lexicon/BasicLexicon.cpp lexicon/LexiconFactory.cpp rules/LexicalRule.cpp rules/LexicalRuleTraining.cpp edges/AnnotationInfo.cpp lexicon/BerkeleyLexicon.cpp lexicon/Lexicon.cpp
 
 nn_lorgparser_CPPFLAGS= $(BOOST_CPPFLAGS) $(TBB_CPPFLAGS) $(EIGEN_CPPFLAGS) $(DYNET_CPPFLAGS) -I. -DNDEBUG -DEIGEN_FAST_MATH
