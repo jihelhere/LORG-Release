@@ -237,8 +237,6 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       auto&& e0e = o0e * dynet::expr::rectify(h0p + b0e);
       auto&& e0s = o0s * dynet::expr::rectify(h0p + b0s);
 
-
-
       if (train_mode)
       {
         span_expressions_rhs0_init[i][r0] = e0i;
@@ -250,7 +248,6 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       span_scores_rhs0_end[i][r0]   = as_scalar(cg->get_value(e0e.i));
       span_scores_rhs0_split[i][r0] = as_scalar(cg->get_value(e0s.i));
     }
-
 
     for (auto l : lhs_int)
     {
@@ -283,11 +280,6 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       // span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
       // span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
     }
-
-
-
-
-
   }
 
   switch (span_level) {

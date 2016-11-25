@@ -203,14 +203,14 @@ void extract_feature(const anchored_binrule_type& ref_anc_bin,
     k = &network.span_repr->get_span_expr_lhs_split(r.get_lhs(), split);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
+    // exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    // k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
+    // exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    // k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
+    // exp_diff_count[k] = oper(exp_diff_count[k]);
   }
 }
 
@@ -241,11 +241,11 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
     k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
     exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
+    // exp_diff_count[k] = oper(exp_diff_count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    // k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
+    // exp_diff_count[k] = oper(exp_diff_count[k]);
   }
 }
 

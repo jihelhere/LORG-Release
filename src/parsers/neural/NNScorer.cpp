@@ -172,7 +172,9 @@ nn_scorer::compute_internal_span_score(int begin,
                span_repr->get_span_score_lhs_end(lhs, end) +
                span_repr->get_span_score_lhs_split(lhs, medium);
 
-    v += span_repr->get_span_score_rhs0_begin(rhs0, begin);
+    // v += span_repr->get_span_score_rhs0_begin(rhs0, begin) +
+    //      span_repr->get_span_score_rhs0_end(rhs0, end) +
+    //      span_repr->get_span_score_rhs0_split(rhs0, split);
 
     if (not use_span_midpoints) medium = 0;
 
@@ -184,8 +186,8 @@ nn_scorer::compute_internal_span_score(int begin,
     double v = span_repr->get_span_score_lhs_begin(lhs, begin) +
                span_repr->get_span_score_lhs_end(lhs, end);
 
-    v += span_repr->get_span_score_rhs0_begin(rhs0, begin);
-
+    // v += span_repr->get_span_score_rhs0_begin(rhs0, begin) +
+    //      span_repr->get_span_score_rhs0_end(rhs0, end);
 
     return v + span_repr->get_span_score_una_info(begin,end, lhs_info);
   }
