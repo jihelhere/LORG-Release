@@ -159,10 +159,10 @@ class all_span_representation : public span_representation,
 
   void clear();
 
-  double get_span_lhs_begin(int lhs, int begin);
-  double get_span_lhs_end(int lhs, int end);
-  double get_span_lhs_split(int lhs, int split);
-  double get_span_rhs0_begin(int rhs,int begin);
+  double get_span_score_lhs_begin(int lhs, int begin);
+  double get_span_score_lhs_end(int lhs, int end);
+  double get_span_score_lhs_split(int lhs, int split);
+  double get_span_score_rhs0_begin(int rhs,int begin);
 
 
   double get_span_score_bin_info(int begin, int end, int split, int root_info);
