@@ -405,3 +405,80 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       break;
   }
 }
+
+
+
+
+
+double all_span_representation::get_span_lhs_begin(int lhs, int begin) {return span_scores_init[begin][lhs];}
+double all_span_representation::get_span_lhs_end  (int lhs, int end)   {return span_scores_init[end][lhs];}
+double all_span_representation::get_span_lhs_split(int lhs, int split) {return span_scores_split[split][lhs];}
+
+double all_span_representation::get_span_rhs0_begin(int rhs,int begin) {return span_scores_rhs0_init[begin][rhs];}
+
+
+double all_span_representation::get_span_score_bin_info(int begin, int end, int split, int root_info)
+{
+  return span_scores_bin[std::make_tuple(begin,end, split, root_info)];
+}
+
+double all_span_representation::get_span_score_una_info(int begin, int end, int root_info)
+{
+  return span_scores_un[std::make_tuple(begin,end,root_info)];
+}
+
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_init(int lhs, int begin)
+{return span_expressions_init[begin][lhs];}
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_end (int lhs, int end)
+{return span_expressions_end[end][lhs];}
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_split(int lhs, int split)
+{return span_expressions_split[split][lhs];}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_init(int rhs0, int begin)
+{
+  return span_expressions_rhs0_init[begin][rhs0];
+}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_end(int rhs0, int end)
+{
+  return span_expressions_rhs0_end[end][rhs0];
+}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_split(int rhs0, int split)
+{
+  return span_expressions_rhs0_split[split][rhs0];
+}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_info(int lhs, int begin, int end, int medium)
+{
+  int lhs_code = 0;
+
+  switch (span_level)
+  {
+    case 1:
+      {
+        lhs_code = 0;
+        break;
+      }
+    case 2:
+      {
+        lhs_code = is_artificial(lhs) ? 0 : 1;
+        break;
+      }
+    default:
+      lhs_code = lhs;
+      break;
+  }
+
+  if (medium >=0 && not use_span_midpoints) medium = 0;
+
+  return
+      medium >= 0 ?
+      span_expressions_bin[std::make_tuple(begin,end, medium, lhs_code)]
+      :
+      span_expressions_un[std::make_tuple(begin,end, lhs_code)];
+}

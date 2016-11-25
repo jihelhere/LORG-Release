@@ -98,10 +98,8 @@ de::Expression cfg_rule_representation::rule_expression(int lhs, int rhs0, int r
 double cfg_rule_representation::compute_internal_rule_score(const Production* r)
   {
     static int pad = SymbolTable::instance_nt().get_symbol_count();
-    return rule_scores[rule_to_idx_map[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : pad))]];
+    return rule_scores[rule_to_idx_map[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : -1))]];
 }
-
-
 
 dynet::expr::Expression&
 cfg_rule_representation::brule_expression(const Production& p)
@@ -114,5 +112,5 @@ dynet::expr::Expression&
 cfg_rule_representation::urule_expression(const Production& p)
 {
   return
-      rule_expressions[rule_to_idx_map[nt_triple_to_index(p.get_lhs(), p.get_rhs0(), -1)]];
+      rule_expressions[rule_to_idx_map[nt_triple_to_index(p.get_lhs(), p.get_rhs0())]];
 }

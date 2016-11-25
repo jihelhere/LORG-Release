@@ -26,6 +26,9 @@
 #pragma clang diagnostic pop
 #endif
 
+namespace dy = dynet;
+
+
 NNLorgParseApp::NNLorgParseApp()
 : LorgParseApp()
 {}
@@ -174,50 +177,49 @@ NNLorgParseApp::parse_instance(const std::vector<Word>& words,
 
 
 template <typename T> // for increment/decrement
-void extract_feature(const anchored_binrule_type& ref_anc_bin,
-                     std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
-                     nn_scorer& network,
-                     int span_level)
+void extract_feature(const anchored_binrule_type& anc_bin,
+                     std::unordered_map<const dy::expr::Expression*, int>& count,
+                     nn_scorer& network, int span_level)
 {
   T oper;
 
-  auto&& r = std::get<3>(ref_anc_bin);
+  auto&& r = std::get<3>(anc_bin);
   auto k = &nn_scorer::cfg.brule_expression(r);
-  exp_diff_count[k] = oper(exp_diff_count[k]);
+  count[k] = oper(count[k]);
 
   if (span_level > 0)
   {
-    auto begin = std::get<0>(ref_anc_bin);
-    auto end =   std::get<1>(ref_anc_bin) -1;
-    auto split = std::get<2>(ref_anc_bin);
+    auto begin = std::get<0>(anc_bin);
+    auto end =   std::get<1>(anc_bin) - 1;
+    auto split = std::get<2>(anc_bin);
 
     k = &network.span_repr->get_span_expr_lhs_info(r.get_lhs(), begin, end, split);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_split(r.get_lhs(), split);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    count[k] = oper(count[k]);
 
     // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
-    // exp_diff_count[k] = oper(exp_diff_count[k]);
+    // count[k] = oper(exp_diff_count[k]);
 
     // k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
-    // exp_diff_count[k] = oper(exp_diff_count[k]);
+    // count[k] = oper(exp_diff_count[k]);
 
     // k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
-    // exp_diff_count[k] = oper(exp_diff_count[k]);
+    // count[k] = oper(exp_diff_count[k]);
   }
 }
 
 
 template <typename T> // for increment/decrement
 void extract_feature(const anchored_unirule_type& ref_anc_un,
-                     std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                     std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
                      nn_scorer& network,
                      int span_level)
 {
@@ -249,52 +251,53 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
   }
 }
 
-
-struct int_decrement
+template<typename T>
+struct decrement
 {
   inline
-  int operator()(int e) {return e - 1;}
+  T operator()(T e) {return e - 1;}
 };
 
-struct int_increment
+template<typename T>
+struct increment
 {
   inline
-  int operator()(int e) {return e + 1;}
+ T operator()(T e) {return e + 1;}
 };
 
 void extract_feature_ref(const anchored_binrule_type& anc_bin,
-                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
                          nn_scorer& network,
                          int span_level)
 {
-  extract_feature<int_decrement>(anc_bin, exp_diff_count, network, span_level);
+  extract_feature<decrement<int>>(anc_bin, exp_diff_count, network, span_level);
 }
 
 
 void extract_feature_hyp(const anchored_binrule_type& anc_bin,
-                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
                          nn_scorer& network,
                          int span_level)
 {
-  extract_feature<int_increment>(anc_bin, exp_diff_count, network, span_level);
+  extract_feature<increment<int>>(anc_bin, exp_diff_count, network, span_level);
 }
 
 
 void extract_feature_ref(const anchored_unirule_type& anc_un,
-                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
                          nn_scorer& network,
                          int span_level)
 {
-  extract_feature<int_decrement>(anc_un, exp_diff_count, network, span_level);
+  extract_feature<decrement<int>>(anc_un, exp_diff_count, network, span_level);
 }
 
 
 void extract_feature_hyp(const anchored_unirule_type& anc_un,
-                         std::unordered_map<const dynet::expr::Expression*, int>& exp_diff_count,
+                         std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
                          nn_scorer& network,
                          int span_level)
 {
-  extract_feature<int_increment>(anc_un, exp_diff_count, network, span_level);
+  extract_feature<increment<int>>(anc_un, exp_diff_count, network, span_level);
 }
 
 
@@ -308,7 +311,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                const std::vector<int>& rhs0_int_vec,
                                const std::vector<int>& rhs1_int_vec)
 {
-  std::vector<dynet::expr::Expression> local_corrects, local_errs;
+  std::vector<dy::expr::Expression> local_corrects, local_errs;
   std::stringstream ssref,sshyp;
 
   std::unordered_set<anchored_binrule_type> anchored_binaries;
@@ -363,7 +366,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
                                       best_anchored_lexicals);
     }
 
-    std::unordered_map<const dynet::expr::Expression*, int> exp_diff_count;
+    std::unordered_map<const dy::expr::Expression*, int> exp_diff_count;
 
     //binary rules
     for (const auto& ref_anc_bin : anchored_binaries)
@@ -479,11 +482,11 @@ int NNLorgParseApp::run_train()
   parser.set_word_signature(ws);
   Tagger tagger(&(parser.get_words_to_rules()));
 
-  dynet::Model m;
+  dy::Model m;
 
-  //dynet::SimpleSGDTrainer trainer(&m);
-  //dynet::MomentumSGDTrainer trainer(&m);
-  dynet::AdamTrainer trainer(&m);
+  //dy::SimpleSGDTrainer trainer(&m);
+  //dy::MomentumSGDTrainer trainer(&m);
+  dy::AdamTrainer trainer(&m);
   trainer.eta_decay = 1e-8;
 
 
@@ -564,7 +567,7 @@ int NNLorgParseApp::run_train()
     {
       if (verbose) std::cerr << "Mini-batch: " << chunk << "/" << nb_chunks << std::endl;
 
-      dynet::ComputationGraph cg;
+      dy::ComputationGraph cg;
 
       for (auto& network: networks)
       {
@@ -577,7 +580,7 @@ int NNLorgParseApp::run_train()
       nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
       // collect errors for the mini batch
-      std::vector<dynet::expr::Expression> errs;
+      std::vector<dy::expr::Expression> errs;
 
       auto lower_bound = chunk * batch_size;
       auto upper_bound = std::min<unsigned long>(trees.size(), (chunk+1)*batch_size);
@@ -587,8 +590,8 @@ int NNLorgParseApp::run_train()
         ++ segment;
 
 
-      std::vector<std::vector<dynet::expr::Expression>> thread_corrects(nbthreads);
-      std::vector<std::vector<dynet::expr::Expression>> thread_errs(nbthreads);
+      std::vector<std::vector<dy::expr::Expression>> thread_corrects(nbthreads);
+      std::vector<std::vector<dy::expr::Expression>> thread_errs(nbthreads);
       std::vector<std::vector<std::pair<std::string,std::string>>> thread_treestrings(nbthreads);
       std::vector<std::thread> threads;
 
@@ -644,10 +647,10 @@ int NNLorgParseApp::run_train()
       for (unsigned thidx = 0; thidx < nbthreads; ++thidx)
       {
         if (not thread_corrects[thidx].empty())
-          errs.emplace_back(- dynet::expr::sum(thread_corrects[thidx]));
+          errs.emplace_back(- dy::expr::sum(thread_corrects[thidx]));
 
         if (not thread_errs[thidx].empty())
-          errs.emplace_back(dynet::expr::sum(thread_errs[thidx]));
+          errs.emplace_back(dy::expr::sum(thread_errs[thidx]));
         loss += thread_errs[thidx].size();
 
         for (const auto& p : thread_treestrings[thidx])
@@ -659,7 +662,7 @@ int NNLorgParseApp::run_train()
 
       if (not errs.empty())
       {
-        dynet::expr::Expression s = dynet::expr::sum(errs);
+        dy::expr::Expression s = dy::expr::sum(errs);
         cg.incremental_forward(s);
         cg.backward(s.i);
         loss += as_scalar(cg.get_value(s.i));
@@ -728,7 +731,7 @@ int NNLorgParseApp::run_train()
       bool allvalid = true;
       while(allvalid)
       {
-        dynet::ComputationGraph cgdev;
+        dy::ComputationGraph cgdev;
 
         std::vector<std::string> test_sentence(nbthreads);
         std::vector<std::vector<std::string>> comments(nbthreads);
@@ -831,7 +834,7 @@ int NNLorgParseApp::run()
   parser.set_word_signature(ws);
   Tagger tagger(&(parser.get_words_to_rules()));
 
-  dynet::Model m;
+  dy::Model m;
   std::ifstream ms(test_model_name);
   boost::archive::text_iarchive mia(ms);
   mia >> m;
@@ -876,7 +879,7 @@ int NNLorgParseApp::run()
   // this is moved here and si sequential
   // bc a mutex is needed
   {
-    dynet::ComputationGraph cg;
+    dy::ComputationGraph cg;
     networks[0].set_cg(cg);
     networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
     networks[0].unset_dropout();
@@ -893,7 +896,7 @@ int NNLorgParseApp::run()
   bool allvalid = true;
   while(allvalid)
   {
-    dynet::ComputationGraph cgdev;
+    dy::ComputationGraph cgdev;
 
     std::vector<std::string> test_sentence(nbthreads);
     std::vector<std::vector<std::string>> comments(nbthreads);

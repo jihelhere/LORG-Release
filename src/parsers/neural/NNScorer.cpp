@@ -61,10 +61,10 @@ nn_scorer::nn_scorer(bool init_global,
                  static_cast<lexical_rule_representation*>
                  (new bilstm_lexical_rule(init_global,m,
                                           nt_embedding_size,
-                                          hidden_size, lstm_hidden_size,
+                                          lstm_hidden_size,
+                                          hidden_size,
                                           lex_repr,
                                           &cfg));
-
 
   span_repr = span_level == 0 ?
               static_cast<span_representation*>
@@ -103,7 +103,7 @@ void nn_scorer::set_gold(std::unordered_set<anchored_binrule_type>& ancbin,
 void nn_scorer::unset_gold()
 {
   anchored_binaries = nullptr;
-  anchored_unaries = nullptr;
+  anchored_unaries  = nullptr;
   anchored_lexicals = nullptr;
   gold = false;
 }

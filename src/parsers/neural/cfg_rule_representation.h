@@ -73,12 +73,15 @@ class cfg_rule_representation : public computation_attachment
 private:
   dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
 
-  dynet::LookupParameter _p_nts;
+
 
   std::vector<dynet::expr::Expression> rule_expressions;
   std::vector<double> rule_scores;
   std::unordered_map<int,int> rule_to_idx_map;
 
+
+  // TODO: could be externalized
+  dynet::LookupParameter _p_nts;
 
   //internal rules FF
   dynet::Parameter _p_W_int;

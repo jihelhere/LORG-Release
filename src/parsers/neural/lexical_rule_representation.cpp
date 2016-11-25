@@ -83,9 +83,6 @@ bilstm_lexical_rule::bilstm_lexical_rule(bool init_global,
   }
 }
 
-
-
-
 dynet::expr::Expression
 bilstm_lexical_rule::lexical_rule_expression(int lhs, unsigned word_idx)
 {
