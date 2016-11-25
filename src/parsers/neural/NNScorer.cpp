@@ -5,8 +5,6 @@
 
 #include "utils/hash_impl.h"
 
-#include <mutex>
-
 namespace dy = dynet;
 namespace de = dy::expr;
 
