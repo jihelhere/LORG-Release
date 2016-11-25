@@ -37,7 +37,6 @@
 
 #include <mutex>
 
-
 struct computation_attachment
 {
   static dynet::ComputationGraph * cg;

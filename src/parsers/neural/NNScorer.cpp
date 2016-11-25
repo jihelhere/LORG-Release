@@ -230,7 +230,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 void nn_scorer::precompute_rule_expressions(const std::vector<Rule>& brules,
                                             const std::vector<Rule>& urules)
 {
-  cfg.precompute_rule_expressions(brules, urules, train_mode);
+  cfg.precompute_rule_expressions(brules, urules);
 }
 
 void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int,

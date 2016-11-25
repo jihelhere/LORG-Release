@@ -65,8 +65,7 @@ class cfg_rule_representation : public computation_attachment
   double compute_internal_rule_score(const Production* r);
 
   void precompute_rule_expressions(const std::vector<Rule>& brules,
-                                   const std::vector<Rule>& urules,
-                                   bool train_mode);
+                                   const std::vector<Rule>& urules);
 
   dynet::expr::Expression& brule_expression(const Production& p);
   dynet::expr::Expression& urule_expression(const Production& p);
@@ -75,8 +74,11 @@ private:
   dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
 
   dynet::LookupParameter _p_nts;
+
   std::vector<dynet::expr::Expression> rule_expressions;
   std::vector<double> rule_scores;
+  std::unordered_map<int,int> rule_to_idx_map;
+
 
   //internal rules FF
   dynet::Parameter _p_W_int;

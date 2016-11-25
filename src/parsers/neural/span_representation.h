@@ -159,14 +159,10 @@ class all_span_representation : public span_representation,
 
   void clear();
 
-  double get_span_lhs_begin(int lhs, int begin)
-  {return span_scores_init[begin][lhs];}
-  double get_span_lhs_end(int lhs, int end)
-  {return span_scores_init[end][lhs];}
-  double get_span_lhs_split(int lhs, int split)
-  {return span_scores_split[split][lhs];}
-  double get_span_rhs0_begin(int rhs,int begin)
-  {return span_scores_rhs0_init[begin][rhs];}
+  double get_span_lhs_begin(int lhs, int begin)  {return span_scores_init[begin][lhs];}
+  double get_span_lhs_end(int lhs, int end)      {return span_scores_init[end][lhs];}
+  double get_span_lhs_split(int lhs, int split)  {return span_scores_split[split][lhs];}
+  double get_span_rhs0_begin(int rhs,int begin)  {return span_scores_rhs0_init[begin][rhs];}
 
 
   double get_span_score_bin_info(int begin,
@@ -186,20 +182,9 @@ class all_span_representation : public span_representation,
 
 
 
-  dynet::expr::Expression& get_span_expr_lhs_init(int lhs, int begin)
-  {
-    return span_expressions_init[begin][lhs];
-  }
-
-
-  dynet::expr::Expression& get_span_expr_lhs_end (int lhs, int end)
-  {
-    return span_expressions_end[end][lhs];
-  }
-
-  dynet::expr::Expression& get_span_expr_lhs_split(int lhs, int split)
-  {
-    return span_expressions_split[split][lhs];
+  dynet::expr::Expression& get_span_expr_lhs_init(int lhs, int begin) {return span_expressions_init[begin][lhs];}
+  dynet::expr::Expression& get_span_expr_lhs_end (int lhs, int end)   {return span_expressions_end[end][lhs];}
+  dynet::expr::Expression& get_span_expr_lhs_split(int lhs, int split){return span_expressions_split[split][lhs];
   }
 
 
@@ -249,9 +234,6 @@ class all_span_representation : public span_representation,
   }
 
 
-
-
-
  private:
   lexicon_representation * lr;
   cfg_rule_representation * cfg;
@@ -279,13 +261,13 @@ class all_span_representation : public span_representation,
   static dynet::Parameter _p_o_span_split;
 
 
-  static dynet::Parameter _p_W_span0_init;
-  static dynet::Parameter _p_b_span0_init;
-  static dynet::Parameter _p_o_span0_init;
-  static dynet::Parameter _p_b_span0_end;
-  static dynet::Parameter _p_o_span0_end;
-  static dynet::Parameter _p_b_span0_split;
-  static dynet::Parameter _p_o_span0_split;
+  // static dynet::Parameter _p_W_span0_init;
+  // static dynet::Parameter _p_b_span0_init;
+  // static dynet::Parameter _p_o_span0_init;
+  // static dynet::Parameter _p_b_span0_end;
+  // static dynet::Parameter _p_o_span0_end;
+  // static dynet::Parameter _p_b_span0_split;
+  // static dynet::Parameter _p_o_span0_split;
 
 
   static dynet::Parameter _p_W_span_left;

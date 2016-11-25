@@ -574,7 +574,7 @@ int NNLorgParseApp::run_train()
 
       nn_scorer::train_mode = true;
       nn_scorer::set_cg(cg);
-      nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules, nn_scorer::train_mode);
+      nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
       // collect errors for the mini batch
       std::vector<dynet::expr::Expression> errs;
@@ -742,7 +742,7 @@ int NNLorgParseApp::run_train()
 
         nn_scorer::train_mode = false;
         nn_scorer::set_cg(cgdev);
-        nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules, nn_scorer::train_mode);
+        nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
         for (unsigned i = 0; i < nbthreads; ++i)
         {

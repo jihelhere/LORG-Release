@@ -13,9 +13,6 @@ cfg_rule_representation::cfg_rule_representation(bool /*init_global*/,
 {
   unsigned s = SymbolTable::instance_nt().get_symbol_count();
 
-  rule_expressions.resize(s * s * (s+1));
-  rule_scores.resize(s * s * (s+1));
-
   _p_nts = m.add_lookup_parameters(s+1, {nt_embedding_size});
 
   // grammar rules
@@ -31,32 +28,55 @@ dynet::expr::Expression cfg_rule_representation::get_nt_expr(int lhs)
 
 void
 cfg_rule_representation::precompute_rule_expressions(const std::vector<Rule>& brules,
-                                                     const std::vector<Rule>& urules,
-                                                     bool train_mode)
+                                                     const std::vector<Rule>& urules)
 {
-  std::cout << "before rule precomputation" << std::endl;
+  // first time we initialize structures
+  // TODO: do it clean
+  static bool init = true;
+  if (init)
+  {
+    auto s = brules.size() + urules.size();
+    rule_expressions.resize(s);
+    rule_scores.resize(s);
 
+    unsigned i = 0;
+    for (; i < brules.size(); ++i)
+    {
+      auto&& t = nt_triple_to_index(brules[i].get_lhs(),
+                                    brules[i].get_rhs0(),
+                                    brules[i].get_rhs1());
+      rule_to_idx_map[t] = i;
+    }
+
+    unsigned j = 0;
+    for (; j < urules.size(); ++j)
+    {
+      auto&& t = nt_triple_to_index(urules[j].get_lhs(),
+                                    urules[j].get_rhs0());
+      rule_to_idx_map[t] = i + j;
+    }
+
+    init = false;
+  }
+
+  ////////////////////////////
   static int pad = SymbolTable::instance_nt().get_symbol_count();
-
-  for (const auto& r : brules)
+  unsigned i = 0;
+  for (; i < brules.size(); ++i)
   {
-    auto&& e = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
-    auto&& t = nt_triple_to_index(r.get_lhs(),r.get_rhs0(),r.get_rhs1());
-    if (train_mode) rule_expressions[t] = e;
-    rule_scores[t] = as_scalar(cg->get_value(e.i));
+    auto&& r = brules[i];
+    auto&& e = rule_expressions[i] = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
+    rule_scores[i] = as_scalar(cg->get_value(e.i));
   }
 
-  std::cout << " after rule precomputation for binaries " << std::endl;
-
-  for (const auto& r : urules)
+  unsigned j = 0;
+  for (; j < urules.size(); ++j)
   {
-    auto&& e =  rule_expression(r.get_lhs(), r.get_rhs0(), pad);
-    auto&& t = nt_triple_to_index(r.get_lhs(),r.get_rhs0());
-    if (train_mode) rule_expressions[t] = e;
-    rule_scores[t] = as_scalar(cg->get_value(e.i));
+    auto&& r = urules[j];
+    auto&& e =rule_expressions[i+j] = rule_expression(r.get_lhs(), r.get_rhs0(), pad);
+    rule_scores[i+j] = as_scalar(cg->get_value(e.i));
   }
-
-  std::cout << "after rule precomputation" << std::endl;
+  //  std::cout << "after rule precomputation" << std::endl;
 }
 
 
@@ -78,7 +98,7 @@ de::Expression cfg_rule_representation::rule_expression(int lhs, int rhs0, int r
 double cfg_rule_representation::compute_internal_rule_score(const Production* r)
   {
     static int pad = SymbolTable::instance_nt().get_symbol_count();
-    return rule_scores[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : pad))];
+    return rule_scores[rule_to_idx_map[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : pad))]];
 }
 
 
@@ -87,12 +107,12 @@ dynet::expr::Expression&
 cfg_rule_representation::brule_expression(const Production& p)
 {
   return
-      rule_expressions[nt_triple_to_index(p.get_lhs(), p.get_rhs0(), p.get_rhs1())];
+      rule_expressions[rule_to_idx_map[nt_triple_to_index(p.get_lhs(), p.get_rhs0(), p.get_rhs1())]];
 }
 
 dynet::expr::Expression&
 cfg_rule_representation::urule_expression(const Production& p)
 {
   return
-      rule_expressions[nt_triple_to_index(p.get_lhs(), p.get_rhs0(), -1)];
+      rule_expressions[rule_to_idx_map[nt_triple_to_index(p.get_lhs(), p.get_rhs0(), -1)]];
 }
