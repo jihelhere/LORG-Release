@@ -66,11 +66,11 @@ class span_representation
                                    bool) {};
   virtual void clear() {};
 
-  virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/) {return 0.0;}
-  virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/)     {return 0.0;}
-  virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/) {return 0.0;}
+  virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/)=0;
+  virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/)=0;
+  virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/)=0;
 
-  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/){return 0.0;}
+  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/)=0;
   // virtual double get_span_score_rhs0_end(int/*rhs*/, int/*end*/)    {return 0.0;}
   // virtual double get_span_score_rhs0_split(int/*rhs*/, int/*split*/){return 0.0;}
 
@@ -78,12 +78,12 @@ class span_representation
                                          int, // end
                                          int, // split
                                          int // root_info
-                                         ) {return 0.0;};
+                                         )=0;
 
   virtual double get_span_score_una_info(int, // begin
                                          int, // end
                                          int // root_info
-                                         ) {return 0.0;};
+                                         )=0;
 
   virtual dynet::expr::Expression& get_span_expr_lhs_init(int, int)
   {
@@ -132,6 +132,28 @@ class empty_span_representation : public span_representation
  public:
   empty_span_representation() {};
   virtual ~empty_span_representation() {};
+
+
+  virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/) {return 0.0;}
+  virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/)     {return 0.0;}
+  virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/) {return 0.0;}
+
+  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/){return 0.0;}
+  // virtual double get_span_score_rhs0_end(int/*rhs*/, int/*end*/)    {return 0.0;}
+  // virtual double get_span_score_rhs0_split(int/*rhs*/, int/*split*/){return 0.0;}
+
+  virtual double get_span_score_bin_info(int, // begin
+                                         int, // end
+                                         int, // split
+                                         int // root_info
+                                         ) {return 0.0;};
+
+  virtual double get_span_score_una_info(int, // begin
+                                         int, // end
+                                         int // root_info
+                                         ) {return 0.0;};
+
+
 };
 
 

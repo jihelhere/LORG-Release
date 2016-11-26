@@ -185,6 +185,7 @@ void extract_feature(const anchored_binrule_type& anc_bin,
 
   auto&& r = std::get<3>(anc_bin);
   auto k = &nn_scorer::cfg.brule_expression(r);
+  if (not count.count(k)) count[k] = 0;
   count[k] = oper(count[k]);
 
   if (span_level > 0)
@@ -197,12 +198,15 @@ void extract_feature(const anchored_binrule_type& anc_bin,
     count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
+    if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
+    if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_split(r.get_lhs(), split);
+    if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
     // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
@@ -219,7 +223,7 @@ void extract_feature(const anchored_binrule_type& anc_bin,
 
 template <typename T> // for increment/decrement
 void extract_feature(const anchored_unirule_type& ref_anc_un,
-                     std::unordered_map<const dy::expr::Expression*, int>& exp_diff_count,
+                     std::unordered_map<const dy::expr::Expression*, int>& count,
                      nn_scorer& network,
                      int span_level)
 {
@@ -227,7 +231,8 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
 
   auto&& r = std::get<2>(ref_anc_un);
   auto k = &nn_scorer::cfg.urule_expression(r);
-  exp_diff_count[k] = oper(exp_diff_count[k]);
+  if (not count.count(k)) count[k] = 0;
+  count[k] = oper(count[k]);
 
   if (span_level > 0)
   {
@@ -235,13 +240,16 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
     auto end =   std::get<1>(ref_anc_un) -1;
     auto split = -1;
     k = &network.span_repr->get_span_expr_lhs_info(r.get_lhs(), begin, end, split);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    if (not count.count(k)) count[k] = 0;
+    count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    if (not count.count(k)) count[k] = 0;
+    count[k] = oper(count[k]);
 
     k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
-    exp_diff_count[k] = oper(exp_diff_count[k]);
+    if (not count.count(k)) count[k] = 0;
+    count[k] = oper(count[k]);
 
     // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
     // exp_diff_count[k] = oper(exp_diff_count[k]);
@@ -396,6 +404,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       auto k = &network.lexrule_repr->retrieve_lexical_rule_expression(std::get<1>(ref_anc_lex).get_lhs(),
                                                                        std::get<0>(ref_anc_lex));
+      if (not exp_diff_count.count(k)) exp_diff_count[k] = 0;
       exp_diff_count[k]--;
     }
 
@@ -403,6 +412,7 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
     {
       auto k = &network.lexrule_repr->retrieve_lexical_rule_expression(std::get<1>(best_anc_lex).get_lhs(),
                                                                        std::get<0>(best_anc_lex));
+      if (not exp_diff_count.count(k)) exp_diff_count[k] = 0;
       exp_diff_count[k]++;
     }
 

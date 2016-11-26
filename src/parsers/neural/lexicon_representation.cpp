@@ -4,7 +4,6 @@ std::vector<dynet::LSTMBuilder> bilstm_lexicon_representation::word_l2r_builders
 std::vector<dynet::LSTMBuilder> bilstm_lexicon_representation::word_r2l_builders;
 
 
-
 void
 simple_lexicon_representation::precompute_embeddings(const std::vector<Word>& words)
 {

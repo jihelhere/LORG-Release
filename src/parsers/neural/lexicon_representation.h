@@ -49,8 +49,8 @@ class lexicon_representation
 
   word_representation * get_word_representation() {return wr;};
 
-  virtual void set_dropout(float) {};
-  virtual void unset_dropout() {};
+  virtual void set_dropout(float)=0;
+  virtual void unset_dropout()=0;
 
  protected:
   std::vector<dynet::expr::Expression> embeddings;
@@ -67,6 +67,9 @@ class simple_lexicon_representation : public lexicon_representation,
   {};
 
   virtual ~simple_lexicon_representation() {};
+
+  void set_dropout(float) {};
+  void unset_dropout() {};
 
   void precompute_embeddings(const std::vector<Word>& words);
 };
@@ -88,7 +91,7 @@ class bilstm_lexicon_representation : public lexicon_representation,
   virtual ~bilstm_lexicon_representation() {};
 
   void set_dropout(float);
-  void unset_dropout();
+  void unset_dropout() ;
 
 private:
   unsigned layers;
