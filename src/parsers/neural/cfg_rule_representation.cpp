@@ -97,7 +97,7 @@ de::Expression cfg_rule_representation::rule_expression(int lhs, int rhs0, int r
 
 double cfg_rule_representation::compute_internal_rule_score(const Production* r)
   {
-    static int pad = SymbolTable::instance_nt().get_symbol_count();
+    //static int pad = SymbolTable::instance_nt().get_symbol_count();
     return rule_scores[rule_to_idx_map[nt_triple_to_index(r->get_lhs(), r->get_rhs0(), (r->get_rhs().size() > 1 ? r->get_rhs1() : -1))]];
 }
 
