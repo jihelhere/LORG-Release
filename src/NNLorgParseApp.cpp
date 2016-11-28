@@ -422,7 +422,6 @@ NNLorgParseApp::train_instance(const PtbPsTree& tree,
       if (kv.second > 0)
       {
         for (auto i = 0; i < kv.second; ++i)
-
           local_errs.emplace_back(*(kv.first));
       }
       else
@@ -455,9 +454,7 @@ int NNLorgParseApp::run_train()
   std::unordered_set<Rule> bin,un;
   std::unordered_set<Rule> lex;
 
-
   collect_rules(trees, bin, un, lex);
-
 
   Grammar<Rule,Rule,Rule> grammar;
   grammar.set_rules(std::vector<Rule>(bin.begin(),bin.end()),
