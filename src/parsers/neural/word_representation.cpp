@@ -17,8 +17,8 @@ simple_word_representation::simple_word_representation(bool init_global,
 {
   if (init_global)
   {
-    unsigned s = SymbolTable::instance_word().get_symbol_count() + 1;
-    _p_word = m.add_lookup_parameters(s, {word_embedding_size});
+    unsigned s = SymbolTable::instance_word().get_symbol_count();
+    _p_word = m.add_lookup_parameters(s + 1, {word_embedding_size});
   }
 }
 

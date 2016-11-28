@@ -411,7 +411,7 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
 
 
 double all_span_representation::get_span_score_lhs_begin(int lhs, int begin) {return span_scores_init[begin][lhs];}
-double all_span_representation::get_span_score_lhs_end  (int lhs, int end)   {return span_scores_init[end][lhs];}
+double all_span_representation::get_span_score_lhs_end  (int lhs, int end)   {return span_scores_end[end][lhs];}
 double all_span_representation::get_span_score_lhs_split(int lhs, int split) {return span_scores_split[split][lhs];}
 
 double all_span_representation::get_span_score_rhs0_begin(int rhs,int begin) {return span_scores_rhs0_init[begin][rhs];}

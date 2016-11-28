@@ -7,12 +7,12 @@ std::vector<dynet::LSTMBuilder> bilstm_lexicon_representation::word_r2l_builders
 void
 simple_lexicon_representation::precompute_embeddings(const std::vector<Word>& words)
 {
-  embeddings.clear();
+  embeddings.resize(words.size());
 
   std::lock_guard<std::mutex> guard(computation_attachment::cg_mutex);
 
-  for (const auto& w : words)
-    embeddings.push_back(wr->word_reprentation(w));
+  for (unsigned i = 0; i < embeddings.size(); ++i)
+    embeddings[i] = wr->word_reprentation(words[i]);
 }
 
 /////////
