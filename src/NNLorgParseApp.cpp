@@ -583,7 +583,7 @@ int NNLorgParseApp::run_train()
       }
 
       nn_scorer::train_mode = true;
-      nn_scorer::set_cg(cg);
+      nn_scorer::set_cg(&cg);
       nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
       // collect errors for the mini batch
@@ -751,7 +751,7 @@ int NNLorgParseApp::run_train()
         std::vector<std::thread> threads;
 
         nn_scorer::train_mode = false;
-        nn_scorer::set_cg(cgdev);
+        nn_scorer::set_cg(&cgdev);
         nn_scorer::cfg.precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
 
         for (unsigned i = 0; i < nbthreads; ++i)
@@ -887,7 +887,7 @@ int NNLorgParseApp::run()
   // bc a mutex is needed
   {
     dy::ComputationGraph cg;
-    networks[0].set_cg(cg);
+    networks[0].set_cg(&cg);
     networks[0].precompute_rule_expressions(grammar.binary_rules, grammar.unary_rules);
     networks[0].unset_dropout();
   }
@@ -917,7 +917,7 @@ int NNLorgParseApp::run()
 
     for (unsigned i = 0; i < nbthreads; ++i)
     {
-      networks[i].set_cg(cgdev);
+      networks[i].set_cg(&cgdev);
       networks[i].unset_gold();
 
       valid_sentence[i] = tokeniser->tokenise(*in,test_sentence[i],s[i],brackets[i], comments[i]);

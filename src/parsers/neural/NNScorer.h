@@ -100,9 +100,6 @@ struct nn_scorer : public computation_attachment
 
   ~nn_scorer() {};
 
-  static void set_cg(dynet::ComputationGraph& g) {cg = &g;};
-
-
   void set_gold(std::unordered_set<anchored_binrule_type>& ancbin,
                 std::unordered_set<anchored_unirule_type>& ancuni,
                 std::unordered_set<anchored_lexrule_type>& anclex);
@@ -114,11 +111,7 @@ struct nn_scorer : public computation_attachment
 
   double compute_lexical_score(int position, const MetaProduction* mp);
   double compute_unary_score(int begin, int end, const MetaProduction* mp);
-
   double compute_binary_score(int begin, int end, int mid, const MetaProduction* mp);
-
-  double
-  compute_internal_span_score(int begin, int end, int medium, int lhs, int rhs0);
 
   void clear();
 
@@ -132,23 +125,10 @@ struct nn_scorer : public computation_attachment
   void precompute_embeddings();
 
 
-  dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
-  dynet::expr::Expression& span_init(int lhs, int begin);
-  dynet::expr::Expression& span_end(int lhs, int end);
-  dynet::expr::Expression& span_split(int lhs, int split);
-
-  // dynet::expr::Expression& span_init_un(int lhs, int begin);
-  // dynet::expr::Expression& span_end_un(int lhs, int end);
-
-  dynet::expr::Expression& span_rhs0_init(int rhs0, int begin);
-  dynet::expr::Expression& span_rhs0_end(int rhs0, int end);
-  dynet::expr::Expression& span_rhs0_split(int rhs0, int split);
-
-
   void set_dropout(float d);
   void unset_dropout();
 
  private:
-  double
-  compute_internal_rule_score(const Production* r);
+  double compute_internal_rule_score(const Production* r);
+  double compute_internal_span_score(int begin, int end, int medium, int lhs, int rhs0);
 };
