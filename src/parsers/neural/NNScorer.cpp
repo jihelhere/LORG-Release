@@ -116,11 +116,11 @@ double nn_scorer::compute_lexical_score(int position, const MetaProduction* mp)
   auto&& r = static_cast<const Production*>(mp);
 
   // next function call is protected by non-recursive mutex
-  auto&& e = lexical_rule_expression(mp->get_lhs(), position);
+  auto&& e = lexrule_repr->lexical_rule_expression(mp->get_lhs(), position);
 
   {
     std::lock_guard<std::mutex> guard(computation_attachment::cg_mutex);
-    v = as_scalar(cg->get_value(e.i));
+    v = as_scalar(e.value());
   }
 
   if (gold && !anchored_lexicals->count(std::make_tuple(position,*r)))
@@ -238,11 +238,6 @@ void nn_scorer::precompute_span_expressions(const std::vector<int>& lhs_int,
                                             const std::vector<int>& rhs1_int)
 {
   span_repr->precompute_span_expressions(lhs_int, rhs0_int, rhs1_int, *words, train_mode);
-}
-
-de::Expression nn_scorer::lexical_rule_expression(int lhs, unsigned word_idx)
-{
-  return lexrule_repr->lexical_rule_expression(lhs, word_idx);
 }
 
 void nn_scorer::precompute_embeddings()

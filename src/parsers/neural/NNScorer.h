@@ -132,9 +132,6 @@ struct nn_scorer : public computation_attachment
   void precompute_embeddings();
 
 
-  static dynet::expr::Expression rule_expression(int lhs, int rhs0, int rhs1);
-  dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_position);
-
   dynet::expr::Expression& span_expression(int lhs, int word_position_start, int word_position_end, int word_medium);
   dynet::expr::Expression& span_init(int lhs, int begin);
   dynet::expr::Expression& span_end(int lhs, int end);

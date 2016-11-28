@@ -66,7 +66,7 @@ cfg_rule_representation::precompute_rule_expressions(const std::vector<Rule>& br
   {
     auto&& r = brules[i];
     auto&& e = rule_expressions[i] = rule_expression(r.get_lhs(), r.get_rhs0(), r.get_rhs1());
-    rule_scores[i] = as_scalar(cg->get_value(e.i));
+    rule_scores[i] = as_scalar(e.value());
   }
 
   unsigned j = 0;
@@ -74,7 +74,7 @@ cfg_rule_representation::precompute_rule_expressions(const std::vector<Rule>& br
   {
     auto&& r = urules[j];
     auto&& e =rule_expressions[i+j] = rule_expression(r.get_lhs(), r.get_rhs0(), pad);
-    rule_scores[i+j] = as_scalar(cg->get_value(e.i));
+    rule_scores[i+j] = as_scalar(e.value());
   }
   //  std::cout << "after rule precomputation" << std::endl;
 }

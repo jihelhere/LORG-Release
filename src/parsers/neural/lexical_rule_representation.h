@@ -106,6 +106,4 @@ class bilstm_lexical_rule : public lexical_rule_representation,
 
   dynet::expr::Expression lexical_rule_expression(int lhs, unsigned word_idx);
 
-  void set_dropout(float d);
-  void unset_dropout();
 };

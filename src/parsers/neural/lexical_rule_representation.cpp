@@ -87,7 +87,6 @@ dynet::expr::Expression
 bilstm_lexical_rule::lexical_rule_expression(int lhs, unsigned word_idx)
 {
   auto&& t = std::make_tuple(lhs,word_idx);
-  auto&& emb = lr->get_embeddings();
 
   std::lock_guard<std::mutex> guard(computation_attachment::cg_mutex);
 
@@ -95,7 +94,7 @@ bilstm_lexical_rule::lexical_rule_expression(int lhs, unsigned word_idx)
   auto&& b = dynet::expr::parameter(*cg, _p_b_lex);
   auto&& o = dynet::expr::parameter(*cg, _p_o_lex);
 
-  auto&& i = dynet::expr::concatenate({emb[word_idx],
+  auto&& i = dynet::expr::concatenate({lr->get_embeddings()[word_idx],
                                        cfg->get_nt_expr(lhs)
     });
 
