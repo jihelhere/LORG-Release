@@ -1,4 +1,4 @@
-#include "span_representation.h"
+ #include "span_representation.h"
 
 
 dynet::Parameter all_span_representation::_p_W_span_distance;
@@ -14,11 +14,14 @@ dynet::Parameter all_span_representation::_p_W_span_mid;
 
 dynet::Parameter all_span_representation::_p_b_span_end;
 dynet::Parameter all_span_representation::_p_o_span_end;
-
+dynet::Parameter all_span_representation::_p_b_span_end_un;
+dynet::Parameter all_span_representation::_p_o_span_end_un;
 
 dynet::Parameter all_span_representation::_p_W_span_init;
 dynet::Parameter all_span_representation::_p_b_span_init;
 dynet::Parameter all_span_representation::_p_o_span_init;
+dynet::Parameter all_span_representation::_p_b_span_init_un;
+dynet::Parameter all_span_representation::_p_o_span_init_un;
 
 dynet::Parameter all_span_representation::_p_W_span_left;
 dynet::Parameter all_span_representation::_p_W_span_right;
@@ -53,15 +56,15 @@ all_span_representation::all_span_representation(bool init_global,
     _p_W_span_init = m.add_parameters({hidden_size, input_size + nt_embedding_size});
     _p_b_span_init = m.add_parameters({hidden_size});
     _p_o_span_init = m.add_parameters({1,hidden_size});
-    // _p_b_span_init_un = m.add_parameters({hidden_size});
-    // _p_o_span_init_un = m.add_parameters({1,hidden_size});
+    _p_b_span_init_un = m.add_parameters({hidden_size});
+    _p_o_span_init_un = m.add_parameters({1,hidden_size});
 
     // _p_W_span_end =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
     _p_b_span_end = m.add_parameters({hidden_size});
     _p_o_span_end = m.add_parameters({1,hidden_size});
 
-    // _p_b_span_end_un = m.add_parameters({hidden_size});
-    // _p_o_span_end_un = m.add_parameters({1,hidden_size});
+    _p_b_span_end_un = m.add_parameters({hidden_size});
+    _p_o_span_end_un = m.add_parameters({1,hidden_size});
 
     // _p_W_span_split =  m.add_parameters({hidden_size, span_input_dim_base + nt_embedding_size});
     _p_b_span_split = m.add_parameters({hidden_size});
@@ -141,16 +144,16 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
   auto&& Wi = dynet::expr::parameter(*cg,_p_W_span_init);
   auto&& bi = dynet::expr::parameter(*cg,_p_b_span_init);
   auto&& oi = dynet::expr::parameter(*cg,_p_o_span_init);
-  // auto&& biu = dynet::expr::parameter(*cg,_p_b_span_init_un);
-  // auto&& oiu = dynet::expr::parameter(*cg,_p_o_span_init_un);
+  auto&& biu = dynet::expr::parameter(*cg,_p_b_span_init_un);
+  auto&& oiu = dynet::expr::parameter(*cg,_p_o_span_init_un);
 
 
   // lhs + span end
   //auto&& We = dynet::expr::parameter(*cg,_p_W_span_end);
   auto&& be = dynet::expr::parameter(*cg,_p_b_span_end);
   auto&& oe = dynet::expr::parameter(*cg,_p_o_span_end);
-  // auto&& beu = dynet::expr::parameter(*cg,_p_b_span_end_un);
-  // auto&& oeu = dynet::expr::parameter(*cg,_p_o_span_end_un);
+  auto&& beu = dynet::expr::parameter(*cg,_p_b_span_end_un);
+  auto&& oeu = dynet::expr::parameter(*cg,_p_o_span_end_un);
 
   //lhs + span split
   //auto&& Ws = dynet::expr::parameter(*cg,_p_W_span_split);
@@ -175,25 +178,25 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
 
   span_expressions_init.resize(words.size());
   span_scores_init.resize(words.size());
-  // span_expressions_init_un.resize(words.size());
-  // span_scores_init_un.resize(words.size());
+  span_expressions_init_un.resize(words.size());
+  span_scores_init_un.resize(words.size());
 
-  span_expressions_rhs0_init.resize(words.size());
-  span_scores_rhs0_init.resize(words.size());
+  // span_expressions_rhs0_init.resize(words.size());
+  // span_scores_rhs0_init.resize(words.size());
 
   span_expressions_end.resize(words.size());
   span_scores_end.resize(words.size());
-  // span_expressions_end_un.resize(words.size());
-  // span_scores_end_un.resize(words.size());
+  span_expressions_end_un.resize(words.size());
+  span_scores_end_un.resize(words.size());
 
-  span_expressions_rhs0_end.resize(words.size());
-  span_scores_rhs0_end.resize(words.size());
+  // span_expressions_rhs0_end.resize(words.size());
+  // span_scores_rhs0_end.resize(words.size());
 
   span_expressions_split.resize(words.size());
   span_scores_split.resize(words.size());
 
-  span_expressions_rhs0_split.resize(words.size());
-  span_scores_rhs0_split.resize(words.size());
+  // span_expressions_rhs0_split.resize(words.size());
+  // span_scores_rhs0_split.resize(words.size());
 
 
   auto&& embeddings = lr->get_embeddings();
@@ -244,10 +247,10 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
     span_expressions_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
     span_scores_split[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
-    // span_expressions_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-    // span_scores_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-    // span_expressions_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
-    // span_scores_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_expressions_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_init_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_expressions_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
+    span_scores_end_un[i].resize(SymbolTable::instance_nt().get_symbol_count());
 
 
 
@@ -263,8 +266,8 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       auto&& ee = oe * dynet::expr::rectify(hp + be);
       auto&& es = os * dynet::expr::rectify(hp + bs);
 
-      // auto&& eiu = oiu * dynet::expr::rectify(hp + biu);
-      // auto&& eeu = oeu * dynet::expr::rectify(hp + beu);
+      auto&& eiu = oiu * dynet::expr::rectify(hp + biu);
+      auto&& eeu = oeu * dynet::expr::rectify(hp + beu);
 
       if (train_mode)
       {
@@ -272,15 +275,15 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
         span_expressions_end[i][l] = ee;
         span_expressions_split[i][l] = es;
 
-        // span_expressions_init_un[i][l] = eiu;
-        // span_expressions_end_un[i][l] = eeu;
+        span_expressions_init_un[i][l] = eiu;
+        span_expressions_end_un[i][l] = eeu;
       }
       span_scores_init[i][l]  = as_scalar(cg->get_value(ei.i));
       span_scores_end[i][l]   = as_scalar(cg->get_value(ee.i));
       span_scores_split[i][l] = as_scalar(cg->get_value(es.i));
 
-      // span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
-      // span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
+      span_scores_init_un[i][l]  = as_scalar(cg->get_value(eiu.i));
+      span_scores_end_un[i][l]   = as_scalar(cg->get_value(eeu.i));
     }
   }
 
@@ -412,9 +415,14 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
 
 double all_span_representation::get_span_score_lhs_begin(int lhs, int begin) {return span_scores_init[begin][lhs];}
 double all_span_representation::get_span_score_lhs_end  (int lhs, int end)   {return span_scores_end[end][lhs];}
+
+double all_span_representation::get_span_score_lhs_begin_unary(int lhs, int begin) {return span_scores_init_un[begin][lhs];}
+double all_span_representation::get_span_score_lhs_end_unary  (int lhs, int end)   {return span_scores_end_un[end][lhs];}
+
+
 double all_span_representation::get_span_score_lhs_split(int lhs, int split) {return span_scores_split[split][lhs];}
 
-double all_span_representation::get_span_score_rhs0_begin(int rhs,int begin) {return span_scores_rhs0_init[begin][rhs];}
+// double all_span_representation::get_span_score_rhs0_begin(int rhs,int begin) {return span_scores_rhs0_init[begin][rhs];}
 
 
 double all_span_representation::get_span_score_bin_info(int begin, int end, int split, int root_info)
@@ -428,29 +436,47 @@ double all_span_representation::get_span_score_una_info(int begin, int end, int 
 }
 
 dynet::expr::Expression& all_span_representation::get_span_expr_lhs_init(int lhs, int begin)
-{return span_expressions_init[begin][lhs];}
+{
+  return span_expressions_init[begin][lhs];
+}
+
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_init_unary(int lhs, int begin)
+{
+  return span_expressions_init_un[begin][lhs];
+}
+
 dynet::expr::Expression& all_span_representation::get_span_expr_lhs_end (int lhs, int end)
-{return span_expressions_end[end][lhs];}
+{
+  return span_expressions_end[end][lhs];
+}
+
+dynet::expr::Expression& all_span_representation::get_span_expr_lhs_end_unary (int lhs, int end)
+{
+  return span_expressions_end_un[end][lhs];
+}
+
 dynet::expr::Expression& all_span_representation::get_span_expr_lhs_split(int lhs, int split)
-{return span_expressions_split[split][lhs];}
-
-
-dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_init(int rhs0, int begin)
 {
-  return span_expressions_rhs0_init[begin][rhs0];
+  return span_expressions_split[split][lhs];
 }
 
 
-dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_end(int rhs0, int end)
-{
-  return span_expressions_rhs0_end[end][rhs0];
-}
+// dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_init(int rhs0, int begin)
+// {
+//   return span_expressions_rhs0_init[begin][rhs0];
+// }
 
 
-dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_split(int rhs0, int split)
-{
-  return span_expressions_rhs0_split[split][rhs0];
-}
+// dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_end(int rhs0, int end)
+// {
+//   return span_expressions_rhs0_end[end][rhs0];
+// }
+
+
+// dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_split(int rhs0, int split)
+// {
+//   return span_expressions_rhs0_split[split][rhs0];
+// }
 
 
 dynet::expr::Expression& all_span_representation::get_span_expr_lhs_info(int lhs, int begin, int end, int medium)

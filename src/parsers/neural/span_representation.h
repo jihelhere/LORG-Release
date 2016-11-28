@@ -68,9 +68,12 @@ class span_representation
 
   virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/)=0;
   virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/)=0;
+  virtual double get_span_score_lhs_begin_unary(int/*lhs*/,int /*begin*/)=0;
+  virtual double get_span_score_lhs_end_unary(int/*lhs*/, int/*end*/)=0;
+
   virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/)=0;
 
-  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/)=0;
+  // virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/)=0;
   // virtual double get_span_score_rhs0_end(int/*rhs*/, int/*end*/)    {return 0.0;}
   // virtual double get_span_score_rhs0_split(int/*rhs*/, int/*split*/){return 0.0;}
 
@@ -89,9 +92,17 @@ class span_representation
   {
     throw std::logic_error("should not be called");
   }
+  virtual dynet::expr::Expression& get_span_expr_lhs_init_unary(int, int)
+  {
+    throw std::logic_error("should not be called");
+  }
 
 
   virtual  dynet::expr::Expression& get_span_expr_lhs_end (int, int)
+  {
+    throw std::logic_error("should not be called");
+  }
+  virtual  dynet::expr::Expression& get_span_expr_lhs_end_unary(int, int)
   {
     throw std::logic_error("should not be called");
   }
@@ -102,22 +113,22 @@ class span_representation
   }
 
 
-  virtual dynet::expr::Expression& get_span_expr_rhs0_init(int, int)
-  {
-    throw std::logic_error("should not be called");
-  }
+  // virtual dynet::expr::Expression& get_span_expr_rhs0_init(int, int)
+  // {
+  //   throw std::logic_error("should not be called");
+  // }
 
 
-  virtual dynet::expr::Expression& get_span_expr_rhs0_end(int, int)
-  {
-    throw std::logic_error("should not be called");
-  }
+  // virtual dynet::expr::Expression& get_span_expr_rhs0_end(int, int)
+  // {
+  //   throw std::logic_error("should not be called");
+  // }
 
 
-  virtual dynet::expr::Expression& get_span_expr_rhs0_split(int, int)
-  {
-    throw std::logic_error("should not be called");
-  }
+  // virtual dynet::expr::Expression& get_span_expr_rhs0_split(int, int)
+  // {
+  //   throw std::logic_error("should not be called");
+  // }
 
 
   virtual dynet::expr::Expression& get_span_expr_lhs_info(int, int, int, int)
@@ -134,11 +145,15 @@ class empty_span_representation : public span_representation
   virtual ~empty_span_representation() {};
 
 
-  virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/) {return 0.0;}
-  virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/)     {return 0.0;}
-  virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/) {return 0.0;}
+  virtual double get_span_score_lhs_begin(int/*lhs*/,int /*begin*/) override {return 0.0;}
+  virtual double get_span_score_lhs_end(int/*lhs*/, int/*end*/) override    {return 0.0;}
+  virtual double get_span_score_lhs_begin_unary(int,int) override {return 0.0;}
+  virtual double get_span_score_lhs_end_unary(int, int)  override {return 0.0;}
 
-  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/){return 0.0;}
+
+  virtual double get_span_score_lhs_split(int/*lhs*/, int/*split*/) override {return 0.0;}
+
+  //  virtual double get_span_score_rhs0_begin(int/*rhs*/,int /*begin*/) override {return 0.0;}
   // virtual double get_span_score_rhs0_end(int/*rhs*/, int/*end*/)    {return 0.0;}
   // virtual double get_span_score_rhs0_split(int/*rhs*/, int/*split*/){return 0.0;}
 
@@ -146,12 +161,12 @@ class empty_span_representation : public span_representation
                                          int, // end
                                          int, // split
                                          int // root_info
-                                         ) {return 0.0;};
+                                         ) override {return 0.0;};
 
   virtual double get_span_score_una_info(int, // begin
                                          int, // end
                                          int // root_info
-                                         ) {return 0.0;};
+                                         ) override {return 0.0;};
 
 
 };
@@ -182,9 +197,11 @@ class all_span_representation : public span_representation,
   void clear();
 
   double get_span_score_lhs_begin(int lhs, int begin);
+  double get_span_score_lhs_begin_unary(int lhs, int begin);
   double get_span_score_lhs_end(int lhs, int end);
+  double get_span_score_lhs_end_unary(int lhs, int end);
   double get_span_score_lhs_split(int lhs, int split);
-  double get_span_score_rhs0_begin(int rhs,int begin);
+  // double get_span_score_rhs0_begin(int rhs,int begin);
 
 
   double get_span_score_bin_info(int begin, int end, int split, int root_info);
@@ -193,13 +210,16 @@ class all_span_representation : public span_representation,
 
   dynet::expr::Expression& get_span_expr_lhs_init(int lhs, int begin);
   dynet::expr::Expression& get_span_expr_lhs_end (int lhs, int end);
+  dynet::expr::Expression& get_span_expr_lhs_init_unary(int lhs, int begin);
+  dynet::expr::Expression& get_span_expr_lhs_end_unary (int lhs, int end);
+
   dynet::expr::Expression& get_span_expr_lhs_split(int lhs, int split);
 
 
 
-  dynet::expr::Expression& get_span_expr_rhs0_init(int rhs0, int begin);
-  dynet::expr::Expression& get_span_expr_rhs0_end(int rhs0, int end);
-  dynet::expr::Expression& get_span_expr_rhs0_split(int rhs0, int split);
+  // dynet::expr::Expression& get_span_expr_rhs0_init(int rhs0, int begin);
+  // dynet::expr::Expression& get_span_expr_rhs0_end(int rhs0, int end);
+  // dynet::expr::Expression& get_span_expr_rhs0_split(int rhs0, int split);
 
   dynet::expr::Expression& get_span_expr_lhs_info(int lhs, int begin, int end, int medium);
 
@@ -218,13 +238,13 @@ class all_span_representation : public span_representation,
 
   static dynet::Parameter _p_b_span_init;
   static dynet::Parameter _p_o_span_init;
-  // static dynet::Parameter _p_b_span_init_un;
-  // static dynet::Parameter _p_o_span_init_un;
+  static dynet::Parameter _p_b_span_init_un;
+  static dynet::Parameter _p_o_span_init_un;
 
   static dynet::Parameter _p_b_span_end;
   static dynet::Parameter _p_o_span_end;
-  // static dynet::Parameter _p_b_span_end_un;
-  // static dynet::Parameter _p_o_span_end_un;
+  static dynet::Parameter _p_b_span_end_un;
+  static dynet::Parameter _p_o_span_end_un;
 
   static dynet::Parameter _p_b_span_split;
   static dynet::Parameter _p_o_span_split;
@@ -260,28 +280,28 @@ class all_span_representation : public span_representation,
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_init;
   std::vector<std::vector<double>> span_scores_init;
 
-  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_init_un;
-  // std::vector<std::vector<double>> span_scores_init_un;
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_init_un;
+  std::vector<std::vector<double>> span_scores_init_un;
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_end;
   std::vector<std::vector<double>> span_scores_end;
 
-  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_end_un;
-  // std::vector<std::vector<double>> span_scores_end_un;
+  std::vector<std::vector<dynet::expr::Expression>> span_expressions_end_un;
+  std::vector<std::vector<double>> span_scores_end_un;
 
   std::vector<std::vector<dynet::expr::Expression>> span_expressions_split;
   std::vector<std::vector<double>> span_scores_split;
 
 
 
-  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_init;
-  std::vector<std::vector<double>> span_scores_rhs0_init;
+  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_init;
+  // std::vector<std::vector<double>> span_scores_rhs0_init;
 
-  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_end;
-  std::vector<std::vector<double>> span_scores_rhs0_end;
+  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_end;
+  // std::vector<std::vector<double>> span_scores_rhs0_end;
 
-  std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_split;
-  std::vector<std::vector<double>> span_scores_rhs0_split;
+  // std::vector<std::vector<dynet::expr::Expression>> span_expressions_rhs0_split;
+  // std::vector<std::vector<double>> span_scores_rhs0_split;
 
 
 

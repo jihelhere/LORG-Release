@@ -243,11 +243,11 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
-    k = &network.span_repr->get_span_expr_lhs_init(r.get_lhs(), begin);
+    k = &network.span_repr->get_span_expr_lhs_init_unary(r.get_lhs(), begin);
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
-    k = &network.span_repr->get_span_expr_lhs_end(r.get_lhs(), end);
+    k = &network.span_repr->get_span_expr_lhs_end_unary(r.get_lhs(), end);
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 

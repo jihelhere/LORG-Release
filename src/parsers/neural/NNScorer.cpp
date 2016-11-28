@@ -181,8 +181,8 @@ nn_scorer::compute_internal_span_score(int begin,
   }
   else
   {
-    double v = span_repr->get_span_score_lhs_begin(lhs, begin) +
-               span_repr->get_span_score_lhs_end(lhs, end);
+    double v = span_repr->get_span_score_lhs_begin_unary(lhs, begin) +
+               span_repr->get_span_score_lhs_end_unary(lhs, end);
 
     // v += span_repr->get_span_score_rhs0_begin(rhs0, begin) +
     //      span_repr->get_span_score_rhs0_end(rhs0, end);
