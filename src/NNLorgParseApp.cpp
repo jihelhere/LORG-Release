@@ -185,7 +185,7 @@ void extract_feature(const anchored_binrule_type& anc_bin,
 
   auto&& r = std::get<3>(anc_bin);
   auto k = &nn_scorer::cfg.brule_expression(r);
-  if (not count.count(k)) count[k] = 0;
+  if (not count.count(k)) count[k] = 0; // this is useless -> TODO: remove
   count[k] = oper(count[k]);
 
   if (span_level > 0)
@@ -209,14 +209,14 @@ void extract_feature(const anchored_binrule_type& anc_bin,
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
-    // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
-    // count[k] = oper(exp_diff_count[k]);
+    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
+    count[k] = oper(count[k]);
 
-    // k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
-    // count[k] = oper(exp_diff_count[k]);
+    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
+    count[k] = oper(count[k]);
 
-    // k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
-    // count[k] = oper(exp_diff_count[k]);
+    k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
+    count[k] = oper(count[k]);
   }
 }
 
@@ -251,11 +251,11 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
-    // k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
-    // exp_diff_count[k] = oper(exp_diff_count[k]);
+    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
+    count[k] = oper(count[k]);
 
-    // k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
-    // exp_diff_count[k] = oper(exp_diff_count[k]);
+    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
+    count[k] = oper(count[k]);
   }
 }
 
