@@ -260,10 +260,10 @@ void extract_feature(const anchored_unirule_type& ref_anc_un,
     if (not count.count(k)) count[k] = 0;
     count[k] = oper(count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_init(r.get_rhs0(), begin);
+    k = &network.span_repr->get_span_expr_rhs0_init_unary(r.get_rhs0(), begin);
     count[k] = oper(count[k]);
 
-    k = &network.span_repr->get_span_expr_rhs0_end(r.get_rhs0(), end);
+    k = &network.span_repr->get_span_expr_rhs0_end_unary(r.get_rhs0(), end);
     count[k] = oper(count[k]);
   }
 }
