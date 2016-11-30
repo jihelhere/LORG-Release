@@ -32,8 +32,12 @@ dynet::Parameter all_span_representation::_p_o_span_split;
 dynet::Parameter all_span_representation::_p_W_span0_init;
 dynet::Parameter all_span_representation::_p_b_span0_init;
 dynet::Parameter all_span_representation::_p_o_span0_init;
+dynet::Parameter all_span_representation::_p_b_span0_init_un;
+dynet::Parameter all_span_representation::_p_o_span0_init_un;
 dynet::Parameter all_span_representation::_p_b_span0_end;
 dynet::Parameter all_span_representation::_p_o_span0_end;
+dynet::Parameter all_span_representation::_p_b_span0_end_un;
+dynet::Parameter all_span_representation::_p_o_span0_end_un;
 dynet::Parameter all_span_representation::_p_b_span0_split;
 dynet::Parameter all_span_representation::_p_o_span0_split;
 
@@ -84,6 +88,10 @@ all_span_representation::all_span_representation(bool init_global,
     _p_o_span0_init = m.add_parameters({1,hidden_size});
     _p_b_span0_end = m.add_parameters({hidden_size});
     _p_o_span0_end = m.add_parameters({1,hidden_size});
+    _p_b_span0_init_un = m.add_parameters({hidden_size});
+    _p_o_span0_init_un = m.add_parameters({1,hidden_size});
+    _p_b_span0_end_un = m.add_parameters({hidden_size});
+    _p_o_span0_end_un = m.add_parameters({1,hidden_size});
     _p_b_span0_split = m.add_parameters({hidden_size});
     _p_o_span0_split = m.add_parameters({1,hidden_size});
 
@@ -179,10 +187,14 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
   auto&& W0i = dynet::expr::parameter(*cg,_p_W_span0_init);
   auto&& b0i = dynet::expr::parameter(*cg,_p_b_span0_init);
   auto&& o0i = dynet::expr::parameter(*cg,_p_o_span0_init);
+  auto&& b0iu = dynet::expr::parameter(*cg,_p_b_span0_init_un);
+  auto&& o0iu = dynet::expr::parameter(*cg,_p_o_span0_init_un);
 
   // rhs0 + span end
   auto&& b0e = dynet::expr::parameter(*cg,_p_b_span0_end);
   auto&& o0e = dynet::expr::parameter(*cg,_p_o_span0_end);
+  auto&& b0eu = dynet::expr::parameter(*cg,_p_b_span0_end_un);
+  auto&& o0eu = dynet::expr::parameter(*cg,_p_o_span0_end_un);
 
   //rhs0 + span split
   auto&& b0s = dynet::expr::parameter(*cg,_p_b_span0_split);
@@ -227,13 +239,16 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
 
   span_expressions_rhs0_init.resize(wl);
   span_scores_rhs0_init.resize(wl);
+  span_expressions_rhs0_init_un.resize(wl);
+  span_scores_rhs0_init_un.resize(wl);
 
   span_expressions_rhs0_end.resize(wl);
   span_scores_rhs0_end.resize(wl);
+  span_expressions_rhs0_end_un.resize(wl);
+  span_scores_rhs0_end_un.resize(wl);
 
   span_expressions_rhs0_split.resize(wl);
   span_scores_rhs0_split.resize(wl);
-
 
   span_expressions_rhs1_init.resize(wl);
   span_scores_rhs1_init.resize(wl);
@@ -264,6 +279,11 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
     span_expressions_rhs0_split[i].resize(nl);
     span_scores_rhs0_split[i].resize(nl);
 
+    span_expressions_rhs0_init_un[i].resize(nl);
+    span_scores_rhs0_init_un[i].resize(nl);
+    span_expressions_rhs0_end_un[i].resize(nl);
+    span_scores_rhs0_end_un[i].resize(nl);
+
     for (auto r0 : rhs0_int)
     {
       auto&& inp = dynet::expr::concatenate({cfg->get_nt_expr(r0), embeddings[i]});
@@ -273,16 +293,24 @@ void all_span_representation::precompute_span_expressions(const std::vector<int>
       auto&& e0e = o0e * dynet::expr::rectify(h0p + b0e);
       auto&& e0s = o0s * dynet::expr::rectify(h0p + b0s);
 
+      auto&& e0iu = o0iu * dynet::expr::rectify(h0p + b0iu);
+      auto&& e0eu = o0eu * dynet::expr::rectify(h0p + b0eu);
+
       if (train_mode)
       {
         span_expressions_rhs0_init[i][r0] = e0i;
         span_expressions_rhs0_end[i][r0] = e0e;
         span_expressions_rhs0_split[i][r0] = e0s;
 
+        span_expressions_rhs0_init_un[i][r0] = e0iu;
+        span_expressions_rhs0_end_un[i][r0] = e0eu;
       }
       span_scores_rhs0_init[i][r0]  = as_scalar(e0i.value());
       span_scores_rhs0_end[i][r0]   = as_scalar(e0e.value());
       span_scores_rhs0_split[i][r0] = as_scalar(e0s.value());
+
+      span_scores_rhs0_init_un[i][r0]  = as_scalar(e0iu.value());
+      span_scores_rhs0_end_un[i][r0]   = as_scalar(e0eu.value());
     }
 
 
@@ -506,6 +534,8 @@ double all_span_representation::get_span_score_lhs_split(int lhs, int split) {re
 
 double all_span_representation::get_span_score_rhs0_begin(int rhs,int begin) {return span_scores_rhs0_init[begin][rhs];}
 double all_span_representation::get_span_score_rhs0_end(int rhs,int end) {return span_scores_rhs0_end[end][rhs];}
+double all_span_representation::get_span_score_rhs0_begin_unary(int rhs,int begin) {return span_scores_rhs0_init_un[begin][rhs];}
+double all_span_representation::get_span_score_rhs0_end_unary(int rhs,int end) {return span_scores_rhs0_end_un[end][rhs];}
 double all_span_representation::get_span_score_rhs0_split(int rhs,int split) {return span_scores_rhs0_split[split][rhs];}
 
 
@@ -560,6 +590,18 @@ dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_init(int rh
 dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_end(int rhs0, int end)
 {
   return span_expressions_rhs0_end[end][rhs0];
+}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_init_unary(int rhs0, int begin)
+{
+  return span_expressions_rhs0_init_un[begin][rhs0];
+}
+
+
+dynet::expr::Expression& all_span_representation::get_span_expr_rhs0_end_unary(int rhs0, int end)
+{
+  return span_expressions_rhs0_end_un[end][rhs0];
 }
 
 

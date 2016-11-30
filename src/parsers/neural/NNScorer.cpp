@@ -143,7 +143,7 @@ double
 nn_scorer::compute_internal_span_score(int begin,
                                        int end,
                                        int medium,
-                                       int lhs, int rhs0)
+                                       int lhs, int rhs0, int rhs1)
 {
   int lhs_info = 0;
   switch (span_level) {
@@ -174,6 +174,10 @@ nn_scorer::compute_internal_span_score(int begin,
          span_repr->get_span_score_rhs0_end(rhs0, end) +
          span_repr->get_span_score_rhs0_split(rhs0, medium);
 
+    v += span_repr->get_span_score_rhs1_begin(rhs1, begin) +
+         span_repr->get_span_score_rhs1_end(rhs1, end) +
+         span_repr->get_span_score_rhs1_split(rhs1, medium);
+
     if (not use_span_midpoints) medium = 0;
 
     return v + span_repr->get_span_score_bin_info(begin,end, medium, lhs_info);
@@ -184,8 +188,8 @@ nn_scorer::compute_internal_span_score(int begin,
     double v = span_repr->get_span_score_lhs_begin_unary(lhs, begin) +
                span_repr->get_span_score_lhs_end_unary(lhs, end);
 
-    v += span_repr->get_span_score_rhs0_begin(rhs0, begin) +
-         span_repr->get_span_score_rhs0_end(rhs0, end);
+    v += span_repr->get_span_score_rhs0_begin_unary(rhs0, begin) +
+         span_repr->get_span_score_rhs0_end_unary(rhs0, end);
 
     return v + span_repr->get_span_score_una_info(begin,end, lhs_info);
   }
@@ -205,7 +209,7 @@ double nn_scorer::compute_unary_score(int begin, int end, const MetaProduction* 
   double v = compute_internal_rule_score(r);
 
   if (span_level > 0) v+= compute_internal_span_score(begin, end - 1, -1, r->get_lhs(),
-                                                      r->get_rhs0());
+                                                      r->get_rhs0(), -1);
 
   if (gold && !anchored_unaries->count(std::make_tuple(begin,end,*r)))
     v += 1.0;
@@ -220,7 +224,7 @@ double nn_scorer::compute_binary_score(int s, int e, int m, const MetaProduction
 
   double v = compute_internal_rule_score(r);
 
-  if (span_level > 0) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs(), r->get_rhs0());
+  if (span_level > 0) v+= compute_internal_span_score(s, e - 1, m, r->get_lhs(), r->get_rhs0(), r->get_rhs1());
 
   if (gold and not anchored_binaries->count(std::make_tuple(s,e,m,*r))) v += 1.0;
 

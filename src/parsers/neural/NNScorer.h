@@ -130,5 +130,5 @@ struct nn_scorer : public computation_attachment
 
  private:
   double compute_internal_rule_score(const Production* r);
-  double compute_internal_span_score(int begin, int end, int medium, int lhs, int rhs0);
+  double compute_internal_span_score(int begin, int end, int medium, int lhs, int rhs0, int rhs1);
 };
