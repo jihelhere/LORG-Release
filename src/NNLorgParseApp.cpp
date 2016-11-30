@@ -217,6 +217,15 @@ void extract_feature(const anchored_binrule_type& anc_bin,
 
     k = &network.span_repr->get_span_expr_rhs0_split(r.get_rhs0(), split);
     count[k] = oper(count[k]);
+
+    k = &network.span_repr->get_span_expr_rhs1_init(r.get_rhs1(), begin);
+    count[k] = oper(count[k]);
+
+    k = &network.span_repr->get_span_expr_rhs1_end(r.get_rhs1(), end);
+    count[k] = oper(count[k]);
+
+    k = &network.span_repr->get_span_expr_rhs1_split(r.get_rhs1(), split);
+    count[k] = oper(count[k]);
   }
 }
 
