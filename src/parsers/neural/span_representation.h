@@ -309,7 +309,10 @@ class all_span_representation : public span_representation,
 
 
   //span FF
-  static dynet::Parameter _p_W_span_init;
+  //static dynet::Parameter _p_W_span_init;
+  static dynet::Parameter _p_W_span_init_n;
+  static dynet::Parameter _p_W_span_init_w;
+
   // static dynet::Parameter _p_W_span_end;
   // static dynet::Parameter _p_W_span_split;
 
@@ -327,7 +330,10 @@ class all_span_representation : public span_representation,
   static dynet::Parameter _p_o_span_split;
 
 
-  static dynet::Parameter _p_W_span0_init;
+  //static dynet::Parameter _p_W_span0_init;
+  static dynet::Parameter _p_W_span0_init_n;
+  static dynet::Parameter _p_W_span0_init_w;
+
   static dynet::Parameter _p_b_span0_init;
   static dynet::Parameter _p_o_span0_init;
   static dynet::Parameter _p_b_span0_init_un;
@@ -341,7 +347,10 @@ class all_span_representation : public span_representation,
   static dynet::Parameter _p_b_span0_split;
   static dynet::Parameter _p_o_span0_split;
 
-  static dynet::Parameter _p_W_span1_init;
+  //static dynet::Parameter _p_W_span1_init;
+  static dynet::Parameter _p_W_span1_init_n;
+  static dynet::Parameter _p_W_span1_init_w;
+
   static dynet::Parameter _p_b_span1_init;
   static dynet::Parameter _p_o_span1_init;
   static dynet::Parameter _p_b_span1_end;
